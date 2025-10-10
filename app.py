@@ -1117,7 +1117,18 @@ import secrets
 # Google OAuth Configuration - Update these in your .env file
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI', 'http://localhost:5000/google-callback')
+# Dynamic Google OAuth configuration
+def get_google_redirect_uri():
+    """Get the correct redirect URI based on environment"""
+    # Check if we're in production (Render)
+    if os.environ.get('RENDER') or os.environ.get('FLASK_ENV') == 'production':
+        # Use your actual Render URL
+        return 'https://makokha-medical-centre-website.onrender.com/google-callback'
+    else:
+        # Development/localhost
+        return 'http://localhost:5000/google-callback'
+
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI') or get_google_redirect_uri()
 
 # =============================================================================
 # GOOGLE OAUTH ROUTES
