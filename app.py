@@ -11,7 +11,7 @@ import bcrypt
 import re
 import bleach
 from datetime import datetime, timedelta, timezone
-from flask import Flask, render_template, request, redirect, send_file, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, send_file, send_from_directory, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_mail import Mail
@@ -133,15 +133,16 @@ except Exception as e:
     )
     print("⚠️ Using in-memory rate limiting (Redis not available)")
 
+# Replace your current SocketIO initialization with this:
 socketio = SocketIO(
     app, 
-    cors_allowed_origins="*", 
-    manage_session=False,
+    cors_allowed_origins="*",
     async_mode='eventlet',
-    logger=True,
+    logger=False,  # Disable in production
     engineio_logger=False,  # Disable in production
     ping_timeout=60,
-    ping_interval=25
+    ping_interval=25,
+    max_http_buffer_size=100 * 1024 * 1024  # 100MB for file uploads
 )
 
 # Configure login manager
@@ -2928,35 +2929,31 @@ def handle_csrf_error(e):
     log_audit('csrf_validation_failed', getattr(current_user, 'id', None))
     return jsonify({'error': 'CSRF token validation failed', 'message': 'Please refresh the page and try again.'}), 400
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, 'static'),
+        'favicon.ico',
+        mimetype='image/vnd.microsoft.icon'
+    )
+    
 # =============================================================================
-# MAIN EXECUTION
+# PRODUCTION SERVER CONFIGURATION
 # =============================================================================
 
+def create_app():
+    """Application factory for production"""
+    return app
+
+# Production server configuration
 if __name__ == '__main__':
-    print("🚀 Starting Makokha Medical Centre Telemedicine Platform...")
-    
-    # Initialize database and create sample data
-    init_db()
-    
-    print("\n📋 Available Routes:")
-    print("   Home: http://localhost:5000")
-    print("   Login: http://localhost:5000/login")
-    print("   Signup: http://localhost:5000/signup")
-    print("   Communication Hub: http://localhost:5000/communication")
-    
-    print("\n🔐 Test Credentials:")
-    print("   Admin: admin@makokha.com / Admin123!")
-    print("   Doctor: doctor@makokha.com / Doctor123!")
-    print("   Patient: patient@makokha.com / Patient123!")
-    
-    print("\n🌐 Server starting on http://localhost:5000")
-    print("   WebSocket support enabled")
-    print("   Press Ctrl+C to stop the server")
-    
-    # Determine host and port for deployment
-    host = os.environ.get('HOST', '0.0.0.0')
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_ENV') != 'production'
-    
-    # Run the application with SocketIO
-    socketio.run(app, debug=debug, host=host, port=port, log_output=True)
+    # Use different servers for development vs production
+    if os.environ.get('RENDER') or os.environ.get('FLASK_ENV') == 'production':
+        # Production: Use Waitress (better for Render)
+        from waitress import serve
+        print("🚀 Starting production server with Waitress...")
+        serve(app, host='0.0.0.0', port=5000)
+    else:
+        # Development: Use Flask development server with SocketIO
+        print("🚀 Starting development server with Flask...")
+        socketio.run(app, debug=True, host='0.0.0.0', port=5000, log_output=True)
