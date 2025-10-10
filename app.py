@@ -94,26 +94,32 @@ login_manager = LoginManager(app)
 mail = Mail(app)
 csrf = CSRFProtect(app)
 
-# Replace your current limiter configuration with this:
 
-# Fix: Initialize Limiter with Redis storage for production, memory for development
+
+# Fix: Improved Limiter configuration with proper fallback
 try:
-    # Try to use Redis if available (production)
-    from flask_limiter import Limiter
-    from flask_limiter.util import get_remote_address
-    import redis
+    # Try to use Redis if available
+    redis_url = os.environ.get('REDIS_URL')
     
-    # Configure Redis URL for production
-    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-    
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        storage_uri=redis_url,
-        default_limits=["200 per day", "50 per hour"],
-        strategy="fixed-window"  # More reliable than moving-window
-    )
-except:
+    if redis_url:
+        # Handle Redis SSL connections for production
+        if redis_url.startswith('rediss://'):
+            redis_url += "?ssl_cert_reqs=none"
+        
+        limiter = Limiter(
+            app=app,
+            key_func=get_remote_address,
+            storage_uri=redis_url,
+            default_limits=["200 per day", "50 per hour"],
+            strategy="fixed-window",
+            headers_enabled=True
+        )
+        print("✅ Redis rate limiting enabled")
+    else:
+        # Fallback to memory storage
+        raise Exception("No Redis URL configured")
+        
+except Exception as e:
     # Fallback to memory storage with warning suppression
     import warnings
     warnings.filterwarnings("ignore", message="Using the in-memory storage")
@@ -122,15 +128,20 @@ except:
         app=app,
         key_func=get_remote_address,
         default_limits=["200 per day", "50 per hour"],
-        strategy="fixed-window"
+        strategy="fixed-window",
+        storage_uri="memory://"
     )
+    print("⚠️ Using in-memory rate limiting (Redis not available)")
 
-# Initialize SocketIO with proper async mode for production
 socketio = SocketIO(
     app, 
     cors_allowed_origins="*", 
     manage_session=False,
-    async_mode='eventlet'  # Explicitly set eventlet for production
+    async_mode='eventlet',
+    logger=True,
+    engineio_logger=False,  # Disable in production
+    ping_timeout=60,
+    ping_interval=25
 )
 
 # Configure login manager
