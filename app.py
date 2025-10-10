@@ -1,4 +1,11 @@
+# app.py - ADD THIS AT THE VERY TOP
 import os
+import eventlet
+
+# Monkey patch early to avoid issues
+eventlet.monkey_patch()
+
+# Now import other modules
 import string
 import bcrypt
 import re
@@ -87,12 +94,36 @@ login_manager = LoginManager(app)
 mail = Mail(app)
 csrf = CSRFProtect(app)
 
-# Fix: Initialize Limiter correctly
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
-)
+# Replace your current limiter configuration with this:
+
+# Fix: Initialize Limiter with Redis storage for production, memory for development
+try:
+    # Try to use Redis if available (production)
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+    import redis
+    
+    # Configure Redis URL for production
+    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        storage_uri=redis_url,
+        default_limits=["200 per day", "50 per hour"],
+        strategy="fixed-window"  # More reliable than moving-window
+    )
+except:
+    # Fallback to memory storage with warning suppression
+    import warnings
+    warnings.filterwarnings("ignore", message="Using the in-memory storage")
+    
+    limiter = Limiter(
+        app=app,
+        key_func=get_remote_address,
+        default_limits=["200 per day", "50 per hour"],
+        strategy="fixed-window"
+    )
 
 # Initialize SocketIO with proper async mode for production
 socketio = SocketIO(
@@ -2787,76 +2818,82 @@ def upload_message_file():
 def init_db():
     """Initialize the database with sample data"""
     with app.app_context():
-        # Create all tables
-        db.create_all()
-        
-        # Create admin user if not exists
-        admin_user = User.query.filter_by(email='admin@makokha.com').first()
-        if not admin_user:
-            admin_user = User(
-                email='admin@makokha.com',
-                username='admin',
-                role='admin',
-                timezone='Africa/Nairobi'
-            )
-            admin_user.set_password('Admin123!')
-            db.session.add(admin_user)
-            db.session.commit()
-            print("✅ Admin user created: admin@makokha.com / Admin123!")
-        
-        # Create sample doctor
-        doctor_user = User.query.filter_by(email='doctor@makokha.com').first()
-        if not doctor_user:
-            doctor_user = User(
-                email='doctor@makokha.com',
-                username='drjohn',
-                role='doctor',
-                timezone='Africa/Nairobi'
-            )
-            doctor_user.set_password('Doctor123!')
-            db.session.add(doctor_user)
-            db.session.commit()
+        try:
+            # Create all tables
+            db.create_all()
+            print("✅ Database tables created successfully!")
             
-            doctor = Doctor(
-                user_id=doctor_user.id,
-                first_name='John',
-                last_name='Mwangi',
-                specialization='Cardiologist',
-                license_number='MED-12345',
-                consultation_fee=2500.00,
-                bio='Experienced cardiologist with 10+ years of practice.',
-                available_hours='Mon-Fri: 9AM-5PM',
-                timezone='Africa/Nairobi'
-            )
-            db.session.add(doctor)
-            db.session.commit()
-            print("✅ Sample doctor created: doctor@makokha.com / Doctor123!")
-        
-        # Create sample patient
-        patient_user = User.query.filter_by(email='patient@makokha.com').first()
-        if not patient_user:
-            patient_user = User(
-                email='patient@makokha.com',
-                username='patient1',
-                role='patient',
-                timezone='Africa/Nairobi'
-            )
-            patient_user.set_password('Patient123!')
-            db.session.add(patient_user)
-            db.session.commit()
+            # Create admin user if not exists
+            admin_user = User.query.filter_by(email='admin@makokha.com').first()
+            if not admin_user:
+                admin_user = User(
+                    email='admin@makokha.com',
+                    username='admin',
+                    role='admin',
+                    timezone='Africa/Nairobi'
+                )
+                admin_user.set_password('Admin123!')
+                db.session.add(admin_user)
+                db.session.commit()
+                print("✅ Admin user created: admin@makokha.com / Admin123!")
             
-            patient = Patient(
-                user_id=patient_user.id,
-                first_name='Mary',
-                last_name='Wanjiku',
-                phone='+254712345678',
-                medical_history='No significant medical history'
-            )
-            db.session.add(patient)
-            db.session.commit()
-            print("✅ Sample patient created: patient@makokha.com / Patient123!")
-        
-        print("🎉 Database initialized successfully!")
+            # Create sample doctor
+            doctor_user = User.query.filter_by(email='doctor@makokha.com').first()
+            if not doctor_user:
+                doctor_user = User(
+                    email='doctor@makokha.com',
+                    username='drjohn',
+                    role='doctor',
+                    timezone='Africa/Nairobi'
+                )
+                doctor_user.set_password('Doctor123!')
+                db.session.add(doctor_user)
+                db.session.commit()
+                
+                doctor = Doctor(
+                    user_id=doctor_user.id,
+                    first_name='John',
+                    last_name='Mwangi',
+                    specialization='Cardiologist',
+                    license_number='MED-12345',
+                    consultation_fee=2500.00,
+                    bio='Experienced cardiologist with 10+ years of practice.',
+                    available_hours='Mon-Fri: 9AM-5PM',
+                    timezone='Africa/Nairobi'
+                )
+                db.session.add(doctor)
+                db.session.commit()
+                print("✅ Sample doctor created: doctor@makokha.com / Doctor123!")
+            
+            # Create sample patient
+            patient_user = User.query.filter_by(email='patient@makokha.com').first()
+            if not patient_user:
+                patient_user = User(
+                    email='patient@makokha.com',
+                    username='patient1',
+                    role='patient',
+                    timezone='Africa/Nairobi'
+                )
+                patient_user.set_password('Patient123!')
+                db.session.add(patient_user)
+                db.session.commit()
+                
+                patient = Patient(
+                    user_id=patient_user.id,
+                    first_name='Mary',
+                    last_name='Wanjiku',
+                    phone='+254712345678',
+                    medical_history='No significant medical history'
+                )
+                db.session.add(patient)
+                db.session.commit()
+                print("✅ Sample patient created: patient@makokha.com / Patient123!")
+            
+            print("🎉 Database initialized successfully!")
+            
+        except Exception as e:
+            print(f"❌ Database initialization error: {str(e)}")
+            db.session.rollback()
 
 # =============================================================================
 # ERROR HANDLERS
