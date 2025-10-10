@@ -1,36 +1,63 @@
-# wsgi.py - Production WSGI entry point
+# wsgi.py - Fixed version
 import os
 import eventlet
 
-# Apply eventlet monkey patch early
+# Apply monkey patching first
 eventlet.monkey_patch()
 
-from app import app, socketio, initialize_database
+print("🔧 Starting Makokha Medical Centre WebSocket Server...")
 
-print("🚀 Starting Makokha Medical Centre Production Server...")
+from app import app, socketio, db
+
+# Initialize database function
+def initialize_database():
+    """Initialize database tables"""
+    try:
+        with app.app_context():
+            db.create_all()
+            print("✅ Database tables created successfully!")
+            
+            # Create admin user if not exists
+            from app import User, Patient, Doctor
+            admin_user = User.query.filter_by(email='admin@makokha.com').first()
+            if not admin_user:
+                admin_user = User(
+                    email='admin@makokha.com',
+                    username='admin',
+                    role='admin',
+                    timezone='Africa/Nairobi'
+                )
+                admin_user.set_password('Admin123!')
+                db.session.add(admin_user)
+                print("✅ Admin user created")
+            
+            db.session.commit()
+            
+    except Exception as e:
+        print(f"⚠️ Database initialization note: {e}")
+        db.session.rollback()
 
 # Initialize database
 try:
-    with app.app_context():
-        initialize_database()
-    print("✅ Database initialized successfully!")
+    initialize_database()
 except Exception as e:
-    print(f"⚠️ Database initialization warning: {e}")
+    print(f"⚠️ Database initialization: {e}")
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     host = '0.0.0.0'
     
-    # Check if we're in production
-    is_production = os.environ.get('RENDER') or os.environ.get('FLASK_ENV') == 'production'
+    print(f"🌐 Production server starting on {host}:{port}")
+    print("📡 WebSocket support: ENABLED")
+    print("⚡ Server: Eventlet")
+    print("🚀 Ready for connections...")
     
-    if is_production:
-        print(f"🌐 Production server starting on port {port}")
-        print("📡 WebSocket support: Enabled")
-        print("⚡ Server: Eventlet")
-        
-        # Use eventlet's production server
-        socketio.run(app, host=host, port=port, debug=False, log_output=True)
-    else:
-        print(f"🔧 Development server starting on port {port}")
-        socketio.run(app, host=host, port=port, debug=True, log_output=True)
+    # Start the SocketIO server
+    socketio.run(
+        app,
+        host=host,
+        port=port,
+        debug=False,
+        log_output=True,
+        use_reloader=False
+    )
