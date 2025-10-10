@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: makokha-medical-centre-website
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: makokha-medical-db
+          property: connectionString
+      - key: GOOGLE_CLIENT_ID
+        value: your-google-client-id
+      - key: GOOGLE_CLIENT_SECRET
+        value: your-google-client-secret
+      - key: GOOGLE_REDIRECT_URI
+        value: https://your-app-name.onrender.com/google-callback
+
+databases:
+  - name: makokha-medical-db
+    plan: free
+    databaseName: makokha_medical
+    user: makokha_user

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Chat - Makokha Medical Centre</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #e5ddd5;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .whatsapp-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #075e54;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #128c7e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .contact-info {
+            flex: 1;
+        }
+
+        .contact-name {
+            font-weight: bold;
+            margin-bottom: 0.2rem;
+        }
+
+        .contact-status {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .header-action {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            background: #e5ddd5;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background: #dcf8c6;
+            border-top-right-radius: 0;
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background: white;
+            border-top-left-radius: 0;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            color: #667781;
+            text-align: right;
+            margin-top: 0.2rem;
+        }
+
+        .message-status {
+            position: absolute;
+            bottom: 2px;
+            right: 8px;
+            font-size: 0.7rem;
+        }
+
+        .chat-input {
+            padding: 0.75rem;
+            background: #f0f0f0;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-action {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #54656f;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 20px;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        .message-input:focus {
+            outline: none;
+        }
+
+        .send-button {
+            background: #075e54;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .send-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .system-message {
+            align-self: center;
+            background: rgba(0,0,0,0.1);
+            color: #667781;
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 0.5rem 0;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            border-top-left-radius: 0;
+            font-size: 0.8rem;
+            color: #667781;
+            display: none;
+        }
+
+        .typing-indicator.visible {
+            display: block;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 2px;
+        }
+
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            background: #667781;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
+        .file-attachment {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+            color: #075e54;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: #667781;
+        }
+
+        .download-button {
+            background: #075e54;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+            .whatsapp-container {
+                height: 100vh;
+                max-width: none;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="whatsapp-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <button class="back-button" onclick="goBack()">←</button>
+            <div class="contact-avatar">
+                {% if current_user.role == 'patient' %}👨‍⚕️{% else %}👤{% endif %}
+            </div>
+            <div class="contact-info">
+                <div class="contact-name">
+                    {% if current_user.role == 'patient' %}
+                    Dr. {{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}
+                    {% else %}
+                    {{ appointment.patient.first_name }} {{ appointment.patient.last_name }}
+                    {% endif %}
+                </div>
+                <div class="contact-status" id="contactStatus">
+                    {% if current_user.role == 'patient' %}Online{% else %}Available{% endif %}
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="header-action" title="Video Call" onclick="startVideoCall()">📹</button>
+                <button class="header-action" title="Voice Call" onclick="startVoiceCall()">📞</button>
+                <button class="header-action" title="Menu">⋮</button>
+            </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chatMessages">
+            <div class="system-message">
+                Medical consultation chat - Messages are secured and recorded
+            </div>
+
+            <div class="message received">
+                <div class="message-text">
+                    Hello! This is your medical consultation chat. You can message me here for any follow-up questions.
+                </div>
+                <div class="message-time">10:00 AM</div>
+            </div>
+
+            <div class="message sent">
+                <div class="message-text">
+                    Thank you, doctor. I wanted to ask about the medication side effects.
+                </div>
+                <div class="message-time">10:02 AM</div>
+                <div class="message-status">✓✓</div>
+            </div>
+
+            <div class="message received">
+                <div class="message-text">
+                    Of course. What specific side effects are you experiencing?
+                </div>
+                <div class="message-time">10:03 AM</div>
+            </div>
+
+            <div class="file-attachment">
+                <div class="file-icon">📄</div>
+                <div class="file-info">
+                    <div class="file-name">prescription.pdf</div>
+                    <div class="file-size">2.4 MB</div>
+                </div>
+                <button class="download-button">Download</button>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <span class="typing-dots">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </span>
+                typing...
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input">
+            <div class="input-actions">
+                <button class="input-action" title="Emoji">😊</button>
+                <button class="input-action" title="Attach File" onclick="attachFile()">📎</button>
+            </div>
+            <input type="text" class="message-input" id="messageInput" placeholder="Type a message">
+            <button class="send-button" id="sendButton" onclick="sendMessage()">
+                ➤
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const contactStatus = document.getElementById('contactStatus');
+
+        // State
+        let isTyping = false;
+        let typingTimeout;
+
+        // Send message
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                // Create message element
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message sent';
+                messageElement.innerHTML = `
+                    <div class="message-text">${message}</div>
+                    <div class="message-time">${getCurrentTime()}</div>
+                    <div class="message-status">✓✓</div>
+                `;
+                
+                chatMessages.appendChild(messageElement);
+                messageInput.value = '';
+                scrollToBottom();
+                
+                // Simulate reply after delay
+                simulateReply();
+            }
+        }
+
+        // Simulate receiving a message
+        function simulateReply() {
+            showTypingIndicator();
+            
+            setTimeout(() => {
+                hideTypingIndicator();
+                
+                const replies = [
+                    "I understand your concern. Let me check that for you.",
+                    "That's a common side effect. It should subside in a few days.",
+                    "Please continue taking the medication as prescribed.",
+                    "I recommend drinking plenty of water with that medication.",
+                    "If the symptoms persist, please schedule a follow-up appointment.",
+                    "You can take the medication with food to reduce stomach discomfort."
+                ];
+                
+                const randomReply = replies[Math.floor(Math.random() * replies.length)];
+                
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message received';
+                messageElement.innerHTML = `
+                    <div class="message-text">${randomReply}</div>
+                    <div class="message-time">${getCurrentTime()}</div>
+                `;
+                
+                chatMessages.appendChild(messageElement);
+                scrollToBottom();
+            }, 2000 + Math.random() * 2000);
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            typingIndicator.classList.add('visible');
+            scrollToBottom();
+        }
+
+        // Hide typing indicator
+        function hideTypingIndicator() {
+            typingIndicator.classList.remove('visible');
+        }
+
+        // Get current time in 12-hour format
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        // Scroll to bottom of chat
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Attach file
+        function attachFile() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '*/*';
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    // Create file attachment message
+                    const fileElement = document.createElement('div');
+                    fileElement.className = 'file-attachment';
+                    fileElement.innerHTML = `
+                        <div class="file-icon">📄</div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${(file.size / 1024 / 1024).toFixed(2)} MB</div>
+                        </div>
+                        <button class="download-button">Download</button>
+                    `;
+                    
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'message sent';
+                    messageElement.appendChild(fileElement);
+                    messageElement.innerHTML += `
+                        <div class="message-time">${getCurrentTime()}</div>
+                        <div class="message-status">✓✓</div>
+                    `;
+                    
+                    chatMessages.appendChild(messageElement);
+                    scrollToBottom();
+                    
+                    // Simulate file received confirmation
+                    setTimeout(() => {
+                        const confirmElement = document.createElement('div');
+                        confirmElement.className = 'message received';
+                        confirmElement.innerHTML = `
+                            <div class="message-text">Thank you for sharing the file. I'll review it.</div>
+                            <div class="message-time">${getCurrentTime()}</div>
+                        `;
+                        chatMessages.appendChild(confirmElement);
+                        scrollToBottom();
+                    }, 1000);
+                }
+            };
+            fileInput.click();
+        }
+
+        // Start video call
+        function startVideoCall() {
+            window.open(`/video-call/{{ appointment.id }}`, '_blank');
+        }
+
+        // Start voice call
+        function startVoiceCall() {
+            window.open(`/voice-call/{{ appointment.id }}`, '_blank');
+        }
+
+        // Go back to dashboard
+        function goBack() {
+            if (confirm('Are you sure you want to leave the chat?')) {
+                window.history.back();
+            }
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            if (!isTyping) {
+                isTyping = true;
+                // In real implementation: send typing indicator via WebSocket
+            }
+            
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                isTyping = false;
+                // In real implementation: stop typing indicator
+            }, 1000);
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            scrollToBottom();
+            
+            // Simulate initial message after delay
+            setTimeout(() => {
+                const welcomeElement = document.createElement('div');
+                welcomeElement.className = 'message received';
+                welcomeElement.innerHTML = `
+                    <div class="message-text">
+                        Welcome to your medical consultation chat! Feel free to ask any questions about your health.
+                    </div>
+                    <div class="message-time">${getCurrentTime()}</div>
+                `;
+                chatMessages.appendChild(welcomeElement);
+                scrollToBottom();
+            }, 1000);
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            // Save chat state if needed
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Makokha Medical Centre</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f7fafc;
+            color: #2d3748;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: #2d3748;
+            color: white;
+            padding: 2rem 1rem;
+            position: fixed;
+            width: 250px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .logo span {
+            color: #667eea;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-link {
+            padding: 0.75rem 1rem;
+            color: #cbd5e0;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: #4a5568;
+            color: white;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            grid-column: 2;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .welcome-message h1 {
+            font-size: 2rem;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .welcome-message p {
+            color: #718096;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Dashboard Cards */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .card .trend {
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .trend.up { color: #48bb78; }
+        .trend.down { color: #f56565; }
+
+        /* Sections */
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            color: #2d3748;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Tables */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .table tr:hover {
+            background: #f7fafc;
+        }
+
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-active { background: #c6f6d5; color: #22543d; }
+        .status-inactive { background: #fed7d7; color: #742a2a; }
+        .status-pending { background: #fefcbf; color: #744210; }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            background: #f7fafc;
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1100;
+            max-width: 400px;
+        }
+
+        .flash-message {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .flash-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .flash-error {
+            background: #f56565;
+            color: white;
+        }
+
+        .flash-info {
+            background: #4299e1;
+            color: white;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            font-size: 1.5rem;
+            color: #2d3748;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #718096;
+        }
+
+        .close-modal:hover {
+            color: #2d3748;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .role-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .role-admin { background: #667eea; color: white; }
+        .role-doctor { background: #48bb78; color: white; }
+        .role-patient { background: #ed8936; color: white; }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                grid-column: 1;
+                padding: 1rem;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+/* Add to the existing CSS */
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #718096;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.password-toggle:hover {
+    background: #f7fafc;
+    color: #2d3748;
+}
+
+.password-toggle.active {
+    color: #667eea;
+}
+
+.form-group {
+    position: relative;
+}
+
+.password-input-container {
+    position: relative;
+}
+
+.password-input-container input {
+    padding-right: 40px !important;
+}
+
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">Makokha<span>Medical</span></div>
+            <div class="nav-links">
+                <a href="#overview" class="nav-link active" data-section="overview">
+                    📊 Overview
+                </a>
+                <a href="#users" class="nav-link" data-section="users">
+                    👥 Users
+                </a>
+                <a href="#appointments" class="nav-link" data-section="appointments">
+                    📅 Appointments
+                </a>
+                <a href="#reports" class="nav-link" data-section="reports">
+                    📈 Reports
+                </a>
+                <a href="#settings" class="nav-link" data-section="settings">
+                    ⚙️ Settings
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-link" style="margin-top: 2rem;">
+                    🚪 Logout
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="welcome-message">
+                    <h1>Admin Dashboard</h1>
+                    <p>Manage the telemedicine platform</p>
+                </div>
+                <div class="user-menu">
+                    <span>Administrator</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            <div class="flash-messages">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Overview Section -->
+            <section id="overview-section" class="section">
+                <div class="section-header">
+                    <h2>Platform Overview</h2>
+                </div>
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <h3>Total Patients</h3>
+                        <div class="number">{{ stats.total_patients }}</div>
+                        <div class="trend up">+12% from last month</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Doctors</h3>
+                        <div class="number">{{ stats.total_doctors }}</div>
+                        <div class="trend up">+5% from last month</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Appointments</h3>
+                        <div class="number">{{ stats.total_appointments }}</div>
+                        <div class="trend up">+18% from last month</div>
+                    </div>
+                    <div class="card">
+                        <h3>Pending Appointments</h3>
+                        <div class="number">{{ stats.pending_appointments }}</div>
+                        <div class="trend down">-3% from last month</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Appointments by Status</h3>
+                        <div class="chart-placeholder">
+                            Appointments Chart Placeholder
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Revenue Overview</h3>
+                        <div class="chart-placeholder">
+                            Revenue Chart Placeholder
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section id="users-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2>User Management</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary" onclick="openAddUserModal()">
+                            👥 Add New User
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Users will be loaded dynamically -->
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #718096;">
+                                    Loading users...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Appointments Section -->
+            <section id="appointments-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2>All Appointments</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary">Export Data</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                                <th>Payment</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Sample data -->
+                            <tr>
+                                <td>#001</td>
+                                <td>Mary Wanjiku</td>
+                                <td>Dr. John Mwangi</td>
+                                <td>2024-01-20 10:00</td>
+                                <td><span class="status status-active">Confirmed</span></td>
+                                <td><span class="status status-active">Completed</span></td>
+                                <td>KES 2,500.00</td>
+                            </tr>
+                            <tr>
+                                <td>#002</td>
+                                <td>James Kimani</td>
+                                <td>Dr. John Mwangi</td>
+                                <td>2024-01-20 11:00</td>
+                                <td><span class="status status-pending">Scheduled</span></td>
+                                <td><span class="status status-pending">Pending</span></td>
+                                <td>KES 2,500.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2>Platform Reports</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-primary">Generate Report</button>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Monthly Appointments</h3>
+                        <div class="chart-placeholder">
+                            Monthly Appointments Chart
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Doctor Performance</h3>
+                        <div class="chart-placeholder">
+                            Doctor Performance Chart
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Patient Demographics</h3>
+                        <div class="chart-placeholder">
+                            Patient Demographics Chart
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Revenue Trends</h3>
+                        <div class="chart-placeholder">
+                            Revenue Trends Chart
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="section" style="display: none;">
+                <div class="section-header">
+                    <h2>Platform Settings</h2>
+                </div>
+                <div style="max-width: 600px;">
+                    <div class="form-group">
+                        <label>Platform Name</label>
+                        <input type="text" class="form-control" value="Makokha Medical Centre" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Default Consultation Fee (KES)</label>
+                        <input type="number" class="form-control" value="2500" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Max File Upload Size (MB)</label>
+                        <input type="number" class="form-control" value="100" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Platform Description</label>
+                        <textarea class="form-control" rows="4" readonly>
+Quality telemedicine services for modern healthcare needs. Connect with experienced doctors online.
+                        </textarea>
+                    </div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-primary">Save Changes</button>
+                        <button class="btn btn-secondary">Reset to Defaults</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+<!-- Add User Modal -->
+<div id="addUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New User</h3>
+            <button class="close-modal" onclick="closeAddUserModal()">×</button>
+        </div>
+        <form id="addUserForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label for="userRole">User Type</label>
+                <select id="userRole" name="role" class="form-control" required onchange="toggleUserFields()">
+                    <option value="">Select User Type</option>
+                    <option value="admin">Administrator</option>
+                    <option value="doctor">Doctor</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="first_name" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="last_name" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="userEmail">Email Address</label>
+                <input type="email" id="userEmail" name="email" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="userPhone">Phone Number</label>
+                <input type="tel" id="userPhone" name="phone" class="form-control">
+            </div>
+
+            <!-- Password Field with Toggle -->
+            <div class="form-group">
+                <label for="userPassword">Password</label>
+                <div style="position: relative;">
+                    <input type="password" id="userPassword" name="password" class="form-control" required 
+                           style="padding-right: 40px;">
+                    <button type="button" class="password-toggle" 
+                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #718096; cursor: pointer;"
+                            onclick="togglePasswordVisibility('userPassword', this)">
+                        👁️
+                    </button>
+                </div>
+                <small style="color: #718096; font-size: 0.875rem;">
+                    Password must be at least 8 characters with uppercase, lowercase, number, and special character
+                </small>
+            </div>
+
+            <!-- Confirm Password Field with Toggle -->
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <div style="position: relative;">
+                    <input type="password" id="confirmPassword" name="confirm_password" class="form-control" required
+                           style="padding-right: 40px;">
+                    <button type="button" class="password-toggle"
+                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #718096; cursor: pointer;"
+                            onclick="togglePasswordVisibility('confirmPassword', this)">
+                        👁️
+                    </button>
+                </div>
+            </div>
+
+            <!-- Doctor-specific fields -->
+            <div id="doctorFields" style="display: none;">
+                <div class="form-group">
+                    <label for="specialization">Specialization</label>
+                    <input type="text" id="specialization" name="specialization" class="form-control">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="licenseNumber">License Number</label>
+                        <input type="text" id="licenseNumber" name="license_number" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="consultationFee">Consultation Fee (KES)</label>
+                        <input type="number" id="consultationFee" name="consultation_fee" class="form-control" value="2500" step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="doctorBio">Bio/Description</label>
+                    <textarea id="doctorBio" name="bio" class="form-control" rows="3" placeholder="Brief professional description..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="availableHours">Available Hours</label>
+                    <input type="text" id="availableHours" name="available_hours" class="form-control" placeholder="e.g., Mon-Fri: 9AM-5PM">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <script>
+        // Global variables
+        let currentEditingUserId = null;
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+        });
+
+        function initializeDashboard() {
+            setupNavigation();
+            setupModals();
+            setupEventListeners();
+            setupAutoHideFlashMessages();
+            setupPasswordStrength();
+        }
+
+        // ==================== NAVIGATION ====================
+        function setupNavigation() {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Update active link
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show corresponding section
+                    const section = this.getAttribute('data-section');
+                    document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+                    document.getElementById(section + '-section').style.display = 'block';
+                    
+                    // Load section-specific data
+                    loadSectionData(section);
+                });
+            });
+        }
+
+        function loadSectionData(section) {
+            switch(section) {
+                case 'users':
+                    loadUsersData();
+                    break;
+                case 'appointments':
+                    loadAppointmentsData();
+                    break;
+                // Add other sections as needed
+            }
+        }
+
+        // ==================== USER MANAGEMENT ====================
+        async function loadUsersData() {
+            try {
+                const response = await fetch('/api/admin/users');
+                if (response.ok) {
+                    const users = await response.json();
+                    displayUsers(users);
+                } else {
+                    showError('Failed to load users');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showError('Error loading users');
+            }
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) return;
+
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #718096;">
+                            No users found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #667eea; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                ${user.first_name ? user.first_name[0].toUpperCase() : 'U'}
+                            </div>
+                            ${user.first_name} ${user.last_name}
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>
+                        <span class="role-badge role-${user.role}">
+                            ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status status-${user.is_active ? 'active' : 'inactive'}">
+                            ${user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>${user.last_login ? formatDateTime(user.last_login) : 'Never'}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-secondary btn-sm" onclick="editUser(${user.id})">
+                                Edit
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="viewUser(${user.id})">
+                                View
+                            </button>
+                            ${user.role !== 'admin' ? `
+                            <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">
+                                Delete
+                            </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ==================== MODAL MANAGEMENT ====================
+        function setupModals() {
+            // Close modals when clicking outside
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        this.classList.remove('active');
+                    }
+                });
+            });
+        }
+
+        function openAddUserModal() {
+            const modal = document.getElementById('addUserModal');
+            if (modal) {
+                modal.classList.add('active');
+                resetAddUserForm();
+            }
+        }
+
+        function closeAddUserModal() {
+            const modal = document.getElementById('addUserModal');
+            if (modal) {
+                modal.classList.remove('active');
+                resetAddUserForm();
+            }
+        }
+
+        function resetAddUserForm() {
+            const form = document.getElementById('addUserForm');
+            if (form) {
+                form.reset();
+                toggleUserFields();
+            }
+            currentEditingUserId = null;
+        }
+
+        function toggleUserFields() {
+            const roleSelect = document.getElementById('userRole');
+            const doctorFields = document.getElementById('doctorFields');
+            
+            if (roleSelect && doctorFields) {
+                if (roleSelect.value === 'doctor') {
+                    doctorFields.style.display = 'block';
+                    // Make doctor-specific fields required
+                    document.getElementById('specialization').required = true;
+                    document.getElementById('licenseNumber').required = true;
+                    document.getElementById('consultationFee').required = true;
+                } else {
+                    doctorFields.style.display = 'none';
+                    // Remove required from doctor-specific fields
+                    document.getElementById('specialization').required = false;
+                    document.getElementById('licenseNumber').required = false;
+                    document.getElementById('consultationFee').required = false;
+                }
+            }
+        }
+
+        // ==================== PASSWORD TOGGLE FUNCTIONALITY ====================
+        function togglePasswordVisibility(passwordFieldId, toggleButton) {
+            const passwordField = document.getElementById(passwordFieldId);
+            if (!passwordField) return;
+
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleButton.innerHTML = '🙈';
+                toggleButton.classList.add('active');
+            } else {
+                passwordField.type = 'password';
+                toggleButton.innerHTML = '👁️';
+                toggleButton.classList.remove('active');
+            }
+        }
+
+        // Enhanced password strength indicator
+        function setupPasswordStrength() {
+            const passwordField = document.getElementById('userPassword');
+            const confirmField = document.getElementById('confirmPassword');
+            
+            if (passwordField) {
+                passwordField.addEventListener('input', function() {
+                    updatePasswordStrength(this.value);
+                    validatePasswordMatch();
+                });
+            }
+            
+            if (confirmField) {
+                confirmField.addEventListener('input', validatePasswordMatch);
+            }
+        }
+
+        function updatePasswordStrength(password) {
+            // Remove any existing strength indicator
+            let existingIndicator = document.getElementById('passwordStrength');
+            if (existingIndicator) {
+                existingIndicator.remove();
+            }
+
+            if (!password) return;
+
+            const strength = calculatePasswordStrength(password);
+            const strengthText = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'][strength];
+            const strengthColors = ['#f56565', '#ed8936', '#ecc94b', '#48bb78', '#38a169'];
+            
+            const indicator = document.createElement('div');
+            indicator.id = 'passwordStrength';
+            indicator.style.marginTop = '0.5rem';
+            indicator.style.fontSize = '0.875rem';
+            indicator.style.color = strengthColors[strength];
+            indicator.style.fontWeight = '600';
+            indicator.innerHTML = `Password Strength: ${strengthText}`;
+            
+            const passwordField = document.getElementById('userPassword');
+            passwordField.parentNode.appendChild(indicator);
+        }
+
+        function calculatePasswordStrength(password) {
+            let strength = 0;
+            
+            // Length check
+            if (password.length >= 8) strength++;
+            if (password.length >= 12) strength++;
+            
+            // Character variety checks
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+            
+            // Cap at 4 for our scale (0-4)
+            return Math.min(strength, 4);
+        }
+
+        function validatePasswordMatch() {
+            const password = document.getElementById('userPassword')?.value;
+            const confirmPassword = document.getElementById('confirmPassword')?.value;
+            const confirmField = document.getElementById('confirmPassword');
+            
+            // Remove any existing match indicator
+            let existingIndicator = document.getElementById('passwordMatch');
+            if (existingIndicator) {
+                existingIndicator.remove();
+            }
+            
+            if (!password || !confirmPassword) return;
+            
+            const indicator = document.createElement('div');
+            indicator.id = 'passwordMatch';
+            indicator.style.marginTop = '0.5rem';
+            indicator.style.fontSize = '0.875rem';
+            indicator.style.fontWeight = '600';
+            
+            if (password === confirmPassword) {
+                indicator.style.color = '#48bb78';
+                indicator.innerHTML = '✓ Passwords match';
+            } else {
+                indicator.style.color = '#f56565';
+                indicator.innerHTML = '✗ Passwords do not match';
+            }
+            
+            const confirmContainer = confirmField.parentNode;
+            confirmContainer.appendChild(indicator);
+        }
+
+        // Enhanced form validation
+        function validateUserForm() {
+            const password = document.getElementById('userPassword')?.value;
+            const confirmPassword = document.getElementById('confirmPassword')?.value;
+            
+            if (password && confirmPassword && password !== confirmPassword) {
+                showError('Passwords do not match');
+                return false;
+            }
+            
+            if (password && !User().is_strong_password(password)) {
+                showError('Password must be at least 8 characters with uppercase, lowercase, number, and special character');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Update the form submission to use enhanced validation
+        document.getElementById('addUserForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!validateUserForm()) {
+                return;
+            }
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showNotification('User created successfully!', 'success');
+                    closeAddUserModal();
+                    loadUsersData(); // Refresh the users list
+                } else {
+                    showError(result.error || 'Failed to create user');
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                showError('Error creating user: ' + error.message);
+            }
+        });
+
+        // Initialize password functionality when modal opens
+        function openAddUserModal() {
+            const modal = document.getElementById('addUserModal');
+            if (modal) {
+                modal.classList.add('active');
+                resetAddUserForm();
+                // Initialize password strength monitoring
+                setTimeout(setupPasswordStrength, 100);
+            }
+        }
+
+        // ==================== FORM HANDLING ====================
+        document.getElementById('addUserForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            // Validate passwords match
+            if (data.password !== data.confirm_password) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showNotification('User created successfully!', 'success');
+                    closeAddUserModal();
+                    loadUsersData(); // Refresh the users list
+                } else {
+                    showError(result.error || 'Failed to create user');
+                }
+            } catch (error) {
+                console.error('Error creating user:', error);
+                showError('Error creating user: ' + error.message);
+            }
+        });
+
+        // ==================== USER ACTIONS ====================
+        function editUser(userId) {
+            // Implementation for editing user
+            console.log('Edit user:', userId);
+            showNotification('Edit feature coming soon!', 'info');
+        }
+
+        function viewUser(userId) {
+            // Implementation for viewing user details
+            console.log('View user:', userId);
+            showNotification('View feature coming soon!', 'info');
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                });
+
+                if (response.ok) {
+                    showNotification('User deleted successfully!', 'success');
+                    loadUsersData(); // Refresh the users list
+                } else {
+                    const result = await response.json();
+                    showError(result.error || 'Failed to delete user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showError('Error deleting user: ' + error.message);
+            }
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function formatDateTime(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString();
+            } catch (error) {
+                return 'Invalid date';
+            }
+        }
+
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                   document.querySelector('input[name="csrf_token"]')?.value || '';
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create a temporary notification
+            const notification = document.createElement('div');
+            notification.className = `flash-message flash-${type}`;
+            notification.textContent = message;
+            
+            const flashContainer = document.querySelector('.flash-messages');
+            if (flashContainer) {
+                flashContainer.appendChild(notification);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    notification.style.transition = 'all 0.3s ease';
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => notification.remove(), 300);
+                }, 5000);
+            } else {
+                alert(message); // Fallback
+            }
+        }
+
+        function showError(message) {
+            showNotification(message, 'error');
+        }
+
+        function setupAutoHideFlashMessages() {
+            const flashMessages = document.querySelectorAll('.flash-message');
+            flashMessages.forEach(message => {
+                setTimeout(() => {
+                    message.style.transition = 'all 0.3s ease';
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateX(100%)';
+                    setTimeout(() => message.remove(), 300);
+                }, 5000);
+            });
+        }
+
+        function setupEventListeners() {
+            // Add any additional event listeners here
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    // Close any open modals
+                    document.querySelectorAll('.modal.active').forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                }
+            });
+        }
+
+        // Make functions globally available
+        window.openAddUserModal = openAddUserModal;
+        window.closeAddUserModal = closeAddUserModal;
+        window.toggleUserFields = toggleUserFields;
+        window.editUser = editUser;
+        window.viewUser = viewUser;
+        window.deleteUser = deleteUser;
+    </script>
+</body>
+</html>
