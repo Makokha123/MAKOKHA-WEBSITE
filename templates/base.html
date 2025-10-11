@@ -3,167 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Makokha Medical Centre{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Makokha Medical Centre - Telemedicine{% endblock %}</title>
+
+    <!-- CSS Resources -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
+            --sidebar-width: 260px;
             --primary-color: #667eea;
             --primary-dark: #5a6fd8;
             --secondary-color: #764ba2;
+            --bg-light: #f7fafc;
             --text-dark: #2d3748;
             --text-light: #718096;
-            --bg-light: #f7fafc;
             --white: #ffffff;
-            --sidebar-width: 250px;
-            --sidebar-collapsed: 70px;
             --header-height: 70px;
-            --shadow: 0 2px 10px rgba(0,0,0,0.1);
-            --transition: all 0.3s ease;
+            --transition-speed: 0.3s;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+            --hamburger-red: #dc3545;
+            --hamburger-green: #28a745;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Global Styles */
         body {
+            background-color: var(--bg-light);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-light);
-            color: var(--text-dark);
             line-height: 1.6;
+            color: var(--text-dark);
+            padding-top: 20px;
         }
 
-        /* Layout */
-        .app-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Header */
-        .header {
+        /* Sidebar Styles - Hidden by default */
+        .sidebar {
             position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            height: var(--header-height);
-            background: var(--white);
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-            z-index: 1000;
-            transition: var(--transition);
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .hamburger-menu {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--text-dark);
-            padding: 0.5rem;
-            border-radius: 6px;
-            transition: var(--transition);
-        }
-
-        .hamburger-menu:hover {
-            background: var(--bg-light);
-            color: var(--primary-color);
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--text-dark);
-        }
-
-        .logo span {
-            color: var(--primary-color);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            top: var(--header-height);
-            left: 0;
+            height: 100vh;
             width: var(--sidebar-width);
-            height: calc(100vh - var(--header-height));
-            background: var(--white);
+            background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            transition: transform var(--transition-speed) ease;
+            z-index: 1000;
+            overflow-x: hidden;
             box-shadow: var(--shadow);
-            transition: var(--transition);
-            transform: translateX(0);
-            z-index: 999;
-            overflow-y: auto;
-        }
-
-        .sidebar.collapsed {
             transform: translateX(-100%);
         }
 
-        .nav-links {
+        .sidebar.show {
+            transform: translateX(0);
+        }
+
+        /* Toggle Button - Always visible */
+        .toggle-nav {
+            position: fixed;
+            left: 1rem;
+            top: 1rem;
+            z-index: 1060;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--hamburger-red);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all var(--transition-speed);
+        }
+
+        /* PC Hamburger Toggle */
+        .pc-toggle-nav {
+            position: fixed;
+            left: 1rem;
+            top: 1rem;
+            z-index: 1060;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: white;
+            border: none;
+            color: var(--hamburger-green);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all var(--transition-speed);
+        }
+
+        .pc-toggle-nav:hover {
+            background: #f8f9fa;
+            transform: scale(1.05);
+        }
+
+        .toggle-nav:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        /* Sidebar Header */
+        .sidebar-header {
+            height: var(--header-height);
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand-text {
+            font-weight: 600;
+            font-size: 1.2rem;
+            white-space: nowrap;
+        }
+
+        .sidebar-header .close-sidebar {
+            background: transparent;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Navigation Menu */
+        .sidebar-nav {
             padding: 1rem 0;
+            height: calc(100vh - var(--header-height));
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
+        }
+
+        .nav-item {
+            margin: 0.25rem 1rem;
         }
 
         .nav-link {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem 1.5rem;
-            color: var(--text-dark);
+            padding: 0.75rem 1rem;
+            color: var(--white) !important;
             text-decoration: none;
-            transition: var(--transition);
-            border-left: 3px solid transparent;
-        }
-
-        .nav-link:hover {
-            background: var(--bg-light);
-            color: var(--primary-color);
-        }
-
-        .nav-link.active {
-            background: var(--bg-light);
-            color: var(--primary-color);
-            border-left-color: var(--primary-color);
+            border-radius: var(--radius);
+            transition: all var(--transition-speed);
+            white-space: nowrap;
+            background-color: transparent;
+            border: none;
         }
 
         .nav-link i {
-            width: 20px;
+            min-width: 24px;
             text-align: center;
+            margin-right: 12px;
+            font-size: 1.1rem;
         }
 
-        .nav-text {
-            transition: var(--transition);
-            opacity: 1;
+        .nav-link .nav-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white !important;
+            transform: translateX(5px);
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-left: 4px solid white;
         }
 
         /* Main Content */
         .main-content {
-            flex: 1;
             margin-left: 0;
-            margin-top: var(--header-height);
-            padding: 2rem;
-            transition: var(--transition);
-            min-height: calc(100vh - var(--header-height));
+            transition: margin var(--transition-speed) ease;
+            min-height: 100vh;
+            padding: 1rem;
+            width: 100%;
         }
 
-        .main-content.expanded {
-            margin-left: 0;
+        /* Overlay for mobile */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            margin-top: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+        }
+
+        .profile-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem;
+            border-radius: var(--radius);
+        }
+
+        .profile-picture {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Card Styling */
+        .card {
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+        }
+
+        /* Button Styling */
+        .btn {
+            border-radius: var(--radius);
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+            transform: translateY(-2px);
         }
 
         /* Flash Messages */
@@ -178,7 +279,7 @@
         .flash-message {
             padding: 1rem;
             margin-bottom: 0.5rem;
-            border-radius: 8px;
+            border-radius: var(--radius);
             animation: slideIn 0.3s ease;
         }
 
@@ -197,39 +298,6 @@
             color: white;
         }
 
-        /* Buttons */
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn-primary {
-            background: var(--primary-color);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e0;
-        }
-
-        /* Animations */
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -242,134 +310,275 @@
         }
 
         /* Responsive Design */
-        @media (min-width: 1024px) {
-            .sidebar {
-                transform: translateX(0) !important;
+        /* Desktop (PC) */
+        @media (min-width: 1200px) {
+            .pc-toggle-nav {
+                display: flex !important;
             }
             
-            .main-content {
-                margin-left: var(--sidebar-width);
-            }
-            
-            .main-content.expanded {
-                margin-left: var(--sidebar-width);
-            }
-            
-            .hamburger-menu {
-                display: none;
-            }
-        }
-
-        @media (max-width: 1023px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.mobile-open {
-                transform: translateX(0);
+            .toggle-nav {
+                display: none !important;
             }
             
             .overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 998;
-            }
-            
-            .overlay.active {
-                display: block;
+                display: none !important;
             }
         }
-
-        @media (max-width: 768px) {
-            .header {
-                padding: 0 1rem;
-            }
-            
-            .main-content {
-                padding: 1rem;
-            }
-            
-            .flash-messages {
-                right: 10px;
-                left: 10px;
-                max-width: none;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header {
-                height: 60px;
-            }
-            
-            .main-content {
-                margin-top: 60px;
-            }
-            
+        
+        /* Tablet and Landscape Phone */
+        @media (min-width: 768px) and (max-width: 1199px) {
             .sidebar {
-                top: 60px;
-                height: calc(100vh - 60px);
+                width: var(--sidebar-width);
+            }
+
+            .toggle-nav {
+                display: flex !important;
             }
             
-            .logo {
-                font-size: 1.2rem;
+            .pc-toggle-nav {
+                display: none !important;
             }
         }
+        
+        /* Phone Portrait */
+        @media (max-width: 767px) {
+            .sidebar {
+                width: 85%;
+            }
 
-        /* Print Styles */
-        @media print {
-            .header, .sidebar, .flash-messages {
-                display: none;
+            .toggle-nav {
+                display: flex !important;
+            }
+            
+            .pc-toggle-nav {
+                display: none !important;
             }
             
             .main-content {
-                margin: 0;
-                padding: 0;
+                padding: 0.5rem;
             }
         }
     </style>
+    
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Overlay for mobile -->
-    <div class="overlay" id="overlay"></div>
+    <!-- PC Hamburger Toggle -->
+    <button class="pc-toggle-nav" id="pcToggleNav">
+        <i class="fas fa-bars"></i>
+    </button>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="header-left">
-            <button class="hamburger-menu" id="hamburgerMenu">
-                <i class="fas fa-bars"></i>
+    <!-- Mobile Navigation Toggle Button -->
+    <button class="toggle-nav" id="toggleNav">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <!-- Sidebar Header -->
+        <div class="sidebar-header">
+            <span class="brand-text">Makokha Medical</span>
+            <button class="close-sidebar" id="closeSidebar">
+                <i class="fas fa-times"></i>
             </button>
-            <div class="logo">
-                <i class="fas fa-hospital-alt"></i>
-                Makokha<span>Medical</span>
-            </div>
         </div>
-        <div class="header-right">
+            
+        <!-- Navigation Menu -->
+        <nav class="sidebar-nav">
             {% if current_user.is_authenticated %}
-            <span>Welcome, {{ current_user.patient_profile.first_name if current_user.role == 'patient' else current_user.doctor_profile.first_name if current_user.role == 'doctor' else 'Admin' }}</span>
-            <a href="{{ url_for('logout') }}" class="btn btn-secondary">
-                <i class="fas fa-sign-out-alt"></i>
-                Logout
-            </a>
+                {% if current_user.role == 'admin' %}
+                    <!-- Admin Navigation -->
+                    <div class="nav-item">
+                        <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+                            <i class="fas fa-chart-bar"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('manage_users') }}" class="nav-link">
+                            <i class="fas fa-users"></i>
+                            <span class="nav-text">Users</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('manage_doctors') }}" class="nav-link">
+                            <i class="fas fa-user-md"></i>
+                            <span class="nav-text">Doctors</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('reports') }}" class="nav-link">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="nav-text">Reports</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('settings') }}" class="nav-link">
+                            <i class="fas fa-cog"></i>
+                            <span class="nav-text">Settings</span>
+                        </a>
+                    </div>
+
+                {% elif current_user.role == 'doctor' %}
+                    <!-- Doctor Navigation -->
+                    <div class="nav-item">
+                        <a href="{{ url_for('doctor_dashboard') }}" class="nav-link">
+                            <i class="fas fa-chart-bar"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('doctor_appointments') }}" class="nav-link">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="nav-text">Appointments</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('doctor_patients') }}" class="nav-link">
+                            <i class="fas fa-user-injured"></i>
+                            <span class="nav-text">Patients</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication') }}" class="nav-link">
+                            <i class="fas fa-comments"></i>
+                            <span class="nav-text">Messages</span>
+                        </a>
+                    </div>
+                    <!-- Additional Doctor Navigation Links -->
+                    <div class="nav-item">
+                        <a href="#overview" class="nav-link" data-section="overview">
+                            <i class="fas fa-chart-pie"></i>
+                            <span class="nav-text">Overview</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#today" class="nav-link" data-section="today">
+                            <i class="fas fa-calendar-day"></i>
+                            <span class="nav-text">Today's Schedule</span>
+                        </a>
+                    </div>
+
+                {% elif current_user.role == 'patient' %}
+                    <!-- Patient Navigation -->
+                    <div class="nav-item">
+                        <a href="{{ url_for('patient_dashboard') }}" class="nav-link">
+                            <i class="fas fa-chart-bar"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('book_appointment') }}" class="nav-link">
+                            <i class="fas fa-calendar-plus"></i>
+                            <span class="nav-text">Book Appointment</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('my_appointments') }}" class="nav-link">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="nav-text">My Appointments</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('communication') }}" class="nav-link">
+                            <i class="fas fa-comments"></i>
+                            <span class="nav-text">Messages</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('my_documents') }}" class="nav-link">
+                            <i class="fas fa-file-medical"></i>
+                            <span class="nav-text">Documents</span>
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="{{ url_for('find_doctors') }}" class="nav-link">
+                            <i class="fas fa-user-md"></i>
+                            <span class="nav-text">Find Doctors</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                <!-- Common Links for All Authenticated Users -->
+                <div class="nav-item">
+                    <a href="{{ url_for('communication') }}" class="nav-link">
+                        <i class="fas fa-comments"></i>
+                        <span class="nav-text">Communication</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('profile') }}" class="nav-link">
+                        <i class="fas fa-user"></i>
+                        <span class="nav-text">Profile</span>
+                    </a>
+                </div>
+
             {% else %}
-            <a href="{{ url_for('login') }}" class="btn btn-secondary">Login</a>
-            <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
+                <!-- Navigation for Non-Authenticated Users -->
+                <div class="nav-item">
+                    <a href="{{ url_for('index') }}" class="nav-link">
+                        <i class="fas fa-home"></i>
+                        <span class="nav-text">Home</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('login') }}" class="nav-link">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span class="nav-text">Login</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('signup') }}" class="nav-link">
+                        <i class="fas fa-user-plus"></i>
+                        <span class="nav-text">Sign Up</span>
+                    </a>
+                </div>
+            {% endif %}
+        </nav>
+        
+        <!-- Profile Section at Bottom -->
+        <div class="profile-section">
+            {% if current_user.is_authenticated %}
+                <div class="nav-item">
+                    <a href="{{ url_for('profile') }}" class="profile-link">
+                        {% if current_user.profile_picture %}
+                            <img src="{{ url_for('static', filename=current_user.profile_picture) }}" alt="Profile" class="profile-picture">
+                        {% else %}
+                            <i class="fas fa-user-circle fa-lg"></i>
+                        {% endif %}
+                        <div>
+                            <div class="fw-bold">
+                                {% if current_user.role == 'patient' %}
+                                    {{ current_user.patient_profile.first_name }} {{ current_user.patient_profile.last_name }}
+                                {% elif current_user.role == 'doctor' %}
+                                    Dr. {{ current_user.doctor_profile.first_name }} {{ current_user.doctor_profile.last_name }}
+                                {% else %}
+                                    {{ current_user.username }}
+                                {% endif %}
+                            </div>
+                            <small class="text-white-50">{{ current_user.role|title }}</small>
+                        </div>
+                    </a>
+                </div>
+                <div class="nav-item mt-2">
+                    <a href="{{ url_for('logout') }}" class="nav-link">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="nav-text">Logout</span>
+                    </a>
+                </div>
+            {% else %}
+                <div class="nav-item">
+                    <a href="{{ url_for('login') }}" class="nav-link">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span class="nav-text">Login to Access Features</span>
+                    </a>
+                </div>
             {% endif %}
         </div>
-    </header>
+    </div>
 
-    <!-- Sidebar -->
-    <nav class="sidebar" id="sidebar">
-        <div class="nav-links">
-            {% block sidebar_links %}
-            <!-- Sidebar links will be defined in child templates -->
-            {% endblock %}
-        </div>
-    </nav>
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"></div>
 
     <!-- Main Content -->
     <main class="main-content" id="mainContent">
@@ -389,62 +598,114 @@
         {% endblock %}
     </main>
 
+    <!-- JavaScript Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Sidebar Management Script -->
     <script>
-        // Mobile menu functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const hamburgerMenu = document.getElementById('hamburgerMenu');
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            const mainContent = document.getElementById('mainContent');
-
-            function toggleSidebar() {
-                sidebar.classList.toggle('mobile-open');
-                overlay.classList.toggle('active');
-                document.body.style.overflow = sidebar.classList.contains('mobile-open') ? 'hidden' : '';
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const toggleNav = document.getElementById('toggleNav');
+        const pcToggleNav = document.getElementById('pcToggleNav');
+        const closeSidebar = document.getElementById('closeSidebar');
+        const overlay = document.getElementById('overlay');
+        const mainContent = document.getElementById('mainContent');
+        
+        // Function to toggle sidebar
+        function toggleSidebar() {
+            sidebar.classList.toggle('show');
+            
+            if (window.innerWidth < 1200) {
+                overlay.classList.toggle('show');
             }
-
-            // Hamburger menu click
-            hamburgerMenu.addEventListener('click', toggleSidebar);
-
-            // Overlay click to close sidebar
-            overlay.addEventListener('click', toggleSidebar);
-
-            // Close sidebar when clicking on a nav link (mobile)
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function() {
-                    if (window.innerWidth < 1024) {
-                        toggleSidebar();
-                    }
-                });
+            
+            if (sidebar.classList.contains('show')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = 'auto';
+            }
+        }
+        
+        // Toggle sidebar when buttons are clicked
+        if (toggleNav) {
+            toggleNav.addEventListener('click', toggleSidebar);
+        }
+        
+        if (pcToggleNav) {
+            pcToggleNav.addEventListener('click', toggleSidebar);
+        }
+        
+        if (closeSidebar) {
+            closeSidebar.addEventListener('click', function() {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = 'auto';
             });
-
-            // Auto-hide flash messages
-            const flashMessages = document.querySelectorAll('.flash-message');
-            flashMessages.forEach(message => {
-                setTimeout(() => {
-                    message.style.transition = 'all 0.3s ease';
-                    message.style.opacity = '0';
-                    message.style.transform = 'translateX(100%)';
-                    setTimeout(() => message.remove(), 300);
-                }, 5000);
+        }
+        
+        // Close sidebar when overlay is clicked
+        if (overlay) {
+            overlay.addEventListener('click', function() {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = 'auto';
             });
-
-            // Handle window resize
-            function handleResize() {
-                if (window.innerWidth >= 1024) {
-                    sidebar.classList.remove('mobile-open');
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
+        }
+        
+        // Close sidebar when ESC key is pressed
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            }
+        });
+        
+        // Close sidebar when clicking on nav links (mobile)
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth < 1200) {
+                    sidebar.classList.remove('show');
+                    overlay.classList.remove('show');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 1200) {
+                // Desktop view - hide overlay
+                overlay.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            } else {
+                // Mobile/tablet view - hide sidebar by default
+                if (sidebar.classList.contains('show')) {
+                    overlay.classList.add('show');
+                } else {
+                    overlay.classList.remove('show');
                 }
             }
-
-            window.addEventListener('resize', handleResize);
-
-            // Initialize based on screen size
-            handleResize();
         });
+        
+        // Auto-hide flash messages
+        const flashMessages = document.querySelectorAll('.flash-message');
+        flashMessages.forEach(message => {
+            setTimeout(() => {
+                message.style.transition = 'all 0.3s ease';
+                message.style.opacity = '0';
+                message.style.transform = 'translateX(100%)';
+                setTimeout(() => message.remove(), 300);
+            }, 5000);
+        });
+        
+        // Initialize for current screen size - sidebar hidden by default on all devices
+        sidebar.classList.remove('show');
+        overlay.classList.remove('show');
+        document.body.style.overflow = 'auto';
+    });
     </script>
-
+    
     {% block scripts %}
     <!-- Additional scripts will be defined in child templates -->
     {% endblock %}

@@ -1,1506 +1,1385 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard - Makokha Medical Centre</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% extends "base.html" %}
 
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #f7fafc;
-            color: #2d3748;
-        }
+{% block title %}Doctor Dashboard - Makokha Medical Centre{% endblock %}
 
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            min-height: 100vh;
-        }
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        min-height: 100vh;
+    }
 
-        /* Sidebar Styles */
-        .sidebar {
-            background: #2d3748;
-            color: white;
-            padding: 2rem 1rem;
-            position: fixed;
-            width: 250px;
-            height: 100vh;
-            overflow-y: auto;
-        }
+    /* Main Content Styles */
+    .main-content {
+        padding: 2rem;
+    }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
 
-        .logo span {
-            color: #667eea;
-        }
+    .welcome-message h1 {
+        font-size: 2rem;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
 
-        .nav-links {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
+    .welcome-message p {
+        color: #718096;
+    }
 
-        .nav-link {
-            padding: 0.75rem 1rem;
-            color: #cbd5e0;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+    .user-menu {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
 
-        .nav-link:hover, .nav-link.active {
-            background: #4a5568;
-            color: white;
-        }
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
-        /* Main Content Styles */
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5a6fd8;
+    }
+
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .btn-secondary:hover {
+        background: #cbd5e0;
+    }
+
+    .btn-success {
+        background: #48bb78;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #38a169;
+    }
+
+    .btn-warning {
+        background: #ed8936;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background: #dd6b20;
+    }
+
+    /* Dashboard Cards */
+    .dashboard-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+    }
+
+    .card h3 {
+        font-size: 0.9rem;
+        color: #718096;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .card .number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2d3748;
+    }
+
+    /* Sections */
+    .section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+        color: #2d3748;
+    }
+
+    /* Tables */
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table th {
+        background: #f7fafc;
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    .table tr:hover {
+        background: #f7fafc;
+    }
+
+    .status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .status-scheduled { background: #fed7d7; color: #742a2a; }
+    .status-confirmed { background: #c6f6d5; color: #22543d; }
+    .status-completed { background: #bee3f8; color: #1a365d; }
+    .status-cancelled { background: #e2e8f0; color: #4a5568; }
+
+    .payment-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .payment-pending { background: #fefcbf; color: #744210; }
+    .payment-completed { background: #c6f6d5; color: #22543d; }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.5rem;
+        color: #2d3748;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #718096;
+    }
+
+    .close-modal:hover {
+        color: #2d3748;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    /* Patient Info */
+    .patient-info {
+        background: #f7fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+
+    .patient-info h4 {
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+    }
+
+    /* Communication Hub Styles */
+    .communication-hub {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .communication-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .communication-header h2 {
+        font-size: 1.5rem;
+        color: #2d3748;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: #f7fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        border-left: 4px solid #667eea;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #718096;
+        font-size: 0.9rem;
+    }
+
+    .communication-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    .communication-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .communication-card {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: all 0.3s;
+    }
+
+    .communication-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .communication-card h3 {
+        font-size: 1.1rem;
+        color: #2d3748;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .message-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .message-item {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .message-item:hover {
+        background: white;
+    }
+
+    .message-item:last-child {
+        border-bottom: none;
+    }
+
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .message-time {
+        font-size: 0.875rem;
+        color: #718096;
+    }
+
+    .message-preview {
+        color: #4a5568;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .unread-indicator {
+        background: #f56565;
+        color: white;
+        border-radius: 50%;
+        width: 8px;
+        height: 8px;
+        display: inline-block;
+        margin-left: 0.5rem;
+    }
+
+    .appointment-communication {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .appointment-info h4 {
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .appointment-info p {
+        color: #718096;
+        font-size: 0.875rem;
+    }
+
+    .communication-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .action-btn.primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .action-btn.primary:hover {
+        background: #5a6fd8;
+    }
+
+    .action-btn.secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .action-btn.secondary:hover {
+        background: #cbd5e0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #718096;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
         .main-content {
-            grid-column: 2;
-            padding: 2rem;
+            padding: 1rem;
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .welcome-message h1 {
-            font-size: 2rem;
-            color: #2d3748;
-            margin-bottom: 0.5rem;
-        }
-
-        .welcome-message p {
-            color: #718096;
-        }
-
-        .user-menu {
-            display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 1rem;
+            align-items: flex-start;
         }
 
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5a6fd8;
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e0;
-        }
-
-        .btn-success {
-            background: #48bb78;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #38a169;
-        }
-
-        .btn-warning {
-            background: #ed8936;
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #dd6b20;
-        }
-
-        /* Dashboard Cards */
         .dashboard-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 4px solid #667eea;
-        }
-
-        .card h3 {
-            font-size: 0.9rem;
-            color: #718096;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .card .number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #2d3748;
-        }
-
-        /* Sections */
-        .section {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .section-header h2 {
-            font-size: 1.5rem;
-            color: #2d3748;
-        }
-
-        /* Tables */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .table th,
-        .table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .table th {
-            background: #f7fafc;
-            font-weight: 600;
-            color: #4a5568;
-        }
-
-        .table tr:hover {
-            background: #f7fafc;
-        }
-
-        .status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-
-        .status-scheduled { background: #fed7d7; color: #742a2a; }
-        .status-confirmed { background: #c6f6d5; color: #22543d; }
-        .status-completed { background: #bee3f8; color: #1a365d; }
-        .status-cancelled { background: #e2e8f0; color: #4a5568; }
-
-        .payment-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-
-        .payment-pending { background: #fefcbf; color: #744210; }
-        .payment-completed { background: #c6f6d5; color: #22543d; }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-header h3 {
-            font-size: 1.5rem;
-            color: #2d3748;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #718096;
-        }
-
-        .close-modal:hover {
-            color: #2d3748;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #4a5568;
-            font-weight: 500;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        textarea.form-control {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        /* Patient Info */
-        .patient-info {
-            background: #f7fafc;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
-
-        .patient-info h4 {
-            margin-bottom: 0.5rem;
-            color: #2d3748;
-        }
-
-        /* Flash Messages */
-        .flash-messages {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1100;
-            max-width: 400px;
-        }
-
-        .flash-message {
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 8px;
-            animation: slideIn 0.3s ease;
-        }
-
-        .flash-success {
-            background: #48bb78;
-            color: white;
-        }
-
-        .flash-error {
-            background: #f56565;
-            color: white;
-        }
-
-        .flash-info {
-            background: #4299e1;
-            color: white;
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        /* Communication Hub Styles */
-        .communication-hub {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .communication-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .communication-header h2 {
-            font-size: 1.5rem;
-            color: #2d3748;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: #f7fafc;
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid #667eea;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #2d3748;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #718096;
-            font-size: 0.9rem;
+            grid-template-columns: 1fr;
         }
 
         .communication-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+            grid-template-columns: 1fr;
         }
-
-        .communication-column {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
-
-        .communication-card {
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 1.5rem;
-            transition: all 0.3s;
-        }
-
-        .communication-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-
-        .communication-card h3 {
-            font-size: 1.1rem;
-            color: #2d3748;
-            margin-bottom: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .message-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .message-item {
-            padding: 1rem;
-            border-bottom: 1px solid #e2e8f0;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .message-item:hover {
-            background: white;
-        }
-
-        .message-item:last-child {
-            border-bottom: none;
-        }
-
-        .message-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .message-sender {
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .message-time {
-            font-size: 0.875rem;
-            color: #718096;
-        }
-
-        .message-preview {
-            color: #4a5568;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .unread-indicator {
-            background: #f56565;
-            color: white;
-            border-radius: 50%;
-            width: 8px;
-            height: 8px;
-            display: inline-block;
-            margin-left: 0.5rem;
-        }
-
-        .appointment-communication {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-
-        .appointment-info h4 {
-            color: #2d3748;
-            margin-bottom: 0.25rem;
-        }
-
-        .appointment-info p {
-            color: #718096;
-            font-size: 0.875rem;
-        }
-
+        
         .communication-actions {
-            display: flex;
-            gap: 0.5rem;
+            flex-direction: column;
         }
 
-        .action-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 6px;
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .table {
             font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
         }
-
-        .action-btn.primary {
-            background: #667eea;
-            color: white;
+        
+        .table th,
+        .table td {
+            padding: 0.5rem;
         }
+    }
+</style>
+{% endblock %}
 
-        .action-btn.primary:hover {
-            background: #5a6fd8;
-        }
-
-        .action-btn.secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .action-btn.secondary:hover {
-            background: #cbd5e0;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: #718096;
-        }
-
-        .empty-state-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-container {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                display: none;
-            }
-
-            .main-content {
-                grid-column: 1;
-                padding: 1rem;
-            }
-
-            .header {
-                flex-direction: column;
-                gap: 1rem;
-                align-items: flex-start;
-            }
-
-            .dashboard-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .communication-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .communication-actions {
-                flex-direction: column;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <nav class="sidebar">
-            <div class="logo">Makokha<span>Medical</span></div>
-            <div class="nav-links">
-                <a href="#overview" class="nav-link active" data-section="overview">
-                    📊 Overview
-                </a>
-                <a href="#communication" class="nav-link" data-section="communication">
-                    💬 Communication Hub
-                </a>
-                <a href="#appointments" class="nav-link" data-section="appointments">
-                    📅 Appointments
-                </a>
-                <a href="#today" class="nav-link" data-section="today">
-                    🎯 Today's Schedule
-                </a>
-                <a href="#profile" class="nav-link" data-section="profile">
-                    👤 Profile
-                </a>
-                <a href="{{ url_for('logout') }}" class="nav-link" style="margin-top: 2rem;">
-                    🚪 Logout
-                </a>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Header -->
-            <div class="header">
-                <div class="welcome-message">
-                    <h1>Welcome, Dr. {{ current_user.doctor_profile.first_name }}!</h1>
-                    <p>Manage your appointments and patient consultations</p>
-                </div>
-                <div class="user-menu">
-                    <span>Doctor</span>
-                    <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
-                </div>
-            </div>
-
-            <!-- Flash Messages -->
-            <div class="flash-messages">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-            </div>
-
-            <!-- Overview Section -->
-            <section id="overview-section" class="section">
-                <div class="section-header">
-                    <h2>Practice Overview</h2>
-                </div>
-                <div class="dashboard-cards">
-                    <div class="card">
-                        <h3>Total Appointments</h3>
-                        <div class="number">{{ appointments|length }}</div>
-                    </div>
-                    <div class="card">
-                        <h3>Today's Appointments</h3>
-                        <div class="number">{{ today_appointments|length }}</div>
-                    </div>
-                    <div class="card">
-                        <h3>Pending Consultations</h3>
-                        <div class="number">
-                            {{ appointments|selectattr("status", "equalto", "confirmed")|list|length }}
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3>Completed</h3>
-                        <div class="number">
-                            {{ appointments|selectattr("status", "equalto", "completed")|list|length }}
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Communication Hub Section -->
-            <section id="communication-section" class="section" style="display: none;">
-                <div class="communication-hub">
-                    <div class="communication-header">
-                        <h2>Communication Hub</h2>
-                        <a href="{{ url_for('communication') }}" class="btn btn-primary">
-                            💬 Open Full Communication
-                        </a>
-                    </div>
-
-                    <!-- Statistics -->
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number" id="activeConversations">0</div>
-                            <div class="stat-label">Active Conversations</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="unreadMessages">0</div>
-                            <div class="stat-label">Unread Messages</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="todayAppointments">0</div>
-                            <div class="stat-label">Today's Appointments</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" id="pendingConsultations">0</div>
-                            <div class="stat-label">Pending Consultations</div>
-                        </div>
-                    </div>
-
-                    <div class="communication-grid">
-                        <!-- Recent Messages Column -->
-                        <div class="communication-column">
-                            <div class="communication-card">
-                                <h3>Recent Messages</h3>
-                                <div class="message-list" id="recentMessagesList">
-                                    <div class="empty-state">
-                                        <div class="empty-state-icon">💬</div>
-                                        <p>Loading messages...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Appointments with Communication Column -->
-                        <div class="communication-column">
-                            <div class="communication-card">
-                                <h3>Today's Appointments</h3>
-                                <div id="todayAppointmentsList">
-                                    <div class="empty-state">
-                                        <div class="empty-state-icon">📅</div>
-                                        <p>Loading appointments...</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="communication-card">
-                                <h3>Quick Actions</h3>
-                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                    <a href="{{ url_for('communication') }}" class="action-btn primary">
-                                        💬 Open Messages
-                                    </a>
-                                    <button class="action-btn secondary" onclick="refreshCommunicationData()">
-                                        🔄 Refresh Data
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Appointments Section -->
-            <section id="appointments-section" class="section" style="display: none;">
-                <div class="section-header">
-                    <h2>All Appointments</h2>
-                </div>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Patient</th>
-                                <th>Date & Time</th>
-                                <th>Symptoms</th>
-                                <th>Status</th>
-                                <th>Payment</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for appointment in appointments %}
-                            <tr data-appointment-id="{{ appointment.id }}">
-                                <td>
-                                    <strong>{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</strong>
-                                    {% if appointment.patient.phone %}
-                                    <br><small style="color: #718096;">{{ appointment.patient.phone }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{{ format_datetime(appointment.appointment_date, '%Y-%m-%d %H:%M') }}</td>
-                                <td>
-                                    {% if appointment.symptoms %}
-                                    <span title="{{ appointment.symptoms }}">
-                                        {{ appointment.symptoms[:50] }}{% if appointment.symptoms|length > 50 %}...{% endif %}
-                                    </span>
-                                    {% else %}
-                                    <span style="color: #718096;">No symptoms provided</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="status status-{{ appointment.status }}">
-                                        {{ appointment.status|title }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="payment-status payment-{{ appointment.payment_status }}">
-                                        {{ appointment.payment_status|title }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        {% if appointment.status == 'confirmed' and appointment.payment_status == 'completed' %}
-                                        <button class="btn btn-primary btn-sm" 
-                                                onclick="startConsultation({{ appointment.id }})">
-                                            Start Consult
-                                        </button>
-                                        <button class="btn btn-secondary btn-sm" 
-                                                onclick="startVideoCall({{ appointment.id }})">
-                                            Video
-                                        </button>
-                                        <button class="btn btn-secondary btn-sm" 
-                                                onclick="startVoiceCall({{ appointment.id }})">
-                                            Voice
-                                        </button>
-                                        <button class="btn btn-secondary btn-sm" 
-                                                onclick="openMessages({{ appointment.id }})">
-                                            Chat
-                                        </button>
-                                        {% endif %}
-                                        
-                                        {% if appointment.status == 'scheduled' %}
-                                        <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=appointment.id) }}" style="display: inline;">
-                                            <input type="hidden" name="status" value="confirmed">
-                                            <button type="submit" class="btn btn-success btn-sm">Confirm</button>
-                                        </form>
-                                        {% endif %}
-                                        
-                                        {% if appointment.status in ['scheduled', 'confirmed'] %}
-                                        <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=appointment.id) }}" style="display: inline;">
-                                            <input type="hidden" name="status" value="cancelled">
-                                            <button type="submit" class="btn btn-warning btn-sm" 
-                                                    onclick="return confirm('Are you sure you want to cancel this appointment?')">
-                                                Cancel
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="6" style="text-align: center; color: #718096;">
-                                    No appointments scheduled yet.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- Today's Schedule Section -->
-            <section id="today-section" class="section" style="display: none;">
-                <div class="section-header">
-                    <h2>Today's Appointments</h2>
-                    <div class="date-display">
-                        {{ current_date.strftime('%A, %B %d, %Y') }}
-                    </div>
-                </div>
-                {% if today_appointments %}
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Patient</th>
-                                <th>Symptoms</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for appointment in today_appointments %}
-                            <tr data-appointment-id="{{ appointment.id }}">
-                                <td>
-                                    {% if appointment.local_time %}
-                                        {{ appointment.local_time.strftime('%H:%M') }}
-                                    {% else %}
-                                        {{ appointment.appointment_date.strftime('%H:%M') }}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <strong>{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</strong>
-                                </td>
-                                <td>
-                                    {% if appointment.symptoms %}
-                                    <span title="{{ appointment.symptoms }}">
-                                        {{ appointment.symptoms[:30] }}{% if appointment.symptoms|length > 30 %}...{% endif %}
-                                    </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="status status-{{ appointment.status }}">
-                                        {{ appointment.status|title }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        {% if appointment.status == 'confirmed' and appointment.payment_status == 'completed' %}
-                                        <button class="btn btn-primary btn-sm" 
-                                                onclick="startConsultation({{ appointment.id }})">
-                                            Start Consult
-                                        </button>
-                                        <button class="btn btn-secondary btn-sm" 
-                                                onclick="openMessages({{ appointment.id }})">
-                                            Message
-                                        </button>
-                                        {% endif %}
-                                        
-                                        {% if appointment.status == 'scheduled' %}
-                                        <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=appointment.id) }}" style="display: inline;">
-                                            <input type="hidden" name="status" value="confirmed">
-                                            <button type="submit" class="btn btn-success btn-sm">Confirm</button>
-                                        </form>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div style="text-align: center; padding: 3rem; color: #718096;">
-                    <h3>No appointments scheduled for today</h3>
-                    <p>Enjoy your day off or check upcoming appointments.</p>
-                </div>
-                {% endif %}
-            </section>
-
-            <!-- Profile Section -->
-            <section id="profile-section" class="section" style="display: none;">
-                <div class="section-header">
-                    <h2>Doctor Profile</h2>
-                </div>
-                <div style="max-width: 500px;">
-                    <div class="form-group">
-                        <label>Full Name</label>
-                        <div class="form-control" style="background: #f7fafc;">
-                            Dr. {{ current_user.doctor_profile.first_name }} {{ current_user.doctor_profile.last_name }}
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Email</label>
-                        <div class="form-control" style="background: #f7fafc;">
-                            {{ current_user.email }}
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Specialization</label>
-                        <div class="form-control" style="background: #f7fafc;">
-                            {{ current_user.doctor_profile.specialization }}
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>License Number</label>
-                        <div class="form-control" style="background: #f7fafc;">
-                            {{ current_user.doctor_profile.license_number }}
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Consultation Fee</label>
-                        <div class="form-control" style="background: #f7fafc;">
-                            KES {{ "%.2f"|format(current_user.doctor_profile.consultation_fee) }}
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Bio</label>
-                        <textarea class="form-control" style="background: #f7fafc; min-height: 100px;" readonly>
-                            {{ current_user.doctor_profile.bio or 'No bio provided' }}
-                        </textarea>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Consultation Modal -->
-    <div id="consultationModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Patient Consultation</h3>
-                <button class="close-modal" onclick="closeConsultationModal()">×</button>
-            </div>
-            <div id="consultationContent">
-                <!-- Dynamic content will be loaded here -->
-            </div>
+{% block content %}
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="header">
+        <div class="welcome-message">
+            <h1>Welcome, Dr. {{ current_user.doctor_profile.first_name }}!</h1>
+            <p>Manage your appointments and patient consultations</p>
+        </div>
+        <div class="user-menu">
+            <span>Doctor</span>
+            <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
         </div>
     </div>
 
-    <script>
-        // ==================== INITIALIZATION ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeDashboard();
+    <!-- Overview Section -->
+    <section id="overview-section" class="section">
+        <div class="section-header">
+            <h2>Practice Overview</h2>
+        </div>
+        <div class="dashboard-cards">
+            <div class="card">
+                <h3>Total Appointments</h3>
+                <div class="number">{{ appointments|length }}</div>
+            </div>
+            <div class="card">
+                <h3>Today's Appointments</h3>
+                <div class="number">{{ today_appointments|length }}</div>
+            </div>
+            <div class="card">
+                <h3>Pending Consultations</h3>
+                <div class="number">
+                    {{ appointments|selectattr("status", "equalto", "confirmed")|list|length }}
+                </div>
+            </div>
+            <div class="card">
+                <h3>Completed</h3>
+                <div class="number">
+                    {{ appointments|selectattr("status", "equalto", "completed")|list|length }}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Communication Hub Section -->
+    <section id="communication-section" class="section" style="display: none;">
+        <div class="communication-hub">
+            <div class="communication-header">
+                <h2>Communication Hub</h2>
+                <a href="{{ url_for('communication') }}" class="btn btn-primary">
+                    💬 Open Full Communication
+                </a>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="activeConversations">0</div>
+                    <div class="stat-label">Active Conversations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="unreadMessages">0</div>
+                    <div class="stat-label">Unread Messages</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="todayAppointments">0</div>
+                    <div class="stat-label">Today's Appointments</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pendingConsultations">0</div>
+                    <div class="stat-label">Pending Consultations</div>
+                </div>
+            </div>
+
+            <div class="communication-grid">
+                <!-- Recent Messages Column -->
+                <div class="communication-column">
+                    <div class="communication-card">
+                        <h3>Recent Messages</h3>
+                        <div class="message-list" id="recentMessagesList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">💬</div>
+                                <p>Loading messages...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Appointments with Communication Column -->
+                <div class="communication-column">
+                    <div class="communication-card">
+                        <h3>Today's Appointments</h3>
+                        <div id="todayAppointmentsList">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📅</div>
+                                <p>Loading appointments...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="communication-card">
+                        <h3>Quick Actions</h3>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <a href="{{ url_for('communication') }}" class="action-btn primary">
+                                💬 Open Messages
+                            </a>
+                            <button class="action-btn secondary" onclick="refreshCommunicationData()">
+                                🔄 Refresh Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Appointments Section -->
+    <section id="appointments-section" class="section" style="display: none;">
+        <div class="section-header">
+            <h2>All Appointments</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Patient</th>
+                        <th>Date & Time</th>
+                        <th>Symptoms</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in appointments %}
+                    <tr data-appointment-id="{{ appointment.id }}">
+                        <td>
+                            <strong>{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</strong>
+                            {% if appointment.patient.phone %}
+                            <br><small style="color: #718096;">{{ appointment.patient.phone }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ format_datetime(appointment.appointment_date, '%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if appointment.symptoms %}
+                            <span title="{{ appointment.symptoms }}">
+                                {{ appointment.symptoms[:50] }}{% if appointment.symptoms|length > 50 %}...{% endif %}
+                            </span>
+                            {% else %}
+                            <span style="color: #718096;">No symptoms provided</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status status-{{ appointment.status }}">
+                                {{ appointment.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="payment-status payment-{{ appointment.payment_status }}">
+                                {{ appointment.payment_status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                {% if appointment.status == 'confirmed' and appointment.payment_status == 'completed' %}
+                                <button class="btn btn-primary btn-sm" 
+                                        onclick="startConsultation({{ appointment.id }})">
+                                    Start Consult
+                                </button>
+                                <button class="btn btn-secondary btn-sm" 
+                                        onclick="startVideoCall({{ appointment.id }})">
+                                    Video
+                                </button>
+                                <button class="btn btn-secondary btn-sm" 
+                                        onclick="startVoiceCall({{ appointment.id }})">
+                                    Voice
+                                </button>
+                                <button class="btn btn-secondary btn-sm" 
+                                        onclick="openMessages({{ appointment.id }})">
+                                    Chat
+                                </button>
+                                {% endif %}
+                                
+                                {% if appointment.status == 'scheduled' %}
+                                <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=appointment.id) }}" style="display: inline;">
+                                    <input type="hidden" name="status" value="confirmed">
+                                    <button type="submit" class="btn btn-success btn-sm">Confirm</button>
+                                </form>
+                                {% endif %}
+                                
+                                {% if appointment.status in ['scheduled', 'confirmed'] %}
+                                <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=appointment.id) }}" style="display: inline;">
+                                    <input type="hidden" name="status" value="cancelled">
+                                    <button type="submit" class="btn btn-warning btn-sm" 
+                                            onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                                        Cancel
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #718096;">
+                            No appointments scheduled yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Today's Schedule Section -->
+    <section id="today-section" class="section" style="display: none;">
+        <div class="section-header">
+            <h2>Today's Appointments</h2>
+            <div class="date-display">
+                {{ current_date.strftime('%A, %B %d, %Y') }}
+            </div>
+        </div>
+        {% if today_appointments %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Patient</th>
+                        <th>Symptoms</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in today_appointments %}
+                    <tr data-appointment-id="{{ appointment.id }}">
+                        <td>
+                            {% if appointment.local_time %}
+                                {{ appointment.local_time.strftime('%H:%M') }}
+                            {% else %}
+                                {{ appointment.appointment_date.strftime('%H:%M') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ appointment.patient.first_name }} {{ appointment.patient.last_name }}</strong>
+                        </td>
+                        <td>
+                            {% if appointment.symptoms %}
+                            <span title="{{ appointment.symptoms }}">
+                                {{ appointment.symptoms[:30] }}{% if appointment.symptoms|length > 30 %}...{% endif %}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status status-{{ appointment.status }}">
+                                {{ appointment.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                {% if appointment.status == 'confirmed' and appointment.payment_status == 'completed' %}
+                                <button class="btn btn-primary btn-sm" 
+                                        onclick="startConsultation({{ appointment.id }})">
+                                    Start Consult
+                                </button>
+                                <button class="btn btn-secondary btn-sm" 
+                                        onclick="openMessages({{ appointment.id }})">
+                                    Message
+                                </button>
+                                {% endif %}
+                                
+                                {% if appointment.status == 'scheduled' %}
+                                <form method="POST" action="{{ url_for('update_appointment_status', appointment_id=appointment.id) }}" style="display: inline;">
+                                    <input type="hidden" name="status" value="confirmed">
+                                    <button type="submit" class="btn btn-success btn-sm">Confirm</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: #718096;">
+            <h3>No appointments scheduled for today</h3>
+            <p>Enjoy your day off or check upcoming appointments.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Profile Section -->
+    <section id="profile-section" class="section" style="display: none;">
+        <div class="section-header">
+            <h2>Doctor Profile</h2>
+        </div>
+        <div style="max-width: 500px;">
+            <div class="form-group">
+                <label>Full Name</label>
+                <div class="form-control" style="background: #f7fafc;">
+                    Dr. {{ current_user.doctor_profile.first_name }} {{ current_user.doctor_profile.last_name }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <div class="form-control" style="background: #f7fafc;">
+                    {{ current_user.email }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Specialization</label>
+                <div class="form-control" style="background: #f7fafc;">
+                    {{ current_user.doctor_profile.specialization }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>License Number</label>
+                <div class="form-control" style="background: #f7fafc;">
+                    {{ current_user.doctor_profile.license_number }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Consultation Fee</label>
+                <div class="form-control" style="background: #f7fafc;">
+                    KES {{ "%.2f"|format(current_user.doctor_profile.consultation_fee) }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Bio</label>
+                <textarea class="form-control" style="background: #f7fafc; min-height: 100px;" readonly>
+                    {{ current_user.doctor_profile.bio or 'No bio provided' }}
+                </textarea>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Consultation Modal -->
+<div id="consultationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Patient Consultation</h3>
+            <button class="close-modal" onclick="closeConsultationModal()">×</button>
+        </div>
+        <div id="consultationContent">
+            <!-- Dynamic content will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeDashboard();
+    });
+
+    function initializeDashboard() {
+        setupNavigation();
+        setupModals();
+        setupEventListeners();
+        setupFormHandlers();
+        initializeCommunicationHub();
+        setupAutoHideFlashMessages();
+    }
+
+    // ==================== NAVIGATION SYSTEM ====================
+    function setupNavigation() {
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (this.getAttribute('data-section')) {
+                    e.preventDefault();
+                    handleNavigation(this);
+                }
+            });
         });
+    }
 
-        function initializeDashboard() {
-            setupNavigation();
-            setupModals();
-            setupEventListeners();
-            setupFormHandlers();
-            initializeCommunicationHub();
-            setupAutoHideFlashMessages();
+    function handleNavigation(clickedLink) {
+        // Update active link
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        clickedLink.classList.add('active');
+        
+        // Show corresponding section
+        const section = clickedLink.getAttribute('data-section');
+        document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+        const targetSection = document.getElementById(section + '-section');
+        if (targetSection) {
+            targetSection.style.display = 'block';
         }
+        
+        // Load section-specific data
+        loadSectionData(section);
+    }
 
-        // ==================== NAVIGATION SYSTEM ====================
-        function setupNavigation() {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    if (this.getAttribute('data-section')) {
-                        e.preventDefault();
-                        handleNavigation(this);
-                    }
-                });
-            });
+    function loadSectionData(section) {
+        switch(section) {
+            case 'communication':
+                loadCommunicationData();
+                break;
+            case 'appointments':
+                refreshAppointmentsData();
+                break;
+            case 'today':
+                refreshTodayAppointments();
+                break;
+            case 'profile':
+                loadProfileData();
+                break;
         }
+    }
 
-        function handleNavigation(clickedLink) {
-            // Update active link
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            clickedLink.classList.add('active');
-            
-            // Show corresponding section
-            const section = clickedLink.getAttribute('data-section');
-            document.querySelectorAll('section').forEach(s => s.style.display = 'none');
-            const targetSection = document.getElementById(section + '-section');
-            if (targetSection) {
-                targetSection.style.display = 'block';
-            }
-            
-            // Load section-specific data
-            loadSectionData(section);
-        }
-
-        function loadSectionData(section) {
-            switch(section) {
-                case 'communication':
-                    loadCommunicationData();
-                    break;
-                case 'appointments':
-                    refreshAppointmentsData();
-                    break;
-                case 'today':
-                    refreshTodayAppointments();
-                    break;
-                case 'profile':
-                    loadProfileData();
-                    break;
-            }
-        }
-
-        // ==================== MODAL MANAGEMENT ====================
-        function setupModals() {
-            // Close modals when clicking outside
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        this.classList.remove('active');
-                    }
-                });
-            });
-        }
-
-        function closeConsultationModal() {
-            document.getElementById('consultationModal').classList.remove('active');
-        }
-
-        // ==================== FORM HANDLERS ====================
-        function setupFormHandlers() {
-            // Add any form handlers needed for doctor dashboard
-        }
-
-        // ==================== COMMUNICATION HUB ====================
-        function initializeCommunicationHub() {
-            // Initial load of communication data
-            loadCommunicationData();
-        }
-
-        async function loadCommunicationData() {
-            try {
-                await Promise.all([
-                    loadRecentMessages(),
-                    loadTodayAppointments(),
-                    loadCommunicationStats()
-                ]);
-            } catch (error) {
-                console.error('Error loading communication data:', error);
-            }
-        }
-
-        async function loadRecentMessages() {
-            try {
-                const response = await fetch('/api/messages/recent');
-                if (response.ok) {
-                    const messages = await response.json();
-                    displayRecentMessages(messages);
-                } else {
-                    showEmptyMessagesState();
+    // ==================== MODAL MANAGEMENT ====================
+    function setupModals() {
+        // Close modals when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
                 }
-            } catch (error) {
-                console.error('Error loading recent messages:', error);
+            });
+        });
+    }
+
+    function closeConsultationModal() {
+        document.getElementById('consultationModal').classList.remove('active');
+    }
+
+    // ==================== FORM HANDLERS ====================
+    function setupFormHandlers() {
+        // Add any form handlers needed for doctor dashboard
+    }
+
+    // ==================== COMMUNICATION HUB ====================
+    function initializeCommunicationHub() {
+        // Initial load of communication data
+        loadCommunicationData();
+    }
+
+    async function loadCommunicationData() {
+        try {
+            await Promise.all([
+                loadRecentMessages(),
+                loadTodayAppointments(),
+                loadCommunicationStats()
+            ]);
+        } catch (error) {
+            console.error('Error loading communication data:', error);
+        }
+    }
+
+    async function loadRecentMessages() {
+        try {
+            const response = await fetch('/api/messages/recent');
+            if (response.ok) {
+                const messages = await response.json();
+                displayRecentMessages(messages);
+            } else {
                 showEmptyMessagesState();
             }
+        } catch (error) {
+            console.error('Error loading recent messages:', error);
+            showEmptyMessagesState();
         }
+    }
 
-        function displayRecentMessages(messages) {
-            const container = document.getElementById('recentMessagesList');
-            if (!container) return;
-            
-            if (!messages || messages.length === 0) {
-                showEmptyMessagesState();
-                return;
-            }
-            
-            container.innerHTML = messages.map(message => `
-                <div class="message-item" onclick="openMessages(${message.appointment_id})">
-                    <div class="message-header">
-                        <span class="message-sender">
-                            ${escapeHtml(message.sender_name || 'Unknown')}
-                            ${!message.is_read ? '<span class="unread-indicator"></span>' : ''}
-                        </span>
-                        <span class="message-time">${formatMessageTime(message.created_at)}</span>
-                    </div>
-                    <div class="message-preview">
-                        ${escapeHtml(message.content || 'No content')}
-                    </div>
+    function displayRecentMessages(messages) {
+        const container = document.getElementById('recentMessagesList');
+        if (!container) return;
+        
+        if (!messages || messages.length === 0) {
+            showEmptyMessagesState();
+            return;
+        }
+        
+        container.innerHTML = messages.map(message => `
+            <div class="message-item" onclick="openMessages(${message.appointment_id})">
+                <div class="message-header">
+                    <span class="message-sender">
+                        ${escapeHtml(message.sender_name || 'Unknown')}
+                        ${!message.is_read ? '<span class="unread-indicator"></span>' : ''}
+                    </span>
+                    <span class="message-time">${formatMessageTime(message.created_at)}</span>
                 </div>
-            `).join('');
-        }
+                <div class="message-preview">
+                    ${escapeHtml(message.content || 'No content')}
+                </div>
+            </div>
+        `).join('');
+    }
 
-        function showEmptyMessagesState() {
-            const container = document.getElementById('recentMessagesList');
-            if (container) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">💬</div>
-                        <p>No recent messages</p>
-                    </div>
-                `;
-            }
+    function showEmptyMessagesState() {
+        const container = document.getElementById('recentMessagesList');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <p>No recent messages</p>
+                </div>
+            `;
         }
+    }
 
-        async function loadTodayAppointments() {
-            try {
-                const response = await fetch('/api/appointments/today');
-                if (response.ok) {
-                    const appointments = await response.json();
-                    displayTodayAppointments(appointments);
-                } else {
-                    showEmptyTodayAppointmentsState();
-                }
-            } catch (error) {
-                console.error('Error loading today appointments:', error);
+    async function loadTodayAppointments() {
+        try {
+            const response = await fetch('/api/appointments/today');
+            if (response.ok) {
+                const appointments = await response.json();
+                displayTodayAppointments(appointments);
+            } else {
                 showEmptyTodayAppointmentsState();
             }
+        } catch (error) {
+            console.error('Error loading today appointments:', error);
+            showEmptyTodayAppointmentsState();
         }
+    }
 
-        function displayTodayAppointments(appointments) {
-            const container = document.getElementById('todayAppointmentsList');
-            if (!container) return;
-            
-            if (!appointments || appointments.length === 0) {
-                showEmptyTodayAppointmentsState();
-                return;
-            }
-            
-            container.innerHTML = appointments.map(apt => `
-                <div class="appointment-communication">
-                    <div class="appointment-info">
-                        <h4>${escapeHtml(apt.patient_name || 'Unknown Patient')}</h4>
-                        <p>${formatAppointmentTime(apt.appointment_date)} • ${escapeHtml(apt.status || 'Scheduled')}</p>
-                        ${apt.unread_count > 0 ? `<small style="color: #f56565;">${apt.unread_count} unread message(s)</small>` : ''}
-                    </div>
-                    <div class="communication-actions">
-                        <button class="action-btn primary" onclick="openMessages(${apt.id})">
-                            💬 Message
-                        </button>
-                        <button class="action-btn secondary" onclick="startConsultation(${apt.id})">
-                            🩺 Consult
-                        </button>
-                    </div>
+    function displayTodayAppointments(appointments) {
+        const container = document.getElementById('todayAppointmentsList');
+        if (!container) return;
+        
+        if (!appointments || appointments.length === 0) {
+            showEmptyTodayAppointmentsState();
+            return;
+        }
+        
+        container.innerHTML = appointments.map(apt => `
+            <div class="appointment-communication">
+                <div class="appointment-info">
+                    <h4>${escapeHtml(apt.patient_name || 'Unknown Patient')}</h4>
+                    <p>${formatAppointmentTime(apt.appointment_date)} • ${escapeHtml(apt.status || 'Scheduled')}</p>
+                    ${apt.unread_count > 0 ? `<small style="color: #f56565;">${apt.unread_count} unread message(s)</small>` : ''}
                 </div>
-            `).join('');
-        }
+                <div class="communication-actions">
+                    <button class="action-btn primary" onclick="openMessages(${apt.id})">
+                        💬 Message
+                    </button>
+                    <button class="action-btn secondary" onclick="startConsultation(${apt.id})">
+                        🩺 Consult
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
 
-        function showEmptyTodayAppointmentsState() {
-            const container = document.getElementById('todayAppointmentsList');
-            if (container) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📅</div>
-                        <p>No appointments today</p>
-                    </div>
-                `;
-            }
+    function showEmptyTodayAppointmentsState() {
+        const container = document.getElementById('todayAppointmentsList');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <p>No appointments today</p>
+                </div>
+            `;
         }
+    }
 
-        async function loadCommunicationStats() {
-            try {
-                const response = await fetch('/api/communication/stats');
-                if (response.ok) {
-                    const stats = await response.json();
-                    displayCommunicationStats(stats);
-                } else {
-                    setDefaultStats();
-                }
-            } catch (error) {
-                console.error('Error loading communication stats:', error);
+    async function loadCommunicationStats() {
+        try {
+            const response = await fetch('/api/communication/stats');
+            if (response.ok) {
+                const stats = await response.json();
+                displayCommunicationStats(stats);
+            } else {
                 setDefaultStats();
             }
+        } catch (error) {
+            console.error('Error loading communication stats:', error);
+            setDefaultStats();
         }
+    }
 
-        function displayCommunicationStats(stats) {
-            const activeConv = document.getElementById('activeConversations');
-            const unreadMsg = document.getElementById('unreadMessages');
-            const todayApt = document.getElementById('todayAppointments');
-            const pendingCons = document.getElementById('pendingConsultations');
-            
-            if (activeConv) activeConv.textContent = stats.active_conversations || 0;
-            if (unreadMsg) unreadMsg.textContent = stats.unread_messages || 0;
-            if (todayApt) todayApt.textContent = stats.today_appointments || 0;
-            if (pendingCons) pendingCons.textContent = stats.pending_consultations || 0;
-        }
+    function displayCommunicationStats(stats) {
+        const activeConv = document.getElementById('activeConversations');
+        const unreadMsg = document.getElementById('unreadMessages');
+        const todayApt = document.getElementById('todayAppointments');
+        const pendingCons = document.getElementById('pendingConsultations');
+        
+        if (activeConv) activeConv.textContent = stats.active_conversations || 0;
+        if (unreadMsg) unreadMsg.textContent = stats.unread_messages || 0;
+        if (todayApt) todayApt.textContent = stats.today_appointments || 0;
+        if (pendingCons) pendingCons.textContent = stats.pending_consultations || 0;
+    }
 
-        function setDefaultStats() {
-            displayCommunicationStats({
-                active_conversations: 0,
-                unread_messages: 0,
-                today_appointments: 0,
-                pending_consultations: 0
-            });
-        }
+    function setDefaultStats() {
+        displayCommunicationStats({
+            active_conversations: 0,
+            unread_messages: 0,
+            today_appointments: 0,
+            pending_consultations: 0
+        });
+    }
 
-        // ==================== SECTION-SPECIFIC DATA LOADING ====================
-        async function refreshAppointmentsData() {
-            try {
-                const response = await fetch('/api/appointments');
-                if (response.ok) {
-                    const appointments = await response.json();
-                    console.log('Appointments data refreshed:', appointments);
-                }
-            } catch (error) {
-                console.error('Error refreshing appointments:', error);
+    // ==================== SECTION-SPECIFIC DATA LOADING ====================
+    async function refreshAppointmentsData() {
+        try {
+            const response = await fetch('/api/appointments');
+            if (response.ok) {
+                const appointments = await response.json();
+                console.log('Appointments data refreshed:', appointments);
             }
+        } catch (error) {
+            console.error('Error refreshing appointments:', error);
         }
+    }
 
-        async function refreshTodayAppointments() {
-            try {
-                const response = await fetch('/api/appointments/today');
-                if (response.ok) {
-                    const appointments = await response.json();
-                    console.log('Today appointments refreshed:', appointments);
-                }
-            } catch (error) {
-                console.error('Error refreshing today appointments:', error);
+    async function refreshTodayAppointments() {
+        try {
+            const response = await fetch('/api/appointments/today');
+            if (response.ok) {
+                const appointments = await response.json();
+                console.log('Today appointments refreshed:', appointments);
             }
+        } catch (error) {
+            console.error('Error refreshing today appointments:', error);
         }
+    }
 
-        async function loadProfileData() {
-            try {
-                const response = await fetch('/api/profile');
-                if (response.ok) {
-                    const profile = await response.json();
-                    console.log('Profile data loaded:', profile);
-                }
-            } catch (error) {
-                console.error('Error loading profile:', error);
+    async function loadProfileData() {
+        try {
+            const response = await fetch('/api/profile');
+            if (response.ok) {
+                const profile = await response.json();
+                console.log('Profile data loaded:', profile);
             }
+        } catch (error) {
+            console.error('Error loading profile:', error);
         }
+    }
 
-        // ==================== COMMUNICATION FUNCTIONS ====================
-        function startVideoCall(appointmentId) {
-            window.open(`/video-call/${appointmentId}`, '_blank');
-        }
+    // ==================== COMMUNICATION FUNCTIONS ====================
+    function startVideoCall(appointmentId) {
+        window.open(`/video-call/${appointmentId}`, '_blank');
+    }
 
-        function startVoiceCall(appointmentId) {
-            window.open(`/voice-call/${appointmentId}`, '_blank');
-        }
+    function startVoiceCall(appointmentId) {
+        window.open(`/voice-call/${appointmentId}`, '_blank');
+    }
 
-        function openMessages(appointmentId) {
-            window.open(`/communication#appointment-${appointmentId}`, '_blank');
-        }
+    function openMessages(appointmentId) {
+        window.open(`/communication#appointment-${appointmentId}`, '_blank');
+    }
 
-        function refreshCommunicationData() {
-            loadCommunicationData();
-            showNotification('Communication data refreshed!', 'success');
-        }
+    function refreshCommunicationData() {
+        loadCommunicationData();
+        showNotification('Communication data refreshed!', 'success');
+    }
 
-        // ==================== CONSULTATION FUNCTIONS ====================
-        function startConsultation(appointmentId) {
-            // Load appointment details for consultation
-            fetch(`/api/appointments/${appointmentId}`)
-                .then(response => response.json())
-                .then(appointment => {
-                    const modal = document.getElementById('consultationModal');
-                    const content = document.getElementById('consultationContent');
-                    
-                    content.innerHTML = `
-                        <div class="patient-info">
-                            <h4>Patient Information</h4>
-                            <p><strong>Name:</strong> ${appointment.patient_name}</p>
-                            <p><strong>Phone:</strong> ${appointment.patient_phone || 'Not provided'}</p>
-                            <p><strong>Symptoms:</strong> ${appointment.symptoms || 'No symptoms provided'}</p>
-                            ${appointment.medical_history ? `<p><strong>Medical History:</strong> ${appointment.medical_history}</p>` : ''}
-                        </div>
-                        <form id="consultationForm">
-                            <div class="form-group">
-                                <label for="diagnosis">Diagnosis</label>
-                                <textarea id="diagnosis" name="diagnosis" class="form-control" placeholder="Enter diagnosis...">${appointment.diagnosis || ''}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="prescription">Prescription</label>
-                                <textarea id="prescription" name="prescription" class="form-control" placeholder="Enter prescription...">${appointment.prescription || ''}</textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="consultationNotes">Consultation Notes</label>
-                                <textarea id="consultationNotes" name="consultation_notes" class="form-control" placeholder="Additional notes...">${appointment.consultation_notes || ''}</textarea>
-                            </div>
-                            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                                <button type="button" class="btn btn-secondary" onclick="closeConsultationModal()">Cancel</button>
-                                <button type="button" class="btn btn-primary" onclick="completeConsultation(${appointmentId})">Complete Consultation</button>
-                            </div>
-                        </form>
-                    `;
-                    
-                    modal.classList.add('active');
-                })
-                .catch(error => {
-                    console.error('Error loading appointment:', error);
-                    showNotification('Error loading appointment details', 'error');
-                });
-        }
-
-        function completeConsultation(appointmentId) {
-            const form = document.getElementById('consultationForm');
-            const formData = new FormData(form);
-            
-            const consultationData = {
-                diagnosis: document.getElementById('diagnosis').value,
-                prescription: document.getElementById('prescription').value,
-                consultation_notes: document.getElementById('consultationNotes').value,
-                status: 'completed'
-            };
-            
-            fetch(`/api/appointments/${appointmentId}/consultation`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken()
-                },
-                body: JSON.stringify(consultationData)
-            })
+    // ==================== CONSULTATION FUNCTIONS ====================
+    function startConsultation(appointmentId) {
+        // Load appointment details for consultation
+        fetch(`/api/appointments/${appointmentId}`)
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Consultation completed successfully!', 'success');
-                    closeConsultationModal();
-                    location.reload();
-                } else {
-                    showNotification('Error completing consultation: ' + data.error, 'error');
-                }
+            .then(appointment => {
+                const modal = document.getElementById('consultationModal');
+                const content = document.getElementById('consultationContent');
+                
+                content.innerHTML = `
+                    <div class="patient-info">
+                        <h4>Patient Information</h4>
+                        <p><strong>Name:</strong> ${appointment.patient_name}</p>
+                        <p><strong>Phone:</strong> ${appointment.patient_phone || 'Not provided'}</p>
+                        <p><strong>Symptoms:</strong> ${appointment.symptoms || 'No symptoms provided'}</p>
+                        ${appointment.medical_history ? `<p><strong>Medical History:</strong> ${appointment.medical_history}</p>` : ''}
+                    </div>
+                    <form id="consultationForm">
+                        <div class="form-group">
+                            <label for="diagnosis">Diagnosis</label>
+                            <textarea id="diagnosis" name="diagnosis" class="form-control" placeholder="Enter diagnosis...">${appointment.diagnosis || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="prescription">Prescription</label>
+                            <textarea id="prescription" name="prescription" class="form-control" placeholder="Enter prescription...">${appointment.prescription || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="consultationNotes">Consultation Notes</label>
+                            <textarea id="consultationNotes" name="consultation_notes" class="form-control" placeholder="Additional notes...">${appointment.consultation_notes || ''}</textarea>
+                        </div>
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="closeConsultationModal()">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="completeConsultation(${appointmentId})">Complete Consultation</button>
+                        </div>
+                    </form>
+                `;
+                
+                modal.classList.add('active');
             })
             .catch(error => {
-                console.error('Error completing consultation:', error);
-                showNotification('Error completing consultation', 'error');
+                console.error('Error loading appointment:', error);
+                showNotification('Error loading appointment details', 'error');
             });
-        }
+    }
 
-        // ==================== UTILITY FUNCTIONS ====================
-        function formatMessageTime(isoString) {
-            try {
-                const date = new Date(isoString);
-                const now = new Date();
-                const diffMs = now - date;
-                const diffMins = Math.floor(diffMs / 60000);
-                const diffHours = Math.floor(diffMs / 3600000);
-                const diffDays = Math.floor(diffMs / 86400000);
-                
-                if (diffMins < 1) return 'Just now';
-                if (diffMins < 60) return `${diffMins}m ago`;
-                if (diffHours < 24) return `${diffHours}h ago`;
-                if (diffDays < 7) return `${diffDays}d ago`;
-                
-                return date.toLocaleDateString();
-            } catch (error) {
-                return 'Unknown time';
-            }
-        }
-
-        function formatAppointmentTime(isoString) {
-            try {
-                const date = new Date(isoString);
-                return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            } catch (error) {
-                return 'Invalid time';
-            }
-        }
-
-        function escapeHtml(unsafe) {
-            if (!unsafe) return '';
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        function getCSRFToken() {
-            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
-                   document.querySelector('input[name="csrf_token"]')?.value || '';
-        }
-
-        function showNotification(message, type = 'info') {
-            // Create a temporary notification
-            const notification = document.createElement('div');
-            notification.className = `flash-message flash-${type}`;
-            notification.textContent = message;
-            
-            const flashContainer = document.querySelector('.flash-messages');
-            if (flashContainer) {
-                flashContainer.appendChild(notification);
-                
-                // Auto-remove after 5 seconds
-                setTimeout(() => {
-                    notification.style.transition = 'all 0.3s ease';
-                    notification.style.opacity = '0';
-                    notification.style.transform = 'translateX(100%)';
-                    setTimeout(() => notification.remove(), 300);
-                }, 5000);
+    function completeConsultation(appointmentId) {
+        const form = document.getElementById('consultationForm');
+        const formData = new FormData(form);
+        
+        const consultationData = {
+            diagnosis: document.getElementById('diagnosis').value,
+            prescription: document.getElementById('prescription').value,
+            consultation_notes: document.getElementById('consultationNotes').value,
+            status: 'completed'
+        };
+        
+        fetch(`/api/appointments/${appointmentId}/consultation`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(consultationData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Consultation completed successfully!', 'success');
+                closeConsultationModal();
+                location.reload();
             } else {
-                alert(message); // Fallback
+                showNotification('Error completing consultation: ' + data.error, 'error');
             }
-        }
+        })
+        .catch(error => {
+            console.error('Error completing consultation:', error);
+            showNotification('Error completing consultation', 'error');
+        });
+    }
 
-        function setupAutoHideFlashMessages() {
-            const flashMessages = document.querySelectorAll('.flash-message');
-            flashMessages.forEach(message => {
-                setTimeout(() => {
-                    message.style.transition = 'all 0.3s ease';
-                    message.style.opacity = '0';
-                    message.style.transform = 'translateX(100%)';
-                    setTimeout(() => message.remove(), 300);
-                }, 5000);
-            });
+    // ==================== UTILITY FUNCTIONS ====================
+    function formatMessageTime(isoString) {
+        try {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            
+            return date.toLocaleDateString();
+        } catch (error) {
+            return 'Unknown time';
         }
+    }
 
-        function setupEventListeners() {
-            // Add any additional event listeners here
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    // Close any open modals
-                    document.querySelectorAll('.modal.active').forEach(modal => {
-                        modal.classList.remove('active');
-                    });
-                }
-            });
+    function formatAppointmentTime(isoString) {
+        try {
+            const date = new Date(isoString);
+            return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        } catch (error) {
+            return 'Invalid time';
         }
+    }
 
-        // Make functions globally available
-        window.startVideoCall = startVideoCall;
-        window.startVoiceCall = startVoiceCall;
-        window.openMessages = openMessages;
-        window.startConsultation = startConsultation;
-        window.closeConsultationModal = closeConsultationModal;
-        window.completeConsultation = completeConsultation;
-        window.refreshCommunicationData = refreshCommunicationData;
-    </script>
-</body>
-</html>
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+               document.querySelector('input[name="csrf_token"]')?.value || '';
+    }
+
+    function showNotification(message, type = 'info') {
+        // Create a temporary notification
+        const notification = document.createElement('div');
+        notification.className = `flash-message flash-${type}`;
+        notification.textContent = message;
+        
+        const flashContainer = document.querySelector('.flash-messages');
+        if (flashContainer) {
+            flashContainer.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.transition = 'all 0.3s ease';
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        } else {
+            alert(message); // Fallback
+        }
+    }
+
+    function setupAutoHideFlashMessages() {
+        const flashMessages = document.querySelectorAll('.flash-message');
+        flashMessages.forEach(message => {
+            setTimeout(() => {
+                message.style.transition = 'all 0.3s ease';
+                message.style.opacity = '0';
+                message.style.transform = 'translateX(100%)';
+                setTimeout(() => message.remove(), 300);
+            }, 5000);
+        });
+    }
+
+    function setupEventListeners() {
+        // Add any additional event listeners here
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Close any open modals
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+    }
+
+    // Make functions globally available
+    window.startVideoCall = startVideoCall;
+    window.startVoiceCall = startVoiceCall;
+    window.openMessages = openMessages;
+    window.startConsultation = startConsultation;
+    window.closeConsultationModal = closeConsultationModal;
+    window.completeConsultation = completeConsultation;
+    window.refreshCommunicationData = refreshCommunicationData;
+</script>
+{% endblock %}
