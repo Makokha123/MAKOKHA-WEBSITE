@@ -206,7 +206,6 @@ def handle_send_message(data):
         appointment_id = data.get('appointment_id')
         content = sanitize_input(data.get('content', '').strip())
         message_type = data.get('message_type', 'text')
-        
         if not content or not appointment_id:
             return
         
@@ -2252,68 +2251,32 @@ def download_file(filename):
 @app.route('/communication')
 @login_required
 def communication():
-    """Main communication hub with real data"""
+    """Main communication hub with appointment filtering"""
     try:
+        appointment_id = request.args.get('appointment_id')
+        selected_appointment = None
+        
+        if appointment_id:
+            selected_appointment = Appointment.query.get(appointment_id)
+            # Verify user has access to this appointment
+            if selected_appointment:
+                if current_user.role == 'patient' and selected_appointment.patient_id != current_user.patient_profile.id:
+                    selected_appointment = None
+                elif current_user.role == 'doctor' and selected_appointment.doctor_id != current_user.doctor_profile.id:
+                    selected_appointment = None
+        
         if current_user.role == 'patient':
-            # Get patient's appointments with communication data
             appointments = Appointment.query.filter_by(
                 patient_id=current_user.patient_profile.id
             ).order_by(Appointment.appointment_date.desc()).all()
-            
-            # Get communication statistics
-            communication_data = get_patient_communication_data(current_user.id)
-            
         else:  # doctor
             appointments = Appointment.query.filter_by(
                 doctor_id=current_user.doctor_profile.id
             ).order_by(Appointment.appointment_date.desc()).all()
-            communication_data = get_doctor_communication_data(current_user.id)
-        
-        # Convert appointments to the format needed by the template
-        appointments_data = []
-        for apt in appointments:
-            local_time = apt.get_local_appointment_time(current_user)
-            
-            # Get unread message count for this appointment
-            unread_count = Message.query.filter(
-                Message.appointment_id == apt.id,
-                Message.receiver_id == current_user.id,
-                Message.is_read == False
-            ).count()
-            
-            # Get last message preview
-            last_message = Message.query.filter_by(appointment_id=apt.id)\
-                                      .order_by(Message.created_at.desc())\
-                                      .first()
-            
-            # Check if communication is allowed (payment completed for doctors)
-            can_communicate = True
-            if current_user.role == 'doctor':
-                can_communicate = apt.payment_status == 'completed'
-            
-            appointment_info = {
-                'id': apt.id,
-                'patient_name': f"{apt.patient.first_name} {apt.patient.last_name}",
-                'doctor_name': f"Dr. {apt.doctor.first_name} {apt.doctor.last_name}",
-                'specialization': apt.doctor.specialization,
-                'appointment_date': apt.appointment_date.isoformat(),
-                'local_appointment_date': local_time.isoformat() if local_time else None,
-                'formatted_date': format_datetime(apt.appointment_date),
-                'status': apt.status,
-                'payment_status': apt.payment_status,
-                'unread_count': unread_count,
-                'last_message_preview': last_message.content[:50] + '...' if last_message and last_message.content else 'No messages yet',
-                'last_message_time': format_datetime(last_message.created_at) if last_message else None,
-                'can_communicate': can_communicate,
-                'has_video_call': bool(apt.video_call_url) and can_communicate,
-                'has_voice_call': bool(apt.voice_call_url) and can_communicate
-            }
-            
-            appointments_data.append(appointment_info)
         
         return render_template('communication.html', 
-                             appointments=appointments_data,
-                             communication_data=communication_data,
+                             appointments=appointments,
+                             selected_appointment=selected_appointment,
                              current_user_role=current_user.role,
                              current_user=current_user)
     
@@ -2918,6 +2881,579 @@ def init_db():
             print(f"❌ Database initialization error: {str(e)}")
             db.session.rollback()
 
+# =============================================================================
+# PROFILE ROUTES
+# =============================================================================
+
+@app.route('/profile')
+@login_required
+def profile():
+    """User profile page"""
+    try:
+        if current_user.role == 'patient':
+            profile_data = current_user.patient_profile
+        elif current_user.role == 'doctor':
+            profile_data = current_user.doctor_profile
+        else:  # admin
+            profile_data = None
+        
+        return render_template('profile.html', 
+                             profile_data=profile_data,
+                             current_user=current_user)
+    
+    except Exception as e:
+        app.logger.error(f"Error loading profile: {str(e)}")
+        flash('Error loading profile', 'error')
+        return redirect(url_for('patient_dashboard' if current_user.role == 'patient' else 'doctor_dashboard'))
+
+@app.route('/update-profile', methods=['POST'])
+@login_required
+def update_profile():
+    """Update user profile with enhanced validation"""
+    try:
+        if request.form.get('change_password'):
+            # Handle password change
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            
+            if not current_user.check_password(current_password):
+                flash('Current password is incorrect', 'error')
+                return redirect(url_for('profile'))
+            
+            if new_password != confirm_password:
+                flash('New passwords do not match', 'error')
+                return redirect(url_for('profile'))
+            
+            if not User().is_strong_password(new_password):
+                flash('Password must be at least 8 characters with uppercase, lowercase, number, and special character', 'error')
+                return redirect(url_for('profile'))
+            
+            current_user.set_password(new_password)
+            db.session.commit()
+            log_audit('password_changed', current_user.id)
+            flash('Password updated successfully!', 'success')
+            return redirect(url_for('profile'))
+        
+        # Handle profile update
+        if current_user.role == 'patient':
+            profile = current_user.patient_profile
+            if not profile:
+                flash('Patient profile not found', 'error')
+                return redirect(url_for('profile'))
+            
+            # Update patient profile fields
+            profile.first_name = sanitize_input(request.form.get('first_name', ''))
+            profile.last_name = sanitize_input(request.form.get('last_name', ''))
+            profile.phone = sanitize_input(request.form.get('phone', ''))
+            profile.address = sanitize_input(request.form.get('address', ''))
+            profile.emergency_contact = sanitize_input(request.form.get('emergency_contact', ''))
+            profile.medical_history = sanitize_input(request.form.get('medical_history', ''))
+            
+            # Handle date of birth
+            dob_str = request.form.get('date_of_birth')
+            if dob_str:
+                try:
+                    profile.date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
+                except ValueError:
+                    flash('Invalid date format', 'error')
+                    return redirect(url_for('profile'))
+        
+        elif current_user.role == 'doctor':
+            profile = current_user.doctor_profile
+            if not profile:
+                flash('Doctor profile not found', 'error')
+                return redirect(url_for('profile'))
+            
+            # Update doctor profile fields
+            profile.first_name = sanitize_input(request.form.get('first_name', ''))
+            profile.last_name = sanitize_input(request.form.get('last_name', ''))
+            profile.specialization = sanitize_input(request.form.get('specialization', ''))
+            profile.license_number = sanitize_input(request.form.get('license_number', ''))
+            profile.phone = sanitize_input(request.form.get('phone', ''))
+            profile.bio = sanitize_input(request.form.get('bio', ''))
+            profile.available_hours = sanitize_input(request.form.get('available_hours', ''))
+            
+            # Handle consultation fee
+            fee_str = request.form.get('consultation_fee')
+            if fee_str:
+                try:
+                    profile.consultation_fee = float(fee_str)
+                except ValueError:
+                    flash('Invalid consultation fee', 'error')
+                    return redirect(url_for('profile'))
+        
+        # Update user email and timezone
+        new_email = sanitize_input(request.form.get('email', '').lower())
+        if new_email and new_email != current_user.email:
+            # Check if email is already taken
+            existing_user = User.query.filter_by(email=new_email).first()
+            if existing_user and existing_user.id != current_user.id:
+                flash('Email already taken', 'error')
+                return redirect(url_for('profile'))
+            current_user.email = new_email
+        
+        timezone = request.form.get('timezone')
+        if timezone:
+            current_user.timezone = timezone
+        
+        db.session.commit()
+        
+        log_audit('profile_updated', current_user.id)
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('profile'))
+    
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating profile: {str(e)}")
+        flash('Error updating profile', 'error')
+        return redirect(url_for('profile'))
+
+# =============================================================================
+# MISSING ADMIN ROUTES
+# =============================================================================
+
+@app.route('/admin/users')
+@login_required
+def manage_users():
+    """Admin user management page"""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    users = User.query.all()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/doctors')
+@login_required
+def manage_doctors():
+    """Admin doctor management page"""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    doctors = Doctor.query.all()
+    return render_template('admin_doctors.html', doctors=doctors)
+
+@app.route('/admin/reports')
+@login_required
+def reports():
+    """Admin reports page"""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    return render_template('admin_reports.html')
+
+@app.route('/admin/settings')
+@login_required
+def settings():
+    """Admin settings page"""
+    if current_user.role != 'admin':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    return render_template('admin_settings.html')
+
+# =============================================================================
+# PATIENT SPECIFIC ROUTES
+# =============================================================================
+
+@app.route('/my-appointments')
+@login_required
+def my_appointments():
+    """Patient's appointments page"""
+    if current_user.role != 'patient':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    appointments = Appointment.query.filter_by(
+        patient_id=current_user.patient_profile.id
+    ).order_by(Appointment.appointment_date.desc()).all()
+    
+    # Convert to local time
+    for appointment in appointments:
+        appointment.local_time = appointment.get_local_appointment_time(current_user)
+    
+    return render_template('patient_appointments.html', 
+                         appointments=appointments,
+                         format_datetime=format_datetime)
+
+@app.route('/my-documents')
+@login_required
+def my_documents():
+    """Patient's documents page"""
+    if current_user.role != 'patient':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    documents = PatientDocument.query.filter_by(
+        patient_id=current_user.patient_profile.id
+    ).order_by(PatientDocument.uploaded_at.desc()).all()
+    
+    return render_template('patient_documents.html', documents=documents)
+
+@app.route('/find-doctors')
+@login_required
+def find_doctors():
+    """Find doctors page"""
+    doctors = Doctor.query.filter_by(is_available=True).all()
+    return render_template('find_doctors.html', doctors=doctors)
+
+# =============================================================================
+# DOCTOR SPECIFIC ROUTES
+# ============================================================================
+
+@app.route('/doctor/patients')
+@login_required
+def doctor_patients():
+    """Doctor's patients page"""
+    if current_user.role != 'doctor':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    # Get unique patients from appointments
+    appointments = Appointment.query.filter_by(
+        doctor_id=current_user.doctor_profile.id
+    ).all()
+    
+    patient_ids = set(apt.patient_id for apt in appointments)
+    patients = Patient.query.filter(Patient.id.in_(patient_ids)).all()
+    
+    return render_template('doctor_patients.html', patients=patients)
+
+# =============================================================================
+# MISSING API ROUTES FOR DASHBOARD
+# =============================================================================
+
+@app.route('/api/messages/recent')
+@login_required
+def get_recent_messages():
+    """Get recent messages for the current user"""
+    try:
+        if current_user.role == 'patient':
+            # Get messages where patient is involved
+            recent_messages = Message.query.join(Appointment).filter(
+                Appointment.patient_id == current_user.patient_profile.id
+            ).order_by(Message.created_at.desc()).limit(10).all()
+        elif current_user.role == 'doctor':
+            # Get messages where doctor is involved
+            recent_messages = Message.query.join(Appointment).filter(
+                Appointment.doctor_id == current_user.doctor_profile.id
+            ).order_by(Message.created_at.desc()).limit(10).all()
+        else:
+            recent_messages = []
+        
+        messages_data = []
+        for message in recent_messages:
+            messages_data.append({
+                'id': message.id,
+                'appointment_id': message.appointment_id,
+                'sender_name': message.sender.username or message.sender.email,
+                'content': message.content[:50] + '...' if message.content and len(message.content) > 50 else message.content,
+                'created_at': format_datetime(message.created_at),
+                'is_read': message.is_read,
+                'is_own': message.sender_id == current_user.id
+            })
+        
+        return jsonify(messages_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting recent messages: {str(e)}")
+        return jsonify({'error': 'Failed to load recent messages'}), 500
+
+@app.route('/api/communication/stats')
+@login_required
+def get_communication_stats():
+    """Get communication statistics for dashboard"""
+    try:
+        if current_user.role == 'patient':
+            patient = current_user.patient_profile
+            if not patient:
+                return jsonify({'error': 'Patient profile not found'}), 404
+            
+            total_messages = Message.query.join(Appointment).filter(
+                Appointment.patient_id == patient.id
+            ).count()
+            
+            unread_messages = Message.query.join(Appointment).filter(
+                Appointment.patient_id == patient.id,
+                Message.receiver_id == current_user.id,
+                Message.is_read == False
+            ).count()
+            
+            total_appointments = Appointment.query.filter_by(
+                patient_id=patient.id
+            ).count()
+            
+            upcoming_appointments = Appointment.query.filter(
+                Appointment.patient_id == patient.id,
+                Appointment.appointment_date >= datetime.utcnow(),
+                Appointment.status.in_(['scheduled', 'confirmed'])
+            ).count()
+        
+        elif current_user.role == 'doctor':
+            doctor = current_user.doctor_profile
+            if not doctor:
+                return jsonify({'error': 'Doctor profile not found'}), 404
+            
+            total_messages = Message.query.join(Appointment).filter(
+                Appointment.doctor_id == doctor.id
+            ).count()
+            
+            unread_messages = Message.query.join(Appointment).filter(
+                Appointment.doctor_id == doctor.id,
+                Message.receiver_id == current_user.id,
+                Message.is_read == False
+            ).count()
+            
+            total_appointments = Appointment.query.filter_by(
+                doctor_id=doctor.id
+            ).count()
+            
+            today_utc = datetime.utcnow().date()
+            upcoming_appointments = Appointment.query.filter(
+                Appointment.doctor_id == doctor.id,
+                Appointment.appointment_date >= datetime.utcnow(),
+                Appointment.status.in_(['scheduled', 'confirmed'])
+            ).count()
+        
+        else:
+            # Admin stats
+            total_messages = Message.query.count()
+            unread_messages = 0
+            total_appointments = Appointment.query.count()
+            upcoming_appointments = Appointment.query.filter(
+                Appointment.appointment_date >= datetime.utcnow(),
+                Appointment.status.in_(['scheduled', 'confirmed'])
+            ).count()
+        
+        return jsonify({
+            'total_messages': total_messages,
+            'unread_messages': unread_messages,
+            'total_appointments': total_appointments,
+            'upcoming_appointments': upcoming_appointments
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error getting communication stats: {str(e)}")
+        return jsonify({'error': 'Failed to load communication statistics'}), 500
+
+@app.route('/api/appointments/today')
+@login_required
+def get_today_appointments():
+    """Get today's appointments"""
+    try:
+        today_utc = datetime.utcnow().date()
+        
+        if current_user.role == 'patient':
+            appointments = Appointment.query.filter(
+                Appointment.patient_id == current_user.patient_profile.id,
+                db.func.date(Appointment.appointment_date) == today_utc,
+                Appointment.status.in_(['scheduled', 'confirmed'])
+            ).order_by(Appointment.appointment_date.asc()).all()
+        
+        elif current_user.role == 'doctor':
+            appointments = Appointment.query.filter(
+                Appointment.doctor_id == current_user.doctor_profile.id,
+                db.func.date(Appointment.appointment_date) == today_utc,
+                Appointment.status.in_(['scheduled', 'confirmed'])
+            ).order_by(Appointment.appointment_date.asc()).all()
+        
+        else:
+            appointments = []
+        
+        appointments_data = []
+        for apt in appointments:
+            local_time = apt.get_local_appointment_time(current_user)
+            
+            appointments_data.append({
+                'id': apt.id,
+                'patient_name': f"{apt.patient.first_name} {apt.patient.last_name}" if current_user.role == 'doctor' else None,
+                'doctor_name': f"Dr. {apt.doctor.first_name} {apt.doctor.last_name}" if current_user.role == 'patient' else None,
+                'appointment_time': local_time.strftime('%H:%M') if local_time else '',
+                'status': apt.status,
+                'symptoms': apt.symptoms[:100] + '...' if apt.symptoms and len(apt.symptoms) > 100 else apt.symptoms
+            })
+        
+        return jsonify(appointments_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting today's appointments: {str(e)}")
+        return jsonify({'error': 'Failed to load today\'s appointments'}), 500
+
+@app.route('/api/appointments/upcoming')
+@login_required
+def get_upcoming_appointments():
+    """Get upcoming appointments (next 7 days)"""
+    try:
+        now_utc = datetime.utcnow()
+        week_from_now = now_utc + timedelta(days=7)
+        
+        if current_user.role == 'patient':
+            appointments = Appointment.query.filter(
+                Appointment.patient_id == current_user.patient_profile.id,
+                Appointment.appointment_date >= now_utc,
+                Appointment.appointment_date <= week_from_now,
+                Appointment.status.in_(['scheduled', 'confirmed'])
+            ).order_by(Appointment.appointment_date.asc()).all()
+        
+        elif current_user.role == 'doctor':
+            appointments = Appointment.query.filter(
+                Appointment.doctor_id == current_user.doctor_profile.id,
+                Appointment.appointment_date >= now_utc,
+                Appointment.appointment_date <= week_from_now,
+                Appointment.status.in_(['scheduled', 'confirmed'])
+            ).order_by(Appointment.appointment_date.asc()).all()
+        
+        else:
+            appointments = []
+        
+        appointments_data = []
+        for apt in appointments:
+            local_time = apt.get_local_appointment_time(current_user)
+            
+            appointments_data.append({
+                'id': apt.id,
+                'patient_name': f"{apt.patient.first_name} {apt.patient.last_name}" if current_user.role == 'doctor' else None,
+                'doctor_name': f"Dr. {apt.doctor.first_name} {apt.doctor.last_name}" if current_user.role == 'patient' else None,
+                'appointment_date': format_datetime(apt.appointment_date, "%Y-%m-%d %H:%M"),
+                'local_time': local_time.strftime('%Y-%m-%d %H:%M') if local_time else '',
+                'status': apt.status,
+                'formatted_date': format_datetime(apt.appointment_date)
+            })
+        
+        return jsonify(appointments_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting upcoming appointments: {str(e)}")
+        return jsonify({'error': 'Failed to load upcoming appointments'}), 500
+
+# =============================================================================
+# ENHANCED COMMUNICATION API ROUTES
+# =============================================================================
+
+
+@app.route('/api/messages/<int:appointment_id>/all')
+@login_required
+def get_all_messages(appointment_id):
+    """Get all messages for an appointment with enhanced data"""
+    try:
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        messages = Message.query.filter_by(appointment_id=appointment_id)\
+                              .order_by(Message.created_at.asc())\
+                              .all()
+        
+        # Mark messages as read when retrieved
+        unread_messages = [msg for msg in messages if msg.receiver_id == current_user.id and not msg.is_read]
+        for message in unread_messages:
+            message.is_read = True
+        
+        if unread_messages:
+            db.session.commit()
+        
+        messages_data = []
+        for message in messages:
+            messages_data.append({
+                'id': message.id,
+                'sender_id': message.sender_id,
+                'sender_name': message.sender.username or message.sender.email,
+                'sender_role': message.sender.role,
+                'sender_first_name': message.sender.patient_profile.first_name if message.sender.role == 'patient' and message.sender.patient_profile else message.sender.doctor_profile.first_name if message.sender.role == 'doctor' and message.sender.doctor_profile else None,
+                'sender_last_name': message.sender.patient_profile.last_name if message.sender.role == 'patient' and message.sender.patient_profile else message.sender.doctor_profile.last_name if message.sender.role == 'doctor' and message.sender.doctor_profile else None,
+                'receiver_id': message.receiver_id,
+                'message_type': message.message_type,
+                'content': message.content,
+                'audio_url': message.audio_url,
+                'file_url': message.file_url,
+                'file_name': message.file_name,
+                'file_size': message.file_size,
+                'is_read': message.is_read,
+                'created_at': message.created_at.isoformat(),
+                'formatted_time': format_datetime(message.created_at, "%H:%M"),
+                'formatted_date': format_datetime(message.created_at, "%b %d, %Y"),
+                'is_own': message.sender_id == current_user.id
+            })
+        
+        return jsonify(messages_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error fetching all messages: {str(e)}")
+        return jsonify({'error': 'Failed to fetch messages'}), 500
+
+# =============================================================================
+# DOCTOR APPOINTMENTS PAGE FIX
+# =============================================================================
+@app.route('/api/appointments/active')
+@login_required
+def get_active_appointments():
+    """Get active appointments for patient dashboard"""
+    try:
+        if current_user.role != 'patient':
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Use timezone-aware datetime
+        from datetime import datetime, timezone
+        now_utc = datetime.now(timezone.utc)
+        
+        appointments = Appointment.query.filter(
+            Appointment.patient_id == current_user.patient_profile.id,
+            Appointment.appointment_date >= now_utc,
+            Appointment.status.in_(['scheduled', 'confirmed'])
+        ).order_by(Appointment.appointment_date.asc()).limit(5).all()
+        
+        appointments_data = []
+        for apt in appointments:
+            local_time = apt.get_local_appointment_time(current_user)
+            
+            appointments_data.append({
+                'id': apt.id,
+                'doctor_name': f"Dr. {apt.doctor.first_name} {apt.doctor.last_name}",
+                'specialization': apt.doctor.specialization,
+                'appointment_date': apt.appointment_date.isoformat(),
+                'local_time': local_time.isoformat() if local_time else None,
+                'formatted_date': format_datetime(apt.appointment_date),
+                'status': apt.status
+            })
+        
+        return jsonify(appointments_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting active appointments: {str(e)}")
+        return jsonify({'error': 'Failed to load active appointments'}), 500
+@app.route('/doctor/appointments')
+@login_required
+def doctor_appointments():
+    """Doctor's appointments management page - FIXED"""
+    if current_user.role != 'doctor':
+        flash('Access denied', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        appointments = Appointment.query.filter_by(
+            doctor_id=current_user.doctor_profile.id
+        ).order_by(Appointment.appointment_date.desc()).all()
+        
+        # Convert to local time
+        for appointment in appointments:
+            appointment.local_time = appointment.get_local_appointment_time(current_user)
+        
+        return render_template('doctor_appointments.html', 
+                             appointments=appointments,
+                             format_datetime=format_datetime)
+    
+    except Exception as e:
+        app.logger.error(f"Error in doctor appointments: {str(e)}")
+        flash('Error loading appointments', 'error')
+        return redirect(url_for('doctor_dashboard'))
 # =============================================================================
 # ERROR HANDLERS
 # =============================================================================

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Find Doctors - Makokha Medical Centre{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Find Doctors</h1>
+                <div class="d-flex gap-2">
+                    <input type="text" class="form-control" placeholder="Search doctors..." id="searchDoctors">
+                    <select class="form-control" id="specializationFilter">
+                        <option value="">All Specializations</option>
+                        <option value="Cardiologist">Cardiologist</option>
+                        <option value="Dermatologist">Dermatologist</option>
+                        <option value="Pediatrician">Pediatrician</option>
+                        <option value="Neurologist">Neurologist</option>
+                        <option value="General Practitioner">General Practitioner</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="doctorsList">
+        {% if doctors %}
+            {% for doctor in doctors %}
+            <div class="col-xl-4 col-lg-6 mb-4 doctor-card" 
+                 data-specialization="{{ doctor.specialization }}"
+                 data-name="{{ doctor.first_name }} {{ doctor.last_name }}">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                                     style="width: 60px; height: 60px;">
+                                    <i class="fas fa-user-md fa-lg text-white"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h5 class="card-title mb-1">Dr. {{ doctor.first_name }} {{ doctor.last_name }}</h5>
+                                <p class="text-muted mb-0">{{ doctor.specialization }}</p>
+                            </div>
+                        </div>
+                        
+                        {% if doctor.bio %}
+                        <p class="card-text text-muted small mb-3">
+                            {{ doctor.bio[:150] }}{% if doctor.bio|length > 150 %}...{% endif %}
+                        </p>
+                        {% endif %}
+                        
+                        <div class="doctor-info mb-3">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <small class="text-muted">Fee</small>
+                                    <div class="fw-bold text-primary">KSh {{ "%.2f"|format(doctor.consultation_fee) }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Availability</small>
+                                    <div>
+                                        {% if doctor.is_available %}
+                                            <span class="badge bg-success">Available</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Unavailable</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            {% if doctor.is_available %}
+                            <button class="btn btn-primary" onclick="bookAppointment({{ doctor.id }})">
+                                <i class="fas fa-calendar-plus"></i> Book Appointment
+                            </button>
+                            {% else %}
+                            <button class="btn btn-secondary" disabled>
+                                <i class="fas fa-clock"></i> Not Available
+                            </button>
+                            {% endif %}
+                            <button class="btn btn-outline-primary" onclick="viewDoctorProfile({{ doctor.id }})">
+                                <i class="fas fa-eye"></i> View Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-user-md fa-4x text-muted mb-3"></i>
+                <h4>No Doctors Available</h4>
+                <p class="text-muted">There are currently no doctors available. Please check back later.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Book Appointment Modal -->
+<div class="modal fade" id="bookAppointmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Book Appointment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="appointmentModalContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function bookAppointment(doctorId) {
+    const modalContent = document.getElementById('appointmentModalContent');
+    modalContent.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-calendar-plus fa-3x text-primary mb-3"></i>
+            <h5>Book Appointment</h5>
+            <p class="text-muted">Appointment booking functionality would be implemented here.</p>
+            <p class="text-muted">Doctor ID: ${doctorId}</p>
+            <div class="alert alert-info">
+                <small>In a full implementation, you would select a date and time for the appointment.</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="confirmAppointment(${doctorId})">Confirm Booking</button>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('bookAppointmentModal'));
+    modal.show();
+}
+
+function confirmAppointment(doctorId) {
+    alert(`Appointment booking confirmed for doctor ID: ${doctorId}`);
+    const modal = bootstrap.Modal.getInstance(document.getElementById('bookAppointmentModal'));
+    modal.hide();
+}
+
+function viewDoctorProfile(doctorId) {
+    alert(`View doctor profile for ID: ${doctorId}`);
+}
+
+// Search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchDoctors');
+    const specializationFilter = document.getElementById('specializationFilter');
+    
+    function filterDoctors() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const specialization = specializationFilter.value;
+        
+        document.querySelectorAll('.doctor-card').forEach(card => {
+            const name = card.getAttribute('data-name').toLowerCase();
+            const cardSpecialization = card.getAttribute('data-specialization');
+            
+            const matchesSearch = name.includes(searchTerm);
+            const matchesSpecialization = !specialization || cardSpecialization === specialization;
+            
+            if (matchesSearch && matchesSpecialization) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterDoctors);
+    specializationFilter.addEventListener('change', filterDoctors);
+});
+</script>
+{% endblock %}

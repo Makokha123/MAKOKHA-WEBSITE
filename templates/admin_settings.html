@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings - Makokha Medical Centre{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">System Settings</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">General Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="clinicName" class="form-label">Clinic Name</label>
+                            <input type="text" class="form-control" id="clinicName" value="Makokha Medical Centre">
+                        </div>
+                        <div class="mb-3">
+                            <label for="clinicEmail" class="form-label">Clinic Email</label>
+                            <input type="email" class="form-control" id="clinicEmail" value="info@makokhamedical.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="clinicPhone" class="form-label">Clinic Phone</label>
+                            <input type="tel" class="form-control" id="clinicPhone" value="+254 700 000 000">
+                        </div>
+                        <div class="mb-3">
+                            <label for="clinicAddress" class="form-label">Clinic Address</label>
+                            <textarea class="form-control" id="clinicAddress" rows="3">Nairobi, Kenya</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save General Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">System Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Appointment Settings</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoConfirm" checked>
+                            <label class="form-check-label" for="autoConfirm">
+                                Auto-confirm appointments
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                            <label class="form-check-label" for="emailNotifications">
+                                Send email notifications
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="smsNotifications">
+                            <label class="form-check-label" for="smsNotifications">
+                                Send SMS notifications
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="timezone" class="form-label">System Timezone</label>
+                        <select class="form-control" id="timezone">
+                            <option value="Africa/Nairobi" selected>East Africa Time (Nairobi)</option>
+                            <option value="UTC">UTC</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="sessionTimeout" class="form-label">Session Timeout (minutes)</label>
+                        <input type="number" class="form-control" id="sessionTimeout" value="30" min="5" max="240">
+                    </div>
+
+                    <button type="button" class="btn btn-primary">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Danger Zone</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">⚠️ Critical Operations</h6>
+                        <p class="mb-0">These actions are irreversible. Please proceed with caution.</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                        <button class="btn btn-outline-danger me-md-2" onclick="clearAllData()">
+                            <i class="fas fa-trash"></i> Clear All Data
+                        </button>
+                        <button class="btn btn-outline-warning" onclick="resetSystem()">
+                            <i class="fas fa-redo"></i> Reset System
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function clearAllData() {
+    if (confirm('⚠️ WARNING: This will delete ALL data including users, appointments, and records. This action cannot be undone. Are you absolutely sure?')) {
+        alert('Data clearance functionality would be implemented here.');
+    }
+}
+
+function resetSystem() {
+    if (confirm('⚠️ WARNING: This will reset the entire system to factory settings. All data will be lost. Are you absolutely sure?')) {
+        alert('System reset functionality would be implemented here.');
+    }
+}
+</script>
+{% endblock %}

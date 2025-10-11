@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}My Patients - Makokha Medical Centre{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">My Patients</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Patient List</h5>
+                </div>
+                <div class="card-body">
+                    {% if patients %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Patient Name</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Appointments</th>
+                                    <th>Last Visit</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for patient in patients %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ patient.first_name }} {{ patient.last_name }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if patient.phone %}
+                                            {{ patient.phone }}
+                                        {% else %}
+                                            <span class="text-muted">Not provided</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ patient.user.email }}
+                                    </td>
+                                    <td>
+                                        {% set patient_appointments = [] %}
+                                        {% for apt in patient.appointments %}
+                                            {% if apt.doctor_id == current_user.doctor_profile.id %}
+                                                {% set _ = patient_appointments.append(apt) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <span class="badge bg-primary">{{ patient_appointments|length }}</span>
+                                    </td>
+                                    <td>
+                                        {% set last_appointment = None %}
+                                        {% for apt in patient.appointments %}
+                                            {% if apt.doctor_id == current_user.doctor_profile.id %}
+                                                {% if not last_appointment or apt.appointment_date > last_appointment.appointment_date %}
+                                                    {% set last_appointment = apt %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if last_appointment %}
+                                            {{ format_datetime(last_appointment.appointment_date, "%Y-%m-%d") }}
+                                        {% else %}
+                                            <span class="text-muted">No visits</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="viewPatientDetails({{ patient.id }})">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                            <a href="{{ url_for('communication') }}?patient_id={{ patient.id }}" 
+                                               class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-comments"></i> Message
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-user-injured fa-3x text-muted mb-3"></i>
+                        <h5>No patients found</h5>
+                        <p class="text-muted">You don't have any patients yet. Patients will appear here after they book appointments with you.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Patient Details Modal -->
+<div class="modal fade" id="patientDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Patient Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="patientDetailsContent">
+                <!-- Patient details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function viewPatientDetails(patientId) {
+    // For now, just show a basic message
+    // In a real implementation, you would fetch patient details from an API
+    const modalContent = document.getElementById('patientDetailsContent');
+    modalContent.innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-user-injured fa-3x text-primary mb-3"></i>
+            <h5>Patient Details</h5>
+            <p>Patient ID: ${patientId}</p>
+            <p class="text-muted">Detailed patient information would be displayed here in a full implementation.</p>
+            <p class="text-muted">This would include medical history, appointment history, prescriptions, and more.</p>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('patientDetailsModal'));
+    modal.show();
+}
+</script>
+{% endblock %}
