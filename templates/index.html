@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Makokha Medical Centre - Telemedicine</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -11,11 +12,23 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5a6fd8;
+            --secondary-color: #764ba2;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-light: #f7fafc;
+            --white: #ffffff;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text-dark);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             min-height: 100vh;
         }
 
@@ -41,11 +54,18 @@
         .logo {
             font-size: 1.8rem;
             font-weight: bold;
-            color: #4a5568;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
         }
 
         .logo span {
-            color: #667eea;
+            color: var(--primary-color);
+        }
+
+        .logo i {
+            margin-right: 10px;
+            color: var(--primary-color);
         }
 
         .nav-links {
@@ -56,13 +76,29 @@
 
         .nav-links a {
             text-decoration: none;
-            color: #4a5568;
+            color: var(--text-dark);
             font-weight: 500;
-            transition: color 0.3s;
+            transition: var(--transition);
+            position: relative;
         }
 
         .nav-links a:hover {
-            color: #667eea;
+            color: var(--primary-color);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary-color);
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
         }
 
         .btn {
@@ -71,37 +107,52 @@
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition);
             text-decoration: none;
             display: inline-block;
+            text-align: center;
         }
 
         .btn-primary {
-            background: #667eea;
-            color: white;
+            background: var(--primary-color);
+            color: var(--white);
         }
 
         .btn-primary:hover {
-            background: #5a6fd8;
+            background: var(--primary-dark);
             transform: translateY(-2px);
+            box-shadow: var(--shadow);
         }
 
         .btn-secondary {
             background: transparent;
-            border: 2px solid #667eea;
-            color: #667eea;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
         }
 
         .btn-secondary:hover {
-            background: #667eea;
+            background: var(--primary-color);
+            color: var(--white);
+            transform: translateY(-2px);
+        }
+
+        .btn-emergency {
+            background: #e53e3e;
             color: white;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        .btn-emergency:hover {
+            background: #c53030;
+            transform: scale(1.05);
         }
 
         .hero {
             padding: 8rem 2rem 4rem;
             text-align: center;
-            color: white;
-            max-width: 800px;
+            color: var(--white);
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -109,17 +160,29 @@
             font-size: 3.5rem;
             margin-bottom: 1rem;
             font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .hero p {
             font-size: 1.2rem;
             margin-bottom: 2rem;
             opacity: 0.9;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 2rem;
         }
 
         .features {
             padding: 4rem 2rem;
-            background: white;
+            background: var(--white);
         }
 
         .container {
@@ -134,13 +197,29 @@
 
         .section-title h2 {
             font-size: 2.5rem;
-            color: #2d3748;
+            color: var(--text-dark);
             margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary-color);
+            border-radius: 2px;
         }
 
         .section-title p {
-            color: #718096;
+            color: var(--text-light);
             font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto;
         }
 
         .features-grid {
@@ -150,39 +229,43 @@
         }
 
         .feature-card {
-            background: #f7fafc;
+            background: var(--bg-light);
             padding: 2rem;
             border-radius: 12px;
             text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: var(--transition);
             border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .feature-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
         }
 
         .feature-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
-            color: #667eea;
+            color: var(--primary-color);
         }
 
         .feature-card h3 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
-            color: #2d3748;
+            color: var(--text-dark);
         }
 
         .feature-card p {
-            color: #718096;
+            color: var(--text-light);
             line-height: 1.6;
+            flex-grow: 1;
         }
 
         .doctors-section {
             padding: 4rem 2rem;
-            background: #f7fafc;
+            background: var(--bg-light);
         }
 
         .doctors-grid {
@@ -192,11 +275,11 @@
         }
 
         .doctor-card {
-            background: white;
+            background: var(--white);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
         }
 
         .doctor-card:hover {
@@ -205,11 +288,11 @@
 
         .doctor-image {
             height: 200px;
-            background: #667eea;
+            background: var(--primary-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: var(--white);
             font-size: 4rem;
         }
 
@@ -220,26 +303,184 @@
         .doctor-info h3 {
             font-size: 1.3rem;
             margin-bottom: 0.5rem;
-            color: #2d3748;
+            color: var(--text-dark);
         }
 
         .doctor-info .specialization {
-            color: #667eea;
+            color: var(--primary-color);
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
 
         .doctor-info .fee {
-            color: #718096;
+            color: var(--text-light);
             font-size: 1.1rem;
             margin-bottom: 1rem;
         }
 
-        .footer {
-            background: #2d3748;
-            color: white;
-            padding: 3rem 2rem;
+        .about-section {
+            padding: 4rem 2rem;
+            background: var(--white);
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .about-text h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .about-text p {
+            margin-bottom: 1.5rem;
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+
+        .about-image {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .about-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .contact-section {
+            padding: 4rem 2rem;
+            background: var(--bg-light);
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .contact-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
             text-align: center;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .contact-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .contact-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .contact-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+        }
+
+        .contact-card p {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .contact-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .contact-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-dark);
+            text-decoration: none;
+            transition: var(--transition);
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .contact-link:hover {
+            background: var(--bg-light);
+            color: var(--primary-color);
+        }
+
+        .contact-link i {
+            font-size: 1.2rem;
+            width: 24px;
+        }
+
+        .footer {
+            background: var(--text-dark);
+            color: var(--white);
+            padding: 3rem 2rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .footer-column h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: var(--primary-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a {
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #4a5568;
         }
 
         .flash-messages {
@@ -272,6 +513,61 @@
             color: white;
         }
 
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            gap: 4px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: var(--text-dark);
+            transition: var(--transition);
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 100%;
+            background: var(--white);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            z-index: 999;
+            padding: 1rem 0;
+        }
+
+        .mobile-menu.active {
+            display: block;
+        }
+
+        .mobile-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .mobile-links a {
+            padding: 1rem 2rem;
+            text-decoration: none;
+            color: var(--text-dark);
+            border-bottom: 1px solid #e2e8f0;
+            transition: var(--transition);
+        }
+
+        .mobile-links a:hover {
+            background: var(--bg-light);
+            color: var(--primary-color);
+        }
+
+        .mobile-buttons {
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
         @keyframes slideIn {
             from {
                 transform: translateX(100%);
@@ -283,17 +579,117 @@
             }
         }
 
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(229, 62, 62, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .hero h1 {
+                font-size: 3rem;
+            }
+            
+            .about-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .about-image {
+                order: -1;
+            }
+        }
+
         @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+            
             .nav-links {
                 display: none;
             }
-
+            
+            .hamburger {
+                display: flex;
+            }
+            
+            .hero {
+                padding: 6rem 1rem 3rem;
+            }
+            
             .hero h1 {
                 font-size: 2.5rem;
             }
+            
+            .hero p {
+                font-size: 1.1rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .section-title h2 {
+                font-size: 2rem;
+            }
+            
+            .features, .doctors-section, .about-section, .contact-section {
+                padding: 3rem 1rem;
+            }
+            
+            .footer {
+                padding: 2rem 1rem;
+            }
+        }
 
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .feature-card, .contact-card {
+                padding: 1.5rem;
+            }
+            
+            .section-title h2 {
+                font-size: 1.8rem;
+            }
+            
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .navbar, .footer, .btn, .hero-buttons, .flash-messages {
+                display: none;
+            }
+            
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .hero, .features, .doctors-section, .about-section, .contact-section {
+                padding: 1rem 0;
+                background: white;
+            }
+            
             .hero {
-                padding: 6rem 1rem 3rem;
+                color: black;
             }
         }
     </style>
@@ -302,16 +698,39 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">Makokha<span>Medical</span>Centre</span></div>
+            <div class="logo">
+                <i class="fas fa-hospital-alt"></i>
+                Makokha<span>Medical</span>Centre
+            </div>
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#doctors">Doctors</a>
                 <a href="#about">About</a>
+                <a href="#contact">Contact</a>
                 <a href="{{ url_for('login') }}" class="btn btn-secondary">Login</a>
                 <a href="{{ url_for('signup') }}" class="btn btn-primary">Sign Up</a>
             </div>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </div>
     </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-links">
+            <a href="#features">Features</a>
+            <a href="#doctors">Doctors</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
+        </div>
+        <div class="mobile-buttons">
+            <a href="{{ url_for('login') }}" class="btn btn-secondary" style="flex: 1; text-align: center;">Login</a>
+            <a href="{{ url_for('signup') }}" class="btn btn-primary" style="flex: 1; text-align: center;">Sign Up</a>
+        </div>
+    </div>
 
     <!-- Flash Messages -->
     <div class="flash-messages">
@@ -328,9 +747,10 @@
     <section class="hero">
         <h1>Quality Healthcare Made Simple</h1>
         <p>Connect with experienced doctors online. Get medical consultations, prescriptions, and follow-up care from the comfort of your home.</p>
-        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <div class="hero-buttons">
             <a href="{{ url_for('signup') }}" class="btn btn-primary">Get Started Today</a>
             <a href="#features" class="btn btn-secondary">Learn More</a>
+            <a href="#contact" class="btn btn-emergency">Emergency Contact</a>
         </div>
     </section>
 
@@ -343,32 +763,32 @@
             </div>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">👨‍⚕️</div>
+                    <div class="feature-icon"><i class="fas fa-user-md"></i></div>
                     <h3>Expert Doctors</h3>
                     <p>Connect with qualified and experienced medical professionals from various specialties.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">💻</div>
+                    <div class="feature-icon"><i class="fas fa-video"></i></div>
                     <h3>Video Consultations</h3>
                     <p>Face-to-face consultations with doctors through secure video calls.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">📞</div>
+                    <div class="feature-icon"><i class="fas fa-phone-alt"></i></div>
                     <h3>Voice Calls</h3>
                     <p>Clear audio consultations for quick medical advice and follow-ups.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">💬</div>
+                    <div class="feature-icon"><i class="fab fa-whatsapp"></i></div>
                     <h3>WhatsApp Messaging</h3>
                     <p>Continuous communication with your doctor through secure messaging.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">📁</div>
+                    <div class="feature-icon"><i class="fas fa-file-upload"></i></div>
                     <h3>Document Upload</h3>
                     <p>Securely share medical reports, prescriptions, and other documents.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">💰</div>
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
                     <h3>Secure Payments</h3>
                     <p>Safe and convenient payment options for consultation fees.</p>
                 </div>
@@ -386,7 +806,9 @@
             <div class="doctors-grid">
                 {% for doctor in doctors %}
                 <div class="doctor-card">
-                    <div class="doctor-image">👨‍⚕️</div>
+                    <div class="doctor-image">
+                        <i class="fas fa-user-md"></i>
+                    </div>
                     <div class="doctor-info">
                         <h3>Dr. {{ doctor.first_name }} {{ doctor.last_name }}</h3>
                         <div class="specialization">{{ doctor.specialization }}</div>
@@ -399,15 +821,173 @@
         </div>
     </section>
 
+    <!-- About Section -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="section-title">
+                <h2>About Makokha Medical Centre</h2>
+                <p>Your trusted partner in healthcare</p>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <h3>Committed to Your Health and Well-being</h3>
+                    <p>Makokha Medical Centre has been providing exceptional healthcare services for over 15 years. Our telemedicine platform extends our commitment to making quality healthcare accessible to everyone, regardless of location.</p>
+                    <p>We combine traditional medical expertise with modern technology to deliver comprehensive care that meets the highest standards. Our team of dedicated professionals works tirelessly to ensure you receive personalized attention and effective treatment.</p>
+                    <p>Our mission is to bridge the gap between patients and healthcare providers through innovative digital solutions while maintaining the human touch that is essential to healing.</p>
+                    <a href="#contact" class="btn btn-primary">Get In Touch</a>
+                </div>
+                <div class="about-image">
+                    <!-- Placeholder for about image -->
+                    <div style="background: var(--primary-color); height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; padding: 2rem; text-align: center;">
+                        <div>
+                            <i class="fas fa-hospital-alt" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+                            <p>Makokha Medical Centre - Quality Care Since 2008</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <div class="section-title">
+                <h2>Contact Us</h2>
+                <p>We're here to help. Reach out to us through any of these channels</p>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone-alt"></i>
+                    </div>
+                    <h3>Customer Care</h3>
+                    <p>Our customer care team is available to assist you with appointments, billing, and general inquiries.</p>
+                    <div class="contact-links">
+                        <a href="tel:+254712345678" class="contact-link">
+                            <i class="fas fa-phone"></i>
+                            <span>+254 712 345 678</span>
+                        </a>
+                        <a href="tel:+254723456789" class="contact-link">
+                            <i class="fas fa-phone"></i>
+                            <span>+254 723 456 789</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-first-aid"></i>
+                    </div>
+                    <h3>Emergency Services</h3>
+                    <p>For urgent medical situations that require immediate attention.</p>
+                    <div class="contact-links">
+                        <a href="tel:999" class="contact-link">
+                            <i class="fas fa-ambulance"></i>
+                            <span>Emergency: 999</span>
+                        </a>
+                        <a href="tel:+254711123456" class="contact-link">
+                            <i class="fas fa-phone"></i>
+                            <span>Medical Emergency: +254 711 123 456</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <h3>Email & Digital</h3>
+                    <p>Send us an email or connect with us on social media.</p>
+                    <div class="contact-links">
+                        <a href="mailto:info@makokhamedical.com" class="contact-link">
+                            <i class="fas fa-envelope"></i>
+                            <span>info@makokhamedical.com</span>
+                        </a>
+                        <a href="https://wa.me/254712345678" class="contact-link">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>WhatsApp: +254 712 345 678</span>
+                        </a>
+                        <a href="#" class="contact-link">
+                            <i class="fab fa-facebook"></i>
+                            <span>Facebook</span>
+                        </a>
+                        <a href="#" class="contact-link">
+                            <i class="fab fa-twitter"></i>
+                            <span>Twitter</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
-        <div class="container">
+        <div class="footer-content">
+            <div class="footer-column">
+                <h3>Makokha Medical Centre</h3>
+                <p>Providing quality healthcare services through innovative telemedicine solutions.</p>
+                <div style="margin-top: 1rem;">
+                    <a href="#" class="btn btn-primary">Book Appointment</a>
+                </div>
+            </div>
+            <div class="footer-column">
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="#features"><i class="fas fa-chevron-right"></i> Services</a></li>
+                    <li><a href="#doctors"><i class="fas fa-chevron-right"></i> Our Doctors</a></li>
+                    <li><a href="#about"><i class="fas fa-chevron-right"></i> About Us</a></li>
+                    <li><a href="#contact"><i class="fas fa-chevron-right"></i> Contact</a></li>
+                    <li><a href="#"><i class="fas fa-chevron-right"></i> Privacy Policy</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h3>Contact Info</h3>
+                <ul class="footer-links">
+                    <li><a href="#"><i class="fas fa-map-marker-alt"></i> 123 Health Street, Nairobi, Kenya</a></li>
+                    <li><a href="tel:+254712345678"><i class="fas fa-phone"></i> +254 712 345 678</a></li>
+                    <li><a href="mailto:info@makokhamedical.com"><i class="fas fa-envelope"></i> info@makokhamedical.com</a></li>
+                    <li><a href="#"><i class="fas fa-clock"></i> Mon - Sun: 24/7</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
             <p>&copy; 2025 Makokha Medical Centre. All rights reserved.</p>
             <p>Telemedicine Platform - Bringing Healthcare to Your Doorstep</p>
         </div>
     </footer>
 
     <script>
+        // Mobile menu toggle
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        
+        hamburger.addEventListener('click', function() {
+            mobileMenu.classList.toggle('active');
+            // Animate hamburger
+            const spans = hamburger.querySelectorAll('span');
+            if (mobileMenu.classList.contains('active')) {
+                spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
+                spans[1].style.opacity = '0';
+                spans[2].style.transform = 'rotate(-45deg) translate(7px, -6px)';
+            } else {
+                spans[0].style.transform = 'none';
+                spans[1].style.opacity = '1';
+                spans[2].style.transform = 'none';
+            }
+        });
+
+        // Close mobile menu when clicking on a link
+        const mobileLinks = document.querySelectorAll('.mobile-links a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('active');
+                const spans = hamburger.querySelectorAll('span');
+                spans[0].style.transform = 'none';
+                spans[1].style.opacity = '1';
+                spans[2].style.transform = 'none';
+            });
+        });
+
         // Auto-hide flash messages after 5 seconds
         document.addEventListener('DOMContentLoaded', function() {
             const flashMessages = document.querySelectorAll('.flash-message');
