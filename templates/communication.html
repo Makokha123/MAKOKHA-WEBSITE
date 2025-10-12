@@ -20,6 +20,7 @@
     </script>
     
     <style>
+        /* Previous CSS remains unchanged */
         * {
             margin: 0;
             padding: 0;
@@ -39,39 +40,60 @@
             height: 100vh;
         }
 
-        /* Sidebar */
+        /* Sidebar Styles */
         .sidebar {
             width: 350px;
             background: white;
             border-right: 1px solid #e0e0e0;
             display: flex;
             flex-direction: column;
+            height: 100%;
         }
 
         .sidebar-header {
             padding: 1.5rem;
-            background: #075e54;
-            color: white;
+            border-bottom: 1px solid #e0e0e0;
         }
 
         .sidebar-header h1 {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
+            color: #075e54;
+        }
+
+        .sidebar-header p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .refresh-button {
+            background: #075e54;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .refresh-button:hover {
+            background: #064e45;
         }
 
         .appointment-list {
             flex: 1;
             overflow-y: auto;
+            padding: 1rem;
         }
 
         .appointment-item {
             padding: 1rem;
-            border-bottom: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
             cursor: pointer;
             transition: background 0.3s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            border: 1px solid #e0e0e0;
         }
 
         .appointment-item:hover {
@@ -80,74 +102,95 @@
 
         .appointment-item.active {
             background: #e3f2fd;
-            border-left: 4px solid #075e54;
-        }
-
-        .appointment-info {
-            flex: 1;
+            border-color: #075e54;
         }
 
         .appointment-info h3 {
             font-size: 1rem;
             margin-bottom: 0.25rem;
-            color: #2d3748;
         }
 
         .appointment-info p {
             color: #666;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             margin-bottom: 0.25rem;
         }
 
-        .appointment-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
+        .appointment-status, .payment-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
             font-weight: 600;
         }
 
-        .status-scheduled { background: #fed7d7; color: #742a2a; }
-        .status-confirmed { background: #c6f6d5; color: #22543d; }
-        .status-completed { background: #bee3f8; color: #1a365d; }
-
-        .payment-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
+        .status-scheduled {
+            background: #fff3cd;
+            color: #856404;
         }
 
-        .payment-pending { background: #fefcbf; color: #744210; }
-        .payment-completed { background: #c6f6d5; color: #22543d; }
+        .status-confirmed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .payment-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .payment-completed {
+            background: #d4edda;
+            color: #155724;
+        }
 
         .unread-badge {
-            background: #f44336;
+            background: #dc3545;
             color: white;
-            border-radius: 10px;
-            padding: 0.2rem 0.5rem;
-            font-size: 0.7rem;
-            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
-        .refresh-button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-left: 1rem;
+        .loading-state, .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
         }
 
-        .refresh-button:hover {
-            background: #5a6fd8;
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #075e54;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
         }
 
-        /* Main Chat Area */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Chat Area Styles */
         .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
+            height: 100%;
+            position: relative;
         }
 
         .chat-header {
@@ -184,7 +227,7 @@
 
         .contact-details p {
             color: #666;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
         }
 
         .call-controls {
@@ -193,24 +236,14 @@
         }
 
         .call-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 20px;
             background: #075e54;
             color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            font-weight: 600;
             transition: background 0.3s;
-        }
-
-        .call-btn:hover {
-            background: #064e45;
-        }
-
-        .call-btn.recording {
-            background: #f44336;
         }
 
         .call-btn:disabled {
@@ -218,59 +251,121 @@
             cursor: not-allowed;
         }
 
-        /* Messages Area */
+        .call-btn:hover:not(:disabled) {
+            background: #064e45;
+        }
+
+        /* Messages Container */
         .messages-container {
             flex: 1;
-            padding: 1.5rem;
             overflow-y: auto;
-            background: #e5ddd5;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            padding: 1.5rem;
+            background: #f5f5f5;
         }
 
         .message {
             max-width: 70%;
+            margin-bottom: 1rem;
             padding: 0.75rem 1rem;
-            border-radius: 8px;
+            border-radius: 12px;
             position: relative;
-            word-wrap: break-word;
         }
 
         .message.sent {
-            align-self: flex-end;
             background: #dcf8c6;
-            border-top-right-radius: 0;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
         }
 
         .message.received {
-            align-self: flex-start;
             background: white;
-            border-top-left-radius: 0;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-text {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
         }
 
         .message-time {
             font-size: 0.75rem;
-            color: #667781;
-            margin-top: 0.25rem;
+            color: #999;
             text-align: right;
         }
 
         .message-status {
-            position: absolute;
-            bottom: 4px;
-            right: 8px;
             font-size: 0.7rem;
+            color: #999;
+            position: absolute;
+            bottom: 0.5rem;
+            right: 1rem;
+        }
+
+        /* Audio Message Styles */
+        .audio-message {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .audio-player {
+            flex: 1;
+            height: 40px;
+        }
+
+        .audio-duration {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* File Message Styles */
+        .file-message {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .download-btn {
+            background: #075e54;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
         }
 
         /* Input Area */
         .input-area {
             background: white;
-            padding: 1rem;
+            padding: 1rem 1.5rem;
             border-top: 1px solid #e0e0e0;
             display: flex;
-            gap: 0.5rem;
             align-items: flex-end;
+            gap: 0.5rem;
         }
 
         .input-tools {
@@ -281,9 +376,8 @@
         .tool-btn {
             background: none;
             border: none;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             cursor: pointer;
-            color: #666;
             padding: 0.5rem;
             border-radius: 50%;
             transition: background 0.3s;
@@ -298,20 +392,20 @@
             cursor: not-allowed;
         }
 
-        .message-input {
-            flex: 1;
-            padding: 0.75rem 1rem;
-            border: 1px solid #e0e0e0;
-            border-radius: 20px;
-            resize: none;
-            font-family: inherit;
-            font-size: 0.9rem;
-            max-height: 120px;
+        .tool-btn:disabled:hover {
+            background: none;
         }
 
-        .message-input:focus {
+        .message-input {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            padding: 0.75rem 1rem;
+            resize: none;
+            font-family: inherit;
+            font-size: 1rem;
+            max-height: 120px;
             outline: none;
-            border-color: #075e54;
         }
 
         .message-input:disabled {
@@ -327,14 +421,11 @@
             height: 40px;
             border-radius: 50%;
             cursor: pointer;
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: background 0.3s;
-        }
-
-        .send-btn:hover {
-            background: #064e45;
         }
 
         .send-btn:disabled {
@@ -342,40 +433,72 @@
             cursor: not-allowed;
         }
 
-        /* Voice Recording */
-        .voice-recorder {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 20px;
-            margin: 0 1rem 1rem 1rem;
+        .send-btn:hover:not(:disabled) {
+            background: #064e45;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            padding: 0.5rem 1.5rem;
+            color: #666;
+            font-size: 0.9rem;
             display: none;
         }
 
+        .typing-indicator.visible {
+            display: block;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 0.25rem;
+            margin-right: 0.5rem;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: #666;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Voice Recorder */
+        .voice-recorder {
+            background: white;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+        }
+
         .record-btn {
-            background: #f44336;
+            background: #dc3545;
             color: white;
             border: none;
             width: 50px;
             height: 50px;
             border-radius: 50%;
             cursor: pointer;
+            font-size: 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
             transition: all 0.3s;
         }
 
         .record-btn.recording {
-            animation: pulse 1s infinite;
-        }
-
-        .record-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+            background: #28a745;
+            animation: pulse 1.5s infinite;
         }
 
         @keyframes pulse {
@@ -385,74 +508,236 @@
         }
 
         .recording-timer {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #f44336;
+            font-weight: 600;
+            color: #dc3545;
         }
 
         .recording-controls {
             display: flex;
             gap: 0.5rem;
+            margin-left: auto;
         }
 
         .control-btn {
             padding: 0.5rem 1rem;
             border: none;
-            border-radius: 20px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.875rem;
+            font-weight: 600;
+            transition: background 0.3s;
         }
 
-        .control-btn:disabled {
+        .send-recording {
+            background: #28a745;
+            color: white;
+        }
+
+        .send-recording:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
 
-        .send-recording {
-            background: #4caf50;
-            color: white;
-        }
-
         .cancel-recording {
-            background: #666;
-            color: white;
+            background: #f5f5f5;
+            color: #333;
         }
 
-        /* Payment Required Overlay */
-        .payment-required-overlay {
-            position: absolute;
+        /* Voice Call Interface */
+        .voice-call-interface {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
+            background: linear-gradient(135deg, #075e54, #128c7e);
+            z-index: 1000;
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            color: white;
+        }
+
+        .voice-call-interface .caller-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .voice-call-interface .call-status {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .voice-call-interface .call-duration {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .voice-call-interface .call-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .voice-call-interface .call-control-btn {
+            width: 60px;
+            height: 60px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .voice-call-interface .mute-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .voice-call-interface .mute-btn.muted {
+            background: #f44336;
+        }
+
+        .voice-call-interface .end-call-btn {
+            background: #f44336;
+            color: white;
+        }
+
+        /* Incoming Call Notification */
+        .incoming-call-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 2000;
             display: none;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .notification-content {
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .incoming-call-notification .caller-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #075e54;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            margin: 0 auto 1rem;
+        }
+
+        .incoming-call-notification .caller-avatar.ringing {
+            animation: ring 1s infinite;
+        }
+
+        @keyframes ring {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .incoming-call-notification h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .incoming-call-notification p {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .call-actions, .timeout-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .accept-call-btn, .retry-call-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .reject-call-btn, .cancel-call-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        /* Call Timeout Notification */
+        .call-timeout-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: none;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        /* Payment Required Overlay */
+        .payment-required-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1500;
+            display: none;
+            justify-content: center;
+            align-items: center;
         }
 
         .payment-required-content {
-            text-align: center;
-            padding: 2rem;
             background: white;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            max-width: 400px;
+            padding: 2rem;
             width: 90%;
+            max-width: 500px;
+            text-align: center;
         }
 
         .payment-icon {
-            font-size: 4rem;
+            font-size: 3rem;
             margin-bottom: 1rem;
-            color: #ff9800;
         }
 
         .payment-required-content h3 {
-            color: #333;
             margin-bottom: 1rem;
+            color: #333;
         }
 
         .payment-required-content p {
@@ -473,16 +758,12 @@
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            transition: all 0.3s;
+            transition: background 0.3s;
         }
 
         .pay-now-btn {
-            background: #075e54;
+            background: #28a745;
             color: white;
-        }
-
-        .pay-now-btn:hover {
-            background: #064e45;
         }
 
         .cancel-payment-btn {
@@ -490,11 +771,201 @@
             color: #333;
         }
 
-        .cancel-payment-btn:hover {
+        /* WebSocket Status Indicator */
+        .websocket-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 3000;
+            display: none;
+        }
+
+        .websocket-connected {
+            background: #28a745;
+            color: white;
+        }
+
+        .websocket-disconnected {
+            background: #dc3545;
+            color: white;
+        }
+
+        /* Device Permission Modal */
+        .device-permission-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            display: none;
+        }
+
+        .device-permission-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .device-permission-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .device-permission-header h2 {
+            color: #075e54;
+            margin-bottom: 0.5rem;
+        }
+
+        .device-permission-header p {
+            color: #666;
+        }
+
+        .device-selection {
+            margin-bottom: 1.5rem;
+        }
+
+        .device-group {
+            margin-bottom: 1rem;
+        }
+
+        .device-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .device-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        .device-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .device-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .confirm-devices-btn {
+            background: #075e54;
+            color: white;
+        }
+
+        .confirm-devices-btn:hover {
+            background: #064e45;
+        }
+
+        .cancel-devices-btn {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .cancel-devices-btn:hover {
             background: #e0e0e0;
         }
 
-        /* Video Call Interface - HIDDEN BY DEFAULT */
+        /* Device Settings Panel */
+        .device-settings-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 8px;
+            z-index: 100;
+            display: none;
+            min-width: 250px;
+        }
+
+        .device-settings-header {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-settings-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .device-settings-group {
+            margin-bottom: 1rem;
+        }
+
+        .device-settings-group label {
+            display: block;
+            color: white;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .device-settings-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #666;
+            border-radius: 4px;
+            background: #333;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .device-test-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .test-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            flex: 1;
+        }
+
+        .test-audio-btn {
+            background: #4caf50;
+            color: white;
+        }
+
+        .test-video-btn {
+            background: #2196f3;
+            color: white;
+        }
+
+        /* Video Call Interface */
         .video-call-interface {
             position: fixed;
             top: 0;
@@ -503,7 +974,7 @@
             height: 100%;
             background: #1a1a1a;
             z-index: 1000;
-            display: none; /* Hidden by default */
+            display: none;
             flex-direction: column;
         }
 
@@ -514,6 +985,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            z-index: 10;
         }
 
         .caller-info {
@@ -522,16 +994,34 @@
             gap: 1rem;
         }
 
+        .device-settings-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.3s;
+        }
+
+        .device-settings-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
         .video-feeds {
             flex: 1;
-            display: grid;
-            grid-template-columns: 1fr;
+            display: flex;
             position: relative;
+            overflow: hidden;
         }
 
         .video-container {
             position: relative;
             background: #000;
+            flex: 1;
         }
 
         .video-container video {
@@ -549,6 +1039,7 @@
             border: 2px solid #075e54;
             border-radius: 10px;
             z-index: 2;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
         .remote-video {
@@ -588,6 +1079,7 @@
             justify-content: center;
             font-size: 1.5rem;
             transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
 
         .call-control-btn.mute-btn {
@@ -608,278 +1100,41 @@
             background: #f44336;
         }
 
+        .call-control-btn.settings-btn {
+            background: #666;
+            color: white;
+        }
+
         .call-control-btn.end-call-btn {
             background: #f44336;
             color: white;
         }
 
-        /* Voice Call Interface - HIDDEN BY DEFAULT */
-        .voice-call-interface {
-            position: fixed;
-            top: 50%;
+        .call-control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: absolute;
+            top: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            text-align: center;
-            z-index: 1000;
-            display: none; /* Hidden by default */
-        }
-
-        .caller-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #075e54;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
             color: white;
-            font-size: 2rem;
-            margin: 0 auto 1rem;
-        }
-
-        .call-status {
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-            color: #666;
-        }
-
-        .call-duration {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #075e54;
-            margin-bottom: 2rem;
-        }
-
-        /* Incoming Call Notification - HIDDEN BY DEFAULT */
-        .incoming-call-notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 2000;
-            min-width: 300px;
-            display: none; /* Hidden by default */
-        }
-
-        .notification-content {
-            text-align: center;
-        }
-
-        .call-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1.5rem;
-        }
-
-        .accept-call-btn, .reject-call-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .accept-call-btn {
-            background: #4caf50;
-            color: white;
-        }
-
-        .accept-call-btn:hover {
-            background: #45a049;
-        }
-
-        .reject-call-btn {
-            background: #f44336;
-            color: white;
-        }
-
-        .reject-call-btn:hover {
-            background: #da190b;
-        }
-
-        /* Ringing animation */
-        @keyframes ring {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(5deg); }
-            50% { transform: rotate(0deg); }
-            75% { transform: rotate(-5deg); }
-            100% { transform: rotate(0deg); }
-        }
-
-        .ringing {
-            animation: ring 0.5s ease-in-out infinite;
-        }
-
-        /* Loading and Empty States */
-        .loading-state {
-            text-align: center;
-            padding: 2rem;
-            color: #718096;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #718096;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-
-        /* Typing Indicator */
-        .typing-indicator {
-            align-self: flex-start;
-            background: white;
             padding: 0.5rem 1rem;
-            border-radius: 8px;
-            border-top-left-radius: 0;
-            font-size: 0.875rem;
-            color: #666;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 5;
             display: none;
         }
 
-        .typing-indicator.visible {
-            display: block;
+        .connection-status.connected {
+            background: rgba(76, 175, 80, 0.8);
         }
 
-        .typing-dots {
-            display: inline-flex;
-            gap: 2px;
-        }
-
-        .typing-dot {
-            width: 4px;
-            height: 4px;
-            background: #666;
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
-        }
-
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); }
-            30% { transform: translateY(-5px); }
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* WebSocket status indicator */
-        .websocket-status {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            z-index: 10000;
-            display: none;
-        }
-        
-        .websocket-connected {
-            background: #4caf50;
-            color: white;
-        }
-        
-        .websocket-disconnected {
-            background: #f44336;
-            color: white;
-        }
-        
-        .websocket-connecting {
-            background: #ff9800;
-            color: white;
-        }
-
-        /* Fallback message */
-        .fallback-message {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 10px;
-            margin: 10px;
-            border-radius: 5px;
-            text-align: center;
-            display: none;
-        }
-
-        /* Call Timeout Notification */
-        .call-timeout-notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 2000;
-            min-width: 300px;
-            display: none;
-            text-align: center;
-        }
-
-        .timeout-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            margin-top: 1.5rem;
-        }
-
-        .retry-call-btn, .cancel-call-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-
-        .retry-call-btn {
-            background: #4caf50;
-            color: white;
-        }
-
-        .retry-call-btn:hover {
-            background: #45a049;
-        }
-
-        .cancel-call-btn {
-            background: #666;
-            color: white;
-        }
-
-        .cancel-call-btn:hover {
-            background: #555;
+        .connection-status.disconnected {
+            background: rgba(244, 67, 54, 0.8);
         }
 
         /* Responsive */
@@ -887,12 +1142,16 @@
             .communication-container {
                 flex-direction: column;
             }
-
+            
             .sidebar {
                 width: 100%;
-                height: 200px;
+                height: 40%;
             }
-
+            
+            .chat-area {
+                height: 60%;
+            }
+            
             .message {
                 max-width: 85%;
             }
@@ -904,8 +1163,20 @@
                 right: 10px;
             }
             
-            .payment-actions {
-                flex-direction: column;
+            .video-call-controls {
+                bottom: 10px;
+            }
+            
+            .call-control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            
+            .device-settings-panel {
+                top: 60px;
+                right: 10px;
+                min-width: 200px;
             }
         }
     </style>
@@ -947,6 +1218,44 @@
 
         <!-- Main Chat Area -->
         <div class="chat-area">
+            <!-- Device Permission Modal -->
+            <div class="device-permission-modal" id="devicePermissionModal">
+                <div class="device-permission-content">
+                    <div class="device-permission-header">
+                        <h2>Device Permissions Required</h2>
+                        <p>Please allow access to your camera, microphone, and speakers for video calls</p>
+                    </div>
+                    
+                    <div class="device-selection">
+                        <div class="device-group">
+                            <label for="cameraSelect">Camera:</label>
+                            <select id="cameraSelect" class="device-select">
+                                <option value="">Loading cameras...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="device-group">
+                            <label for="microphoneSelect">Microphone:</label>
+                            <select id="microphoneSelect" class="device-select">
+                                <option value="">Loading microphones...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="device-group">
+                            <label for="speakerSelect">Speaker:</label>
+                            <select id="speakerSelect" class="device-select">
+                                <option value="">Loading speakers...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="device-actions">
+                        <button class="device-btn cancel-devices-btn" id="cancelDevicesBtn">Cancel</button>
+                        <button class="device-btn confirm-devices-btn" id="confirmDevicesBtn">Confirm Devices</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Payment Required Overlay -->
             <div class="payment-required-overlay" id="paymentRequiredOverlay">
                 <div class="payment-required-content">
@@ -989,16 +1298,56 @@
                         </div>
                     </div>
                     <div class="call-duration" id="videoCallDuration">00:00</div>
+                    <button class="device-settings-btn" id="deviceSettingsBtn">
+                        ⚙️ Settings
+                    </button>
+                </div>
+                
+                <!-- Connection Status -->
+                <div class="connection-status" id="connectionStatus">Connecting...</div>
+                
+                <!-- Device Settings Panel -->
+                <div class="device-settings-panel" id="deviceSettingsPanel">
+                    <div class="device-settings-header">
+                        <span>Device Settings</span>
+                        <button class="close-settings-btn" id="closeSettingsBtn">×</button>
+                    </div>
+                    
+                    <div class="device-settings-group">
+                        <label for="cameraSettingsSelect">Camera:</label>
+                        <select id="cameraSettingsSelect" class="device-settings-select">
+                            <option value="">Loading cameras...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="device-settings-group">
+                        <label for="microphoneSettingsSelect">Microphone:</label>
+                        <select id="microphoneSettingsSelect" class="device-settings-select">
+                            <option value="">Loading microphones...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="device-settings-group">
+                        <label for="speakerSettingsSelect">Speaker:</label>
+                        <select id="speakerSettingsSelect" class="device-settings-select">
+                            <option value="">Loading speakers...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="device-test-buttons">
+                        <button class="test-btn test-audio-btn" id="testAudioBtn">Test Audio</button>
+                        <button class="test-btn test-video-btn" id="testVideoBtn">Test Video</button>
+                    </div>
                 </div>
                 
                 <div class="video-feeds">
-                    <div class="video-container local-video">
-                        <video id="localVideo" autoplay muted></video>
-                        <div class="video-label">You</div>
-                    </div>
                     <div class="video-container remote-video">
-                        <video id="remoteVideo" autoplay></video>
-                        <div class="video-label" id="remoteVideoLabel">Doctor</div>
+                        <video id="remoteVideo" autoplay playsinline></video>
+                        <div class="video-label" id="remoteVideoLabel">Remote User</div>
+                    </div>
+                    <div class="video-container local-video">
+                        <video id="localVideo" autoplay muted playsinline></video>
+                        <div class="video-label">You</div>
                     </div>
                 </div>
                 
@@ -1008,6 +1357,9 @@
                     </button>
                     <button class="call-control-btn video-btn" id="videoToggleBtn" title="Turn off video">
                         📹
+                    </button>
+                    <button class="call-control-btn settings-btn" id="videoSettingsBtn" title="Settings">
+                        ⚙️
                     </button>
                     <button class="call-control-btn end-call-btn" id="videoEndCallBtn" title="End call">
                         📞
@@ -1150,22 +1502,38 @@
             let requiresPayment = false;
             let paymentAppointmentId = null;
 
+            // Device management variables
+            let availableCameras = [];
+            let availableMicrophones = [];
+            let availableSpeakers = [];
+            let selectedCameraId = '';
+            let selectedMicrophoneId = '';
+            let selectedSpeakerId = '';
+            let isFirstTimeUser = true;
+            let devicePermissionsGranted = false;
+
             // Audio elements for call sounds
             let outgoingRingtone = null;
             let incomingRingtone = null;
             let speechSynthesis = null;
+            let testAudio = null;
+            let callToneAudio = null;
 
             // Get user role with fallback
             const currentUserRole = typeof current_user_role !== 'undefined' ? current_user_role : 'patient';
             const currentUserId = typeof current_user_id !== 'undefined' ? current_user_id : null;
             const currentUserName = typeof current_user_name !== 'undefined' ? current_user_name : 'User';
 
-            // WebRTC configuration
+            // WebRTC configuration with better STUN servers
             const configuration = {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
+                ],
+                iceCandidatePoolSize: 10
             };
 
             // DOM Elements
@@ -1197,6 +1565,7 @@
             const videoMuteBtn = document.getElementById('videoMuteBtn');
             const videoToggleBtn = document.getElementById('videoToggleBtn');
             const videoEndCallBtn = document.getElementById('videoEndCallBtn');
+            const videoSettingsBtn = document.getElementById('videoSettingsBtn');
             const incomingCallNotification = document.getElementById('incomingCallNotification');
             const incomingCallName = document.getElementById('incomingCallName');
             const incomingCallType = document.getElementById('incomingCallType');
@@ -1220,6 +1589,25 @@
             const paymentRequiredOverlay = document.getElementById('paymentRequiredOverlay');
             const payNowBtn = document.getElementById('payNowBtn');
             const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+
+            // Device permission elements
+            const devicePermissionModal = document.getElementById('devicePermissionModal');
+            const cameraSelect = document.getElementById('cameraSelect');
+            const microphoneSelect = document.getElementById('microphoneSelect');
+            const speakerSelect = document.getElementById('speakerSelect');
+            const confirmDevicesBtn = document.getElementById('confirmDevicesBtn');
+            const cancelDevicesBtn = document.getElementById('cancelDevicesBtn');
+
+            // Device settings elements
+            const deviceSettingsBtn = document.getElementById('deviceSettingsBtn');
+            const deviceSettingsPanel = document.getElementById('deviceSettingsPanel');
+            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+            const cameraSettingsSelect = document.getElementById('cameraSettingsSelect');
+            const microphoneSettingsSelect = document.getElementById('microphoneSettingsSelect');
+            const speakerSettingsSelect = document.getElementById('speakerSettingsSelect');
+            const testAudioBtn = document.getElementById('testAudioBtn');
+            const testVideoBtn = document.getElementById('testVideoBtn');
+            const connectionStatus = document.getElementById('connectionStatus');
 
             // Initialize WebSocket connection
             function initializeWebSocket() {
@@ -1245,7 +1633,6 @@
                         updateWebSocketStatus('disconnected', 'Disconnected');
                         
                         if (reason === 'io server disconnect') {
-                            // Server initiated disconnect, try to reconnect
                             setTimeout(() => {
                                 socket.connect();
                             }, 1000);
@@ -1257,7 +1644,6 @@
                         isSocketConnected = false;
                         updateWebSocketStatus('disconnected', 'Connection Failed');
                         
-                        // Exponential backoff for reconnection
                         reconnectAttempts++;
                         if (reconnectAttempts <= MAX_RECONNECT_ATTEMPTS) {
                             const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
@@ -1298,16 +1684,16 @@
                     });
 
                     // WebRTC signaling events
-                    socket.on('offer', (data) => {
-                        handleOffer(data);
+                    socket.on('offer', async (data) => {
+                        await handleOffer(data);
                     });
 
-                    socket.on('answer', (data) => {
-                        handleAnswer(data);
+                    socket.on('answer', async (data) => {
+                        await handleAnswer(data);
                     });
 
-                    socket.on('ice-candidate', (data) => {
-                        handleIceCandidate(data);
+                    socket.on('ice-candidate', async (data) => {
+                        await handleIceCandidate(data);
                     });
 
                 } catch (error) {
@@ -1340,6 +1726,8 @@
                 setWelcomeTime();
                 initializeAudioElements();
                 setupPaymentHandlers();
+                setupDeviceHandlers();
+                checkFirstTimeUser();
             });
 
             // Initialize audio elements for call sounds
@@ -1354,6 +1742,326 @@
                 
                 // Initialize speech synthesis
                 speechSynthesis = window.speechSynthesis;
+                
+                // Create test audio element
+                testAudio = new Audio();
+            }
+
+            // Setup device handlers
+            function setupDeviceHandlers() {
+                confirmDevicesBtn.addEventListener('click', confirmDeviceSelection);
+                cancelDevicesBtn.addEventListener('click', cancelDeviceSelection);
+                deviceSettingsBtn.addEventListener('click', toggleDeviceSettings);
+                closeSettingsBtn.addEventListener('click', hideDeviceSettings);
+                videoSettingsBtn.addEventListener('click', toggleDeviceSettings);
+                testAudioBtn.addEventListener('click', testAudioOutput);
+                testVideoBtn.addEventListener('click', testVideoOutput);
+                
+                // Device change listeners
+                cameraSettingsSelect.addEventListener('change', handleCameraChange);
+                microphoneSettingsSelect.addEventListener('change', handleMicrophoneChange);
+                speakerSettingsSelect.addEventListener('change', handleSpeakerChange);
+            }
+
+            // Check if this is first time user
+            function checkFirstTimeUser() {
+                const hasUsedVideoCall = localStorage.getItem('hasUsedVideoCall');
+                isFirstTimeUser = !hasUsedVideoCall;
+            }
+
+            // Show device permission modal
+            async function showDevicePermissionModal() {
+                try {
+                    await enumerateDevices();
+                    populateDeviceSelects();
+                    devicePermissionModal.style.display = 'flex';
+                } catch (error) {
+                    console.error('Error showing device permission modal:', error);
+                    alert('Error accessing devices. Please check your browser permissions.');
+                }
+            }
+
+            // Hide device permission modal
+            function hideDevicePermissionModal() {
+                devicePermissionModal.style.display = 'none';
+            }
+
+            // Enumerate available devices
+            async function enumerateDevices() {
+                try {
+                    // Request permission first by trying to get user media
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: true, 
+                        audio: true 
+                    });
+                    
+                    // Stop the stream immediately since we just needed permission
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    // Now enumerate devices
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    
+                    availableCameras = devices.filter(device => device.kind === 'videoinput');
+                    availableMicrophones = devices.filter(device => device.kind === 'audioinput');
+                    availableSpeakers = devices.filter(device => device.kind === 'audiooutput');
+                    
+                    // Set default selections
+                    if (availableCameras.length > 0) {
+                        selectedCameraId = availableCameras[0].deviceId;
+                    }
+                    if (availableMicrophones.length > 0) {
+                        selectedMicrophoneId = availableMicrophones[0].deviceId;
+                    }
+                    if (availableSpeakers.length > 0) {
+                        selectedSpeakerId = availableSpeakers[0].deviceId;
+                    }
+                    
+                    devicePermissionsGranted = true;
+                    
+                } catch (error) {
+                    console.error('Error enumerating devices:', error);
+                    throw error;
+                }
+            }
+
+            // Populate device selects
+            function populateDeviceSelects() {
+                // Populate camera selects
+                cameraSelect.innerHTML = '';
+                cameraSettingsSelect.innerHTML = '';
+                availableCameras.forEach(camera => {
+                    const option = document.createElement('option');
+                    option.value = camera.deviceId;
+                    option.textContent = camera.label || `Camera ${cameraSelect.length + 1}`;
+                    cameraSelect.appendChild(option.cloneNode(true));
+                    cameraSettingsSelect.appendChild(option);
+                });
+                
+                // Populate microphone selects
+                microphoneSelect.innerHTML = '';
+                microphoneSettingsSelect.innerHTML = '';
+                availableMicrophones.forEach(microphone => {
+                    const option = document.createElement('option');
+                    option.value = microphone.deviceId;
+                    option.textContent = microphone.label || `Microphone ${microphoneSelect.length + 1}`;
+                    microphoneSelect.appendChild(option.cloneNode(true));
+                    microphoneSettingsSelect.appendChild(option);
+                });
+                
+                // Populate speaker selects
+                speakerSelect.innerHTML = '';
+                speakerSettingsSelect.innerHTML = '';
+                availableSpeakers.forEach(speaker => {
+                    const option = document.createElement('option');
+                    option.value = speaker.deviceId;
+                    option.textContent = speaker.label || `Speaker ${speakerSelect.length + 1}`;
+                    speakerSelect.appendChild(option.cloneNode(true));
+                    speakerSettingsSelect.appendChild(option);
+                });
+                
+                // Set selected values
+                if (selectedCameraId) {
+                    cameraSelect.value = selectedCameraId;
+                    cameraSettingsSelect.value = selectedCameraId;
+                }
+                if (selectedMicrophoneId) {
+                    microphoneSelect.value = selectedMicrophoneId;
+                    microphoneSettingsSelect.value = selectedMicrophoneId;
+                }
+                if (selectedSpeakerId) {
+                    speakerSelect.value = selectedSpeakerId;
+                    speakerSettingsSelect.value = selectedSpeakerId;
+                }
+            }
+
+            // Confirm device selection
+            function confirmDeviceSelection() {
+                selectedCameraId = cameraSelect.value;
+                selectedMicrophoneId = microphoneSelect.value;
+                selectedSpeakerId = speakerSelect.value;
+                
+                // Mark as not first time user
+                localStorage.setItem('hasUsedVideoCall', 'true');
+                isFirstTimeUser = false;
+                
+                hideDevicePermissionModal();
+                
+                // Apply speaker selection
+                applySpeakerSelection();
+            }
+
+            // Cancel device selection
+            function cancelDeviceSelection() {
+                hideDevicePermissionModal();
+                endCall();
+            }
+
+            // Apply speaker selection
+            function applySpeakerSelection() {
+                if (selectedSpeakerId && remoteVideo) {
+                    // For modern browsers that support setSinkId
+                    if (remoteVideo.setSinkId) {
+                        remoteVideo.setSinkId(selectedSpeakerId)
+                            .then(() => {
+                                console.log('Speaker set successfully');
+                            })
+                            .catch(error => {
+                                console.error('Error setting speaker:', error);
+                            });
+                    }
+                }
+            }
+
+            // Toggle device settings
+            function toggleDeviceSettings() {
+                if (deviceSettingsPanel.style.display === 'block') {
+                    hideDeviceSettings();
+                } else {
+                    showDeviceSettings();
+                }
+            }
+
+            // Show device settings
+            function showDeviceSettings() {
+                deviceSettingsPanel.style.display = 'block';
+            }
+
+            // Hide device settings
+            function hideDeviceSettings() {
+                deviceSettingsPanel.style.display = 'none';
+            }
+
+            // Handle camera change
+            async function handleCameraChange() {
+                selectedCameraId = cameraSettingsSelect.value;
+                if (localStream && isInCall) {
+                    await restartVideoWithNewCamera();
+                }
+            }
+
+            // Handle microphone change
+            async function handleMicrophoneChange() {
+                selectedMicrophoneId = microphoneSettingsSelect.value;
+                if (localStream && isInCall) {
+                    await restartAudioWithNewMicrophone();
+                }
+            }
+
+            // Handle speaker change
+            function handleSpeakerChange() {
+                selectedSpeakerId = speakerSettingsSelect.value;
+                applySpeakerSelection();
+            }
+
+            // Restart video with new camera
+            async function restartVideoWithNewCamera() {
+                try {
+                    const videoTrack = localStream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        videoTrack.stop();
+                    }
+                    
+                    const newStream = await navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined },
+                        audio: false
+                    });
+                    
+                    const newVideoTrack = newStream.getVideoTracks()[0];
+                    const sender = peerConnection.getSenders().find(s => 
+                        s.track && s.track.kind === 'video'
+                    );
+                    
+                    if (sender) {
+                        await sender.replaceTrack(newVideoTrack);
+                    }
+                    
+                    // Add new track to local stream
+                    localStream.addTrack(newVideoTrack);
+                    
+                    // Update local video
+                    if (localVideo) {
+                        localVideo.srcObject = localStream;
+                    }
+                    
+                } catch (error) {
+                    console.error('Error restarting video:', error);
+                }
+            }
+
+            // Restart audio with new microphone
+            async function restartAudioWithNewMicrophone() {
+                try {
+                    const audioTrack = localStream.getAudioTracks()[0];
+                    if (audioTrack) {
+                        audioTrack.stop();
+                    }
+                    
+                    const newStream = await navigator.mediaDevices.getUserMedia({
+                        video: false,
+                        audio: { deviceId: selectedMicrophoneId ? { exact: selectedMicrophoneId } : undefined }
+                    });
+                    
+                    const newAudioTrack = newStream.getAudioTracks()[0];
+                    const sender = peerConnection.getSenders().find(s => 
+                        s.track && s.track.kind === 'audio'
+                    );
+                    
+                    if (sender) {
+                        await sender.replaceTrack(newAudioTrack);
+                    }
+                    
+                    // Add new track to local stream
+                    localStream.addTrack(newAudioTrack);
+                    
+                } catch (error) {
+                    console.error('Error restarting audio:', error);
+                }
+            }
+
+            // Test audio output
+            function testAudioOutput() {
+                // Create a simple test tone
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = context.createOscillator();
+                const gainNode = context.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(context.destination);
+                
+                oscillator.frequency.value = 440;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.1;
+                
+                oscillator.start();
+                setTimeout(() => {
+                    oscillator.stop();
+                }, 500);
+            }
+
+            // Test video output
+            function testVideoOutput() {
+                if (localVideo && localVideo.srcObject) {
+                    // Flash the local video to indicate it's working
+                    localVideo.style.border = '3px solid #4caf50';
+                    setTimeout(() => {
+                        localVideo.style.border = '2px solid #075e54';
+                    }, 1000);
+                }
+            }
+
+            // Update connection status
+            function updateConnectionStatus(status, message) {
+                if (!connectionStatus) return;
+                
+                connectionStatus.textContent = message;
+                connectionStatus.className = `connection-status ${status}`;
+                connectionStatus.style.display = 'block';
+                
+                if (status === 'connected') {
+                    setTimeout(() => {
+                        connectionStatus.style.display = 'none';
+                    }, 3000);
+                }
             }
 
             // Setup payment handlers
@@ -1367,8 +2075,6 @@
                 requiresPayment = true;
                 paymentAppointmentId = appointmentId;
                 paymentRequiredOverlay.style.display = 'flex';
-                
-                // Disable all communication features
                 disableCommunicationFeatures();
             }
 
@@ -1377,21 +2083,19 @@
                 requiresPayment = false;
                 paymentAppointmentId = null;
                 paymentRequiredOverlay.style.display = 'none';
-                
-                // Re-enable features if payment is completed
                 if (currentAppointment && currentAppointment.payment_status === 'completed') {
                     enableCommunicationFeatures();
                 }
             }
 
-            // Redirect to payment page
+            // Redirect to payment
             function redirectToPayment() {
                 if (paymentAppointmentId) {
                     window.location.href = `/payment/${paymentAppointmentId}`;
                 }
             }
 
-            // Disable all communication features
+            // Disable communication features
             function disableCommunicationFeatures() {
                 messageInput.disabled = true;
                 sendBtn.disabled = true;
@@ -1399,35 +2103,27 @@
                 startRecordingBtn.disabled = true;
                 emojiBtn.disabled = true;
                 attachBtn.disabled = true;
-                
-                // Update placeholder to indicate payment required
                 messageInput.placeholder = "Complete payment to send messages...";
             }
 
             // Enable communication features
             function enableCommunicationFeatures() {
                 if (!currentAppointment) return;
-                
                 messageInput.disabled = false;
                 sendBtn.disabled = false;
                 voiceCallBtn.disabled = false;
                 startRecordingBtn.disabled = false;
                 emojiBtn.disabled = false;
                 attachBtn.disabled = false;
-                
                 messageInput.placeholder = "Type a message...";
             }
 
-            // Check if communication is allowed for current appointment
+            // Check if communication is allowed
             function canCommunicate() {
                 if (!currentAppointment) return false;
-                
-                // For doctors, check if payment is completed
                 if (currentUserRole === 'doctor') {
                     return currentAppointment.payment_status === 'completed';
                 }
-                
-                // For patients, always allow communication
                 return true;
             }
 
@@ -1438,6 +2134,355 @@
                     timeElement.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 }
             }
+
+            // ==================== VIDEO CALL FUNCTIONS - UPDATED ====================
+
+            async function startVideoCall() {
+                if (!canCommunicate()) {
+                    showPaymentOverlay(currentAppointment.id);
+                    return;
+                }
+                
+                if (!currentAppointment || !isSocketConnected) return;
+                
+                try {
+                    // Show device permission modal for first-time users
+                    if (isFirstTimeUser || !devicePermissionsGranted) {
+                        await showDevicePermissionModal();
+                        return;
+                    }
+                    
+                    // Get user media with selected devices
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: selectedCameraId ? { deviceId: { exact: selectedCameraId } } : true,
+                        audio: selectedMicrophoneId ? { deviceId: { exact: selectedMicrophoneId } } : true
+                    });
+                    
+                    isVideoCall = true;
+                    showCallInterface();
+                    startCallTimer();
+                    playOutgoingRingtone();
+                    
+                    const callId = 'call_' + Date.now();
+                    
+                    // Notify other user via WebSocket
+                    socket.emit('call_initiate', {
+                        appointment_id: currentAppointment.id,
+                        call_type: 'video',
+                        call_id: callId,
+                        caller_name: currentUserName,
+                        caller_role: currentUserRole
+                    });
+                    
+                    await initializeVideoCall(stream);
+                    startCallTimeoutTimer();
+                    
+                } catch (error) {
+                    console.error('Error starting video call:', error);
+                    if (error.name === 'NotAllowedError') {
+                        alert('Camera/microphone access was denied. Please allow permissions and try again.');
+                    } else if (error.name === 'NotFoundError') {
+                        alert('No camera/microphone found. Please check your devices.');
+                    } else {
+                        alert('Cannot access camera/microphone. Please check permissions.');
+                    }
+                }
+            }
+
+            async function initializeVideoCall(stream) {
+                localStream = stream;
+                
+                // Display local video
+                if (localVideo) {
+                    localVideo.srcObject = stream;
+                }
+                
+                await initializePeerConnection();
+                
+                // Add local stream tracks to peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+                
+                // Create and send offer
+                try {
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    
+                    socket.emit('offer', {
+                        offer: offer,
+                        appointment_id: currentAppointment.id
+                    });
+                    
+                    updateConnectionStatus('connected', 'Calling...');
+                } catch (error) {
+                    console.error('Error creating offer:', error);
+                    updateConnectionStatus('disconnected', 'Failed to start call');
+                }
+            }
+
+            async function initializePeerConnection() {
+                try {
+                    peerConnection = new RTCPeerConnection(configuration);
+                    
+                    // Handle incoming remote stream - FIXED
+                    peerConnection.ontrack = (event) => {
+                        console.log('Received remote stream:', event.streams);
+                        remoteStream = event.streams[0];
+                        if (remoteStream && remoteVideo) {
+                            remoteVideo.srcObject = remoteStream;
+                            updateConnectionStatus('connected', 'Connected');
+                        }
+                    };
+                    
+                    // Handle ICE candidates - FIXED
+                    peerConnection.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            socket.emit('ice-candidate', {
+                                candidate: event.candidate,
+                                appointment_id: currentAppointment.id
+                            });
+                        }
+                    };
+                    
+                    // Handle connection state changes
+                    peerConnection.onconnectionstatechange = () => {
+                        console.log('Connection state:', peerConnection.connectionState);
+                        switch (peerConnection.connectionState) {
+                            case 'connected':
+                                updateConnectionStatus('connected', 'Connected');
+                                break;
+                            case 'disconnected':
+                            case 'failed':
+                                updateConnectionStatus('disconnected', 'Connection lost');
+                                break;
+                            case 'connecting':
+                                updateConnectionStatus('connecting', 'Connecting...');
+                                break;
+                        }
+                    };
+                    
+                    // Handle ICE connection state
+                    peerConnection.oniceconnectionstatechange = () => {
+                        console.log('ICE connection state:', peerConnection.iceConnectionState);
+                    };
+                    
+                } catch (error) {
+                    console.error('Error initializing peer connection:', error);
+                    throw error;
+                }
+            }
+
+            async function handleOffer(data) {
+                if (!peerConnection) {
+                    await initializePeerConnection();
+                }
+                
+                try {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    
+                    socket.emit('answer', {
+                        answer: answer,
+                        to: data.from,
+                        appointment_id: currentAppointment.id
+                    });
+                } catch (error) {
+                    console.error('Error handling offer:', error);
+                }
+            }
+
+            async function handleAnswer(data) {
+                if (!peerConnection) return;
+                
+                try {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    updateConnectionStatus('connected', 'Call connected');
+                } catch (error) {
+                    console.error('Error handling answer:', error);
+                }
+            }
+
+            async function handleIceCandidate(data) {
+                if (!peerConnection) return;
+                
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                } catch (error) {
+                    console.error('Error adding ICE candidate:', error);
+                }
+            }
+
+            async function acceptCall() {
+                if (!incomingCall || !isSocketConnected) return;
+                
+                stopIncomingRingtone();
+                hideIncomingCallNotification();
+                
+                // Notify caller via WebSocket
+                socket.emit('call_accept', {
+                    call_id: incomingCall.call_id,
+                    appointment_id: incomingCall.appointment_id
+                });
+                
+                try {
+                    if (incomingCall.call_type === 'video') {
+                        isVideoCall = true;
+                        
+                        // Show device permission modal for first-time users
+                        if (isFirstTimeUser || !devicePermissionsGranted) {
+                            await showDevicePermissionModal();
+                            return;
+                        }
+                        
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: selectedCameraId ? { deviceId: { exact: selectedCameraId } } : true,
+                            audio: selectedMicrophoneId ? { deviceId: { exact: selectedMicrophoneId } } : true
+                        });
+                        
+                        showCallInterface();
+                        await initializeVideoCall(stream);
+                        videoCallStatus.textContent = 'Connected';
+                    } else {
+                        // Handle voice call
+                        isVideoCall = false;
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            audio: selectedMicrophoneId ? { deviceId: { exact: selectedMicrophoneId } } : true,
+                            video: false 
+                        });
+                        showCallInterface();
+                        initializeVoiceCall(stream);
+                        callStatus.textContent = 'Connected';
+                    }
+                    
+                    startCallTimer();
+                    incomingCall = null;
+                    
+                } catch (error) {
+                    console.error('Error accepting call:', error);
+                    alert('Cannot access camera/microphone. Please check permissions.');
+                    endCall();
+                }
+            }
+
+            // Initialize voice call
+            function initializeVoiceCall(stream) {
+                localStream = stream;
+                initializePeerConnection();
+                
+                // Add audio tracks to peer connection
+                localStream.getAudioTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+            }
+
+            // Show call interface
+            function showCallInterface() {
+                if (isVideoCall) {
+                    videoCallInterface.style.display = 'flex';
+                    videoCallerName.textContent = currentUserRole === 'patient' ? 
+                        (currentAppointment.doctor_name || 'Doctor') : 
+                        (currentAppointment.patient_name || 'Patient');
+                    videoCallStatus.textContent = 'Calling...';
+                } else {
+                    voiceCallInterface.style.display = 'block';
+                    callStatus.textContent = 'Calling...';
+                }
+            }
+
+            // End call function
+            function endCall() {
+                // Stop local stream
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
+                
+                // Stop remote stream
+                if (remoteStream) {
+                    remoteStream.getTracks().forEach(track => track.stop());
+                    remoteStream = null;
+                }
+                
+                // Close peer connection
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+                
+                // Hide call interfaces
+                if (isVideoCall) {
+                    videoCallInterface.style.display = 'none';
+                    if (localVideo) localVideo.srcObject = null;
+                    if (remoteVideo) remoteVideo.srcObject = null;
+                    hideDeviceSettings();
+                } else {
+                    voiceCallInterface.style.display = 'none';
+                }
+                
+                // Notify other user via WebSocket
+                if (currentAppointment && isSocketConnected) {
+                    socket.emit('call_end', {
+                        appointment_id: currentAppointment.id,
+                        call_id: 'current_call'
+                    });
+                }
+                
+                // Stop timers and sounds
+                stopCallTimer();
+                stopOutgoingRingtone();
+                stopIncomingRingtone();
+                stopCallTimeoutTimer();
+                
+                // Reset call state
+                isVideoCall = false;
+                localStream = null;
+                remoteStream = null;
+                incomingCall = null;
+                isInCall = false;
+                
+                updateConnectionStatus('disconnected', 'Call ended');
+            }
+
+            // Toggle mute function
+            function toggleMute() {
+                if (localStream) {
+                    const audioTracks = localStream.getAudioTracks();
+                    let isMuted = false;
+                    
+                    audioTracks.forEach(track => {
+                        track.enabled = !track.enabled;
+                        isMuted = !track.enabled;
+                    });
+                    
+                    const muteBtn = isVideoCall ? videoMuteBtn : callMuteBtn;
+                    muteBtn.classList.toggle('muted', isMuted);
+                    muteBtn.textContent = isMuted ? '🎤❌' : '🎤';
+                }
+            }
+
+            // Toggle video function
+            function toggleVideo() {
+                if (localStream && isVideoCall) {
+                    const videoTracks = localStream.getVideoTracks();
+                    let isVideoOff = false;
+                    
+                    videoTracks.forEach(track => {
+                        track.enabled = !track.enabled;
+                        isVideoOff = !track.enabled;
+                    });
+                    
+                    videoToggleBtn.classList.toggle('off', isVideoOff);
+                    videoToggleBtn.textContent = isVideoOff ? '📹❌' : '📹';
+                    
+                    if (localVideo) {
+                        localVideo.style.display = isVideoOff ? 'none' : 'block';
+                    }
+                }
+            }
+
+            // ==================== REST OF THE FUNCTIONS ====================
 
             // Load appointments for the current user
             async function loadAppointments() {
@@ -1679,37 +2724,6 @@
                 endCall();
             }
 
-            // Handle WebRTC offer
-            async function handleOffer(data) {
-                if (!peerConnection) {
-                    await initializePeerConnection();
-                }
-                
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                
-                socket.emit('answer', {
-                    answer: answer,
-                    to: data.from,
-                    appointment_id: currentAppointment.id
-                });
-            }
-
-            // Handle WebRTC answer
-            async function handleAnswer(data) {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
-
-            // Handle ICE candidate
-            async function handleIceCandidate(data) {
-                try {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                } catch (error) {
-                    console.error('Error adding ICE candidate:', error);
-                }
-            }
-
             // Mark all messages as read
             async function markAllMessagesRead(appointmentId) {
                 try {
@@ -1940,7 +2954,7 @@
                 }
             }
 
-            // ==================== VIDEO CALL FUNCTIONS ====================
+            // ==================== CALL FUNCTIONS ====================
             function showCallOptions() {
                 // Check if payment is required
                 if (!canCommunicate()) {
@@ -1953,50 +2967,6 @@
                     startVideoCall();
                 } else {
                     startVoiceCall();
-                }
-            }
-
-            async function startVideoCall() {
-                // Check if payment is required
-                if (!canCommunicate()) {
-                    showPaymentOverlay(currentAppointment.id);
-                    return;
-                }
-                
-                if (!currentAppointment || !isSocketConnected) return;
-                
-                try {
-                    // Request permission for camera and microphone
-                    // Microphone is enabled by default (audio: true)
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: true, 
-                        audio: true 
-                    });
-                    
-                    isVideoCall = true;
-                    showCallInterface();
-                    startCallTimer();
-                    playOutgoingRingtone();
-                    
-                    const callId = 'call_' + Date.now();
-                    
-                    // Notify other user via WebSocket
-                    socket.emit('call_initiate', {
-                        appointment_id: currentAppointment.id,
-                        call_type: 'video',
-                        call_id: callId,
-                        caller_name: currentUserName,
-                        caller_role: currentUserRole
-                    });
-                    
-                    initializeVideoCall(stream);
-                    
-                    // Start call timeout timer
-                    startCallTimeoutTimer();
-                    
-                } catch (error) {
-                    console.error('Error starting video call:', error);
-                    alert('Cannot access camera/microphone. Please check permissions.');
                 }
             }
 
@@ -2040,75 +3010,6 @@
                 } catch (error) {
                     console.error('Error starting voice call:', error);
                     alert('Cannot access microphone. Please check permissions.');
-                }
-            }
-
-            function showCallInterface() {
-                if (isVideoCall) {
-                    videoCallInterface.style.display = 'flex';
-                    videoCallerName.textContent = currentUserRole === 'patient' ? 
-                        (currentAppointment.doctor_name || 'Doctor') : 
-                        (currentAppointment.patient_name || 'Patient');
-                    videoCallStatus.textContent = 'Calling...';
-                } else {
-                    voiceCallInterface.style.display = 'block';
-                    callStatus.textContent = 'Calling...';
-                }
-            }
-
-            function initializeVideoCall(stream) {
-                localStream = stream;
-                
-                // Display local video
-                if (localVideo) {
-                    localVideo.srcObject = stream;
-                }
-                
-                initializePeerConnection();
-            }
-
-            function initializeVoiceCall(stream) {
-                localStream = stream;
-                initializePeerConnection();
-            }
-
-            async function initializePeerConnection() {
-                peerConnection = new RTCPeerConnection(configuration);
-                
-                // Add local stream tracks to peer connection
-                if (localStream) {
-                    localStream.getTracks().forEach(track => {
-                        peerConnection.addTrack(track, localStream);
-                    });
-                }
-                
-                // Handle incoming remote stream
-                peerConnection.ontrack = event => {
-                    remoteStream = event.streams[0];
-                    if (isVideoCall) {
-                        if (remoteVideo) remoteVideo.srcObject = remoteStream;
-                    }
-                };
-                
-                // Handle ICE candidates
-                peerConnection.onicecandidate = event => {
-                    if (event.candidate) {
-                        socket.emit('ice-candidate', {
-                            candidate: event.candidate,
-                            appointment_id: currentAppointment.id
-                        });
-                    }
-                };
-                
-                // Create and send offer if we're the caller
-                if (incomingCall === null) {
-                    const offer = await peerConnection.createOffer();
-                    await peerConnection.setLocalDescription(offer);
-                    
-                    socket.emit('offer', {
-                        offer: offer,
-                        appointment_id: currentAppointment.id
-                    });
                 }
             }
 
@@ -2230,49 +3131,6 @@
                 endCall();
             }
 
-            async function acceptCall() {
-                if (!incomingCall || !isSocketConnected) return;
-                
-                stopIncomingRingtone();
-                hideIncomingCallNotification();
-                
-                // Notify caller via WebSocket
-                socket.emit('call_accept', {
-                    call_id: incomingCall.call_id,
-                    appointment_id: incomingCall.appointment_id
-                });
-                
-                try {
-                    if (incomingCall.call_type === 'video') {
-                        isVideoCall = true;
-                        const stream = await navigator.mediaDevices.getUserMedia({ 
-                            video: true, 
-                            audio: true 
-                        });
-                        showCallInterface();
-                        initializeVideoCall(stream);
-                        videoCallStatus.textContent = 'Connected';
-                    } else {
-                        isVideoCall = false;
-                        const stream = await navigator.mediaDevices.getUserMedia({ 
-                            audio: true,
-                            video: false 
-                        });
-                        showCallInterface();
-                        initializeVoiceCall(stream);
-                        callStatus.textContent = 'Connected';
-                    }
-                    
-                    startCallTimer();
-                    incomingCall = null;
-                    
-                } catch (error) {
-                    console.error('Error accepting call:', error);
-                    alert('Cannot access camera/microphone. Please check permissions.');
-                    endCall();
-                }
-            }
-
             function rejectCall() {
                 if (!incomingCall || !isSocketConnected) return;
                 
@@ -2291,92 +3149,6 @@
             function hideIncomingCallNotification() {
                 incomingCallNotification.style.display = 'none';
                 incomingCallAvatar.classList.remove('ringing');
-            }
-
-            function endCall() {
-                // Stop local stream
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                    localStream = null;
-                }
-                
-                // Stop remote stream
-                if (remoteStream) {
-                    remoteStream.getTracks().forEach(track => track.stop());
-                    remoteStream = null;
-                }
-                
-                // Close peer connection
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                }
-                
-                // Hide call interfaces
-                if (isVideoCall) {
-                    videoCallInterface.style.display = 'none';
-                    if (localVideo) localVideo.srcObject = null;
-                    if (remoteVideo) remoteVideo.srcObject = null;
-                } else {
-                    voiceCallInterface.style.display = 'none';
-                }
-                
-                // Notify other user via WebSocket
-                if (currentAppointment && isSocketConnected) {
-                    socket.emit('call_end', {
-                        appointment_id: currentAppointment.id,
-                        call_id: 'current_call'
-                    });
-                }
-                
-                // Stop timers and sounds
-                stopCallTimer();
-                stopOutgoingRingtone();
-                stopIncomingRingtone();
-                stopCallTimeoutTimer();
-                
-                // Reset call state
-                isVideoCall = false;
-                localStream = null;
-                remoteStream = null;
-                incomingCall = null;
-                isInCall = false;
-            }
-
-            function toggleMute() {
-                if (localStream) {
-                    const audioTracks = localStream.getAudioTracks();
-                    let isMuted = false;
-                    
-                    audioTracks.forEach(track => {
-                        track.enabled = !track.enabled;
-                        isMuted = !track.enabled;
-                    });
-                    
-                    const muteBtn = isVideoCall ? videoMuteBtn : callMuteBtn;
-                    muteBtn.classList.toggle('muted', isMuted);
-                    muteBtn.textContent = isMuted ? '🎤❌' : '🎤';
-                }
-            }
-
-            function toggleVideo() {
-                if (localStream && isVideoCall) {
-                    const videoTracks = localStream.getVideoTracks();
-                    let isVideoOff = false;
-                    
-                    videoTracks.forEach(track => {
-                        track.enabled = !track.enabled;
-                        isVideoOff = !track.enabled;
-                    });
-                    
-                    videoToggleBtn.classList.toggle('off', isVideoOff);
-                    videoToggleBtn.textContent = isVideoOff ? '📹❌' : '📹';
-                    
-                    // Show/hide local video based on video state
-                    if (localVideo) {
-                        localVideo.style.display = isVideoOff ? 'none' : 'block';
-                    }
-                }
             }
 
             // Audio functions for call tones (fallback)
@@ -2517,53 +3289,6 @@
                 }
             }
 
-            // Utility functions
-            function formatTime(isoString) {
-                return new Date(isoString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            }
-
-            function formatDuration(seconds) {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
-            }
-
-            function formatFileSize(bytes) {
-                if (!bytes) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-
-            function scrollToBottom() {
-                if (messagesContainer) {
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-            }
-
-            function getCSRFToken() {
-                const metaToken = document.querySelector('meta[name="csrf-token"]');
-                if (metaToken) return metaToken.getAttribute('content');
-                
-                const inputToken = document.querySelector('input[name="csrf_token"]');
-                if (inputToken) return inputToken.value;
-                
-                if (typeof csrf_token !== 'undefined') return csrf_token;
-                
-                console.warn('CSRF token not found');
-                return '';
-            }
-
-            function escapeHtml(unsafe) {
-                return unsafe
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }
-
             // ==================== RECORDING FUNCTIONS ====================
             function startRecording() {
                 // Check if payment is required
@@ -2662,6 +3387,53 @@
                     console.error('Error uploading recording:', error);
                     alert('Error uploading recording');
                 }
+            }
+
+            // Utility functions
+            function formatTime(isoString) {
+                return new Date(isoString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+
+            function formatDuration(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            function formatFileSize(bytes) {
+                if (!bytes) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function scrollToBottom() {
+                if (messagesContainer) {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+            }
+
+            function getCSRFToken() {
+                const metaToken = document.querySelector('meta[name="csrf-token"]');
+                if (metaToken) return metaToken.getAttribute('content');
+                
+                const inputToken = document.querySelector('input[name="csrf_token"]');
+                if (inputToken) return inputToken.value;
+                
+                if (typeof csrf_token !== 'undefined') return csrf_token;
+                
+                console.warn('CSRF token not found');
+                return '';
+            }
+
+            function escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
             }
 
             // Setup event listeners
