@@ -1,1 +1,7 @@
 /.env
+.db
+instance/
+*.pyc
+__pycache__/
+*.sqlite3
+*.log
