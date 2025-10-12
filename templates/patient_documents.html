@@ -2,140 +2,956 @@
 
 {% block title %}My Documents - Makokha Medical Centre{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        min-height: 100vh;
+    }
+
+    .main-content {
+        padding: 2rem;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .welcome-message h1 {
+        font-size: 2rem;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-message p {
+        color: #718096;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5a6fd8;
+    }
+
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .btn-secondary:hover {
+        background: #cbd5e0;
+    }
+
+    .btn-danger {
+        background: #f56565;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #e53e3e;
+    }
+
+    .section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+        color: #2d3748;
+    }
+
+    .section-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    /* Documents Grid */
+    .documents-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .document-card {
+        background: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s;
+        position: relative;
+    }
+
+    .document-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    .document-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .document-icon {
+        font-size: 2rem;
+        color: #667eea;
+        flex-shrink: 0;
+    }
+
+    .document-info {
+        flex-grow: 1;
+    }
+
+    .document-name {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        word-break: break-word;
+        color: #2d3748;
+    }
+
+    .document-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #718096;
+    }
+
+    .document-description {
+        color: #4a5568;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .document-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .action-btn.primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .action-btn.primary:hover {
+        background: #5a6fd8;
+    }
+
+    .action-btn.secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .action-btn.secondary:hover {
+        background: #cbd5e0;
+    }
+
+    .action-btn.danger {
+        background: #f56565;
+        color: white;
+    }
+
+    .action-btn.danger:hover {
+        background: #e53e3e;
+    }
+
+    /* Statistics Cards */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #667eea;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: #718096;
+        font-size: 0.9rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.5rem;
+        color: #2d3748;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #718096;
+    }
+
+    .close-modal:hover {
+        color: #2d3748;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    /* File Upload */
+    .file-upload {
+        border: 2px dashed #e2e8f0;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+
+    .file-upload:hover {
+        border-color: #667eea;
+    }
+
+    .file-upload input {
+        display: none;
+    }
+
+    .upload-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #718096;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #718096;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 1rem;
+        }
+
+        .header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .documents-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .section-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .section-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .document-meta {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .document-actions {
+            flex-direction: column;
+        }
+        
+        .document-actions .action-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">My Medical Documents</h1>
-                <button class="btn btn-primary" onclick="showUploadModal()">
-                    <i class="fas fa-upload"></i> Upload Document
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="header">
+        <div class="welcome-message">
+            <h1>My Medical Documents</h1>
+            <p>Manage your medical records and documents</p>
+        </div>
+        <div class="user-menu">
+            <button class="btn btn-primary" onclick="openUploadModal()">
+                📤 Upload Document
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    <section class="section">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">{{ documents|length }}</div>
+                <div class="stat-label">Total Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalSize">0 MB</div>
+                <div class="stat-label">Total Storage Used</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ recent_uploads_count }}</div>
+                <div class="stat-label">Uploaded This Month</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ (documents|selectattr('file_type', 'equalto', 'application/pdf')|list|length) }}</div>
+                <div class="stat-label">PDF Documents</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documents Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2>All Documents</h2>
+            <div class="section-actions">
+                <button class="btn btn-secondary" onclick="refreshDocuments()">
+                    🔄 Refresh
+                </button>
+                <button class="btn btn-secondary" onclick="exportAllDocuments()">
+                    📥 Export All
                 </button>
             </div>
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">All Documents</h5>
+        <div class="documents-grid" id="documentsGrid">
+            {% for document in documents %}
+            <div class="document-card" data-document-id="{{ document.id }}">
+                <div class="document-header">
+                    <div class="document-icon">
+                        {% if document.file_type == 'application/pdf' %}
+                            📄
+                        {% elif 'image' in document.file_type %}
+                            🖼️
+                        {% elif 'word' in document.file_type or 'document' in document.file_type %}
+                            📝
+                        {% elif 'excel' in document.file_type or 'spreadsheet' in document.file_type %}
+                            📊
+                        {% else %}
+                            📁
+                        {% endif %}
+                    </div>
+                    <div class="document-info">
+                        <div class="document-name">{{ document.original_filename }}</div>
+                        <div class="document-meta">
+                            <span>{{ (document.file_size / 1024 / 1024)|round(2) }} MB</span>
+                            <span>{{ document.file_type or 'Unknown' }}</span>
+                            <span>{{ format_datetime(document.uploaded_at, "%Y-%m-%d") }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    {% if documents %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Document Name</th>
-                                    <th>Type</th>
-                                    <th>Size</th>
-                                    <th>Uploaded</th>
-                                    <th>Description</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for document in documents %}
-                                <tr>
-                                    <td>
-                                        <i class="fas fa-file-{{ 'pdf' if document.file_type == 'application/pdf' else 'image' if 'image' in document.file_type else 'word' if 'word' in document.file_type or 'document' in document.file_type else 'excel' if 'excel' in document.file_type or 'spreadsheet' in document.file_type else 'file' }} text-primary me-2"></i>
-                                        {{ document.original_filename }}
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-secondary">{{ document.file_type or 'Unknown' }}</span>
-                                    </td>
-                                    <td>
-                                        {% if document.file_size %}
-                                            {{ (document.file_size / 1024 / 1024)|round(2) }} MB
-                                        {% else %}
-                                            <span class="text-muted">Unknown</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {{ format_datetime(document.uploaded_at, "%Y-%m-%d") }}
-                                    </td>
-                                    <td>
-                                        {% if document.description %}
-                                            {{ document.description[:50] }}{% if document.description|length > 50 %}...{% endif %}
-                                        {% else %}
-                                            <span class="text-muted">No description</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('download_file', filename=document.filename) }}" 
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-download"></i> Download
-                                            </a>
-                                            <button class="btn btn-sm btn-outline-danger" 
-                                                    onclick="deleteDocument({{ document.id }})">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-file-medical fa-3x text-muted mb-3"></i>
-                        <h5>No documents found</h5>
-                        <p class="text-muted">You haven't uploaded any medical documents yet.</p>
-                        <button class="btn btn-primary" onclick="showUploadModal()">
-                            <i class="fas fa-upload"></i> Upload Your First Document
+                
+                {% if document.description %}
+                <div class="document-description">
+                    {{ document.description }}
+                </div>
+                {% endif %}
+                
+                <div class="document-actions">
+                    <a href="{{ url_for('download_file', filename=document.filename) }}" 
+                       class="action-btn primary" download>
+                        📥 Download
+                    </a>
+                    <button class="action-btn secondary" onclick="previewDocument({{ document.id }})">
+                        👁️ Preview
+                    </button>
+                    <button class="action-btn secondary" onclick="shareDocument({{ document.id }})">
+                        ↗️ Share
+                    </button>
+                    <form method="POST" action="{{ url_for('delete_document', document_id=document.id) }}" 
+                          style="display: inline;"
+                          onsubmit="return confirm('Are you sure you want to delete this document?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="action-btn danger">
+                            🗑️ Delete
                         </button>
-                    </div>
-                    {% endif %}
+                    </form>
                 </div>
             </div>
+            {% else %}
+            <div style="grid-column: 1 / -1;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📁</div>
+                    <h3>No Documents Yet</h3>
+                    <p>You haven't uploaded any medical documents.</p>
+                    <p style="margin-bottom: 2rem;">Upload your medical records, test results, prescriptions, and other important documents.</p>
+                    <button class="btn btn-primary" onclick="openUploadModal()">
+                        📤 Upload Your First Document
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-    </div>
+    </section>
+
+    <!-- Recent Activity Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Recent Activity</h2>
+        </div>
+        <div id="recentActivity">
+            <div class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <p>No recent activity</p>
+            </div>
+        </div>
+    </section>
 </div>
 
 <!-- Upload Document Modal -->
-<div class="modal fade" id="uploadDocumentModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Upload Medical Document</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center">
-                    <i class="fas fa-file-upload fa-3x text-primary mb-3"></i>
-                    <h5>Upload Document</h5>
-                    <p class="text-muted">Document upload functionality would be implemented here.</p>
-                    <p class="text-muted">Supported formats: PDF, Images, Word, Excel</p>
-                    <div class="alert alert-info">
-                        <small>In a full implementation, you would select a file and add a description.</small>
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Upload Medical Document</h3>
+            <button class="close-modal" onclick="closeUploadModal()">×</button>
+        </div>
+        <form method="POST" action="{{ url_for('upload_document') }}" enctype="multipart/form-data" id="uploadForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="form-group">
+                <label for="documentFile">Select File</label>
+                <div class="file-upload" onclick="document.getElementById('documentFile').click()">
+                    <div class="upload-icon">📁</div>
+                    <div>Click to select a file</div>
+                    <div style="font-size: 0.875rem; color: #718096; margin-top: 0.5rem;">
+                        Supported formats: PDF, Images, Word, Excel, Text
+                        <br>Max file size: 100MB
                     </div>
                 </div>
+                <input type="file" id="documentFile" name="file" style="display: none;" 
+                       onchange="updateFileName(this)" accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt">
+                <div id="fileName" style="margin-top: 0.5rem; font-size: 0.875rem; color: #718096;"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary">Upload Document</button>
+
+            <div class="form-group">
+                <label for="documentCategory">Category</label>
+                <select id="documentCategory" name="category" class="form-control">
+                    <option value="">Select Category</option>
+                    <option value="medical_records">Medical Records</option>
+                    <option value="test_results">Test Results</option>
+                    <option value="prescriptions">Prescriptions</option>
+                    <option value="insurance">Insurance Documents</option>
+                    <option value="referrals">Referrals</option>
+                    <option value="other">Other</option>
+                </select>
             </div>
+
+            <div class="form-group">
+                <label for="documentDescription">Description (Optional)</label>
+                <textarea id="documentDescription" name="description" class="form-control" 
+                          placeholder="Brief description of the document (e.g., 'Blood test results from January 2024')..."
+                          rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="documentTags">Tags (Optional)</label>
+                <input type="text" id="documentTags" name="tags" class="form-control" 
+                       placeholder="Add tags separated by commas (e.g., blood-test, january, doctor-smith)">
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeUploadModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="uploadButton">
+                    📤 Upload Document
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Document Preview Modal -->
+<div id="previewModal" class="modal">
+    <div class="modal-content" style="max-width: 90%; max-height: 90%;">
+        <div class="modal-header">
+            <h3>Document Preview</h3>
+            <button class="close-modal" onclick="closePreviewModal()">×</button>
+        </div>
+        <div id="previewContent" style="text-align: center; padding: 2rem;">
+            <!-- Preview content will be loaded here -->
         </div>
     </div>
 </div>
 
+<!-- Share Document Modal -->
+<div id="shareModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Share Document</h3>
+            <button class="close-modal" onclick="closeShareModal()">×</button>
+        </div>
+        <div id="shareContent">
+            <div class="form-group">
+                <label for="shareEmail">Share via Email</label>
+                <input type="email" id="shareEmail" class="form-control" placeholder="Enter email address">
+            </div>
+            <div class="form-group">
+                <label for="shareMessage">Message (Optional)</label>
+                <textarea id="shareMessage" class="form-control" placeholder="Add a message..." rows="3"></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeShareModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendShare()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function showUploadModal() {
-    const modal = new bootstrap.Modal(document.getElementById('uploadDocumentModal'));
-    modal.show();
-}
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        calculateStatistics();
+        loadRecentActivity();
+        setupEventListeners();
+    });
 
-function deleteDocument(documentId) {
-    if (confirm('Are you sure you want to delete this document? This action cannot be undone.')) {
-        alert('Document deletion functionality would be implemented for document ID: ' + documentId);
-        // In a real implementation, you would make an API call to delete the document
+    // ==================== STATISTICS ====================
+    function calculateStatistics() {
+        const totalSize = {{ documents|sum(attribute='file_size') or 0 }};
+        const totalSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+        document.getElementById('totalSize').textContent = totalSizeMB + ' MB';
+        // Calculate recent uploads (last 30 days)
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        const recentUploads = {{ recent_uploads_count }};
+        document.getElementById('recentUploads').textContent = recentUploads;
     }
-}
+
+    // ==================== DOCUMENT MANAGEMENT ====================
+    function openUploadModal() {
+        document.getElementById('uploadModal').classList.add('active');
+    }
+
+    function closeUploadModal() {
+        document.getElementById('uploadModal').classList.remove('active');
+        document.getElementById('uploadForm').reset();
+        document.getElementById('fileName').textContent = '';
+    }
+
+    function updateFileName(input) {
+        const fileName = document.getElementById('fileName');
+        if (input.files.length > 0) {
+            const file = input.files[0];
+            fileName.innerHTML = `
+                <strong>Selected file:</strong> ${escapeHtml(file.name)}<br>
+                <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                <strong>Type:</strong> ${file.type || 'Unknown'}
+            `;
+        } else {
+            fileName.textContent = '';
+        }
+    }
+
+    function previewDocument(documentId) {
+        // In a real implementation, this would fetch and display the document
+        // For now, show a placeholder
+        const previewContent = document.getElementById('previewContent');
+        previewContent.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">👁️</div>
+                <h4>Document Preview</h4>
+                <p>Document ID: ${documentId}</p>
+                <p style="color: #718096; margin-bottom: 2rem;">
+                    In a full implementation, this would display the actual document content.
+                </p>
+                <button class="btn btn-primary" onclick="downloadDocument(${documentId})">
+                    📥 Download Instead
+                </button>
+            </div>
+        `;
+        document.getElementById('previewModal').classList.add('active');
+    }
+
+    function closePreviewModal() {
+        document.getElementById('previewModal').classList.remove('active');
+    }
+
+    function shareDocument(documentId) {
+        document.getElementById('shareModal').classList.add('active');
+        // Store the document ID for the share action
+        document.getElementById('shareModal').setAttribute('data-document-id', documentId);
+    }
+
+    function closeShareModal() {
+        document.getElementById('shareModal').classList.remove('active');
+        document.getElementById('shareEmail').value = '';
+        document.getElementById('shareMessage').value = '';
+    }
+
+    async function sendShare() {
+        const email = document.getElementById('shareEmail').value;
+        const message = document.getElementById('shareMessage').value;
+        const documentId = document.getElementById('shareModal').getAttribute('data-document-id');
+
+        if (!email) {
+            showNotification('Please enter an email address', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/documents/share', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    document_id: documentId,
+                    email: email,
+                    message: message
+                })
+            });
+
+            if (response.ok) {
+                showNotification('Document shared successfully!', 'success');
+                closeShareModal();
+            } else {
+                const result = await response.json();
+                showNotification('Error: ' + (result.error || 'Failed to share document'), 'error');
+            }
+        } catch (error) {
+            showNotification('Error sharing document: ' + error.message, 'error');
+        }
+    }
+
+    function downloadDocument(documentId) {
+        // This would trigger the download
+        window.open(`/download-document/${documentId}`, '_blank');
+    }
+
+    async function exportAllDocuments() {
+        if (!confirm('This will export all your documents as a ZIP file. Continue?')) return;
+
+        try {
+            const response = await fetch('/api/documents/export');
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'medical-documents-export.zip';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showNotification('Documents exported successfully!', 'success');
+            } else {
+                showNotification('Failed to export documents', 'error');
+            }
+        } catch (error) {
+            showNotification('Error exporting documents: ' + error.message, 'error');
+        }
+    }
+
+    async function refreshDocuments() {
+        showNotification('Refreshing documents...', 'info');
+        setTimeout(() => location.reload(), 1000);
+    }
+
+    // ==================== RECENT ACTIVITY ====================
+    async function loadRecentActivity() {
+        try {
+            const response = await fetch('/api/documents/activity');
+            if (response.ok) {
+                const activity = await response.json();
+                displayRecentActivity(activity);
+            } else {
+                showEmptyActivity();
+            }
+        } catch (error) {
+            console.error('Error loading recent activity:', error);
+            showEmptyActivity();
+        }
+    }
+
+    function displayRecentActivity(activity) {
+        const container = document.getElementById('recentActivity');
+        if (!container) return;
+
+        if (!activity || activity.length === 0) {
+            showEmptyActivity();
+            return;
+        }
+
+        container.innerHTML = activity.map(item => `
+            <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 1rem;">
+                <div style="font-size: 1.5rem;">${getActivityIcon(item.type)}</div>
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: 600; color: #2d3748;">${escapeHtml(item.description)}</div>
+                    <div style="font-size: 0.875rem; color: #718096;">${formatDate(item.timestamp)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showEmptyActivity() {
+        const container = document.getElementById('recentActivity');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <p>No recent activity</p>
+                </div>
+            `;
+        }
+    }
+
+    function getActivityIcon(type) {
+        const icons = {
+            'upload': '📤',
+            'download': '📥',
+            'delete': '🗑️',
+            'share': '↗️',
+            'view': '👁️'
+        };
+        return icons[type] || '📄';
+    }
+
+    // ==================== UTILITY FUNCTIONS ====================
+    function formatDate(isoString) {
+        try {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            
+            return date.toLocaleDateString();
+        } catch (error) {
+            return 'Unknown time';
+        }
+    }
+
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+               document.querySelector('input[name="csrf_token"]')?.value || '';
+    }
+
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `flash-message flash-${type}`;
+        notification.textContent = message;
+        
+        const flashContainer = document.querySelector('.flash-messages');
+        if (flashContainer) {
+            flashContainer.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transition = 'all 0.3s ease';
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        } else {
+            alert(message);
+        }
+    }
+
+    function setupEventListeners() {
+        // Upload form submission
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(e) {
+                const fileInput = document.getElementById('documentFile');
+                if (!fileInput.files.length) {
+                    e.preventDefault();
+                    showNotification('Please select a file to upload', 'error');
+                    return;
+                }
+                
+                const uploadButton = document.getElementById('uploadButton');
+                uploadButton.disabled = true;
+                uploadButton.innerHTML = '⏳ Uploading...';
+                
+                // Re-enable after 5 seconds in case of error
+                setTimeout(() => {
+                    uploadButton.disabled = false;
+                    uploadButton.innerHTML = '📤 Upload Document';
+                }, 5000);
+            });
+        }
+
+        // Close modals when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // Escape key to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+    }
+
+    // Make functions globally available
+    window.openUploadModal = openUploadModal;
+    window.closeUploadModal = closeUploadModal;
+    window.updateFileName = updateFileName;
+    window.previewDocument = previewDocument;
+    window.closePreviewModal = closePreviewModal;
+    window.shareDocument = shareDocument;
+    window.closeShareModal = closeShareModal;
+    window.sendShare = sendShare;
+    window.downloadDocument = downloadDocument;
+    window.exportAllDocuments = exportAllDocuments;
+    window.refreshDocuments = refreshDocuments;
 </script>
 {% endblock %}

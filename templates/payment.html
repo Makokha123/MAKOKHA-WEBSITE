@@ -1,0 +1,981 @@
+{% extends "base.html" %}
+
+{% block title %}Payment - Makokha Medical Centre{% endblock %}
+
+{% block extra_css %}
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .payment-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 500px;
+        overflow: hidden;
+    }
+
+    .payment-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+
+    .payment-header h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    .payment-header p {
+        opacity: 0.9;
+        font-size: 14px;
+    }
+
+    .payment-content {
+        padding: 30px;
+    }
+
+    .appointment-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-left: 4px solid #667eea;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .info-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .info-value {
+        color: #2d3748;
+        font-weight: 600;
+    }
+
+    .total-amount {
+        background: #e8f5e8;
+        border: 2px solid #4caf50;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .amount-label {
+        font-size: 14px;
+        color: #2d3748;
+        margin-bottom: 5px;
+    }
+
+    .amount-value {
+        font-size: 28px;
+        font-weight: bold;
+        color: #4caf50;
+    }
+
+    .payment-methods {
+        margin-bottom: 25px;
+    }
+
+    .methods-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .payment-method {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .payment-method:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .payment-method.selected {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+
+    .method-icon {
+        font-size: 32px;
+        margin-bottom: 10px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .method-name {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 5px;
+    }
+
+    .method-description {
+        font-size: 12px;
+        color: #718096;
+    }
+
+    .payment-form {
+        display: none;
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .payment-form.active {
+        display: block;
+        animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 14px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 15px;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+        margin-top: 10px;
+    }
+
+    .btn-secondary:hover {
+        background: #cbd5e0;
+    }
+
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .success-message {
+        display: none;
+        text-align: center;
+        padding: 30px;
+        background: #e8f5e8;
+        border-radius: 12px;
+        margin-top: 20px;
+    }
+
+    .success-icon {
+        font-size: 48px;
+        color: #4caf50;
+        margin-bottom: 15px;
+    }
+
+    .security-notice {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 20px;
+        font-size: 12px;
+        color: #856404;
+        text-align: center;
+    }
+
+    .security-notice i {
+        margin-right: 5px;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .payment-container {
+            margin: 10px;
+        }
+
+        .payment-content {
+            padding: 20px;
+        }
+
+        .methods-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Payment Method Specific Styles */
+    .mpesa-steps {
+        background: #f0f8ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        font-size: 12px;
+    }
+
+    .mpesa-steps ol {
+        margin-left: 20px;
+        margin-bottom: 10px;
+    }
+
+    .mpesa-steps li {
+        margin-bottom: 5px;
+    }
+
+    .phone-input {
+        display: flex;
+        align-items: center;
+    }
+
+    .phone-prefix {
+        background: #e2e8f0;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+        font-weight: 600;
+    }
+
+    .phone-input .form-control {
+        border-radius: 0 8px 8px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hidden CSRF Token -->
+<input type="hidden" name="csrf_token" id="csrf_token" value="{{ csrf_token() }}">
+
+<div class="payment-container">
+    <!-- Header -->
+    <div class="payment-header">
+        <h1>Complete Payment</h1>
+        <p>Secure payment for your medical appointment</p>
+    </div>
+
+    <!-- Payment Content -->
+    <div class="payment-content">
+        <!-- Appointment Information -->
+        <div class="appointment-info">
+            <div class="info-row">
+                <span class="info-label">Doctor:</span>
+                <span class="info-value">Dr. {{ doctor.first_name }} {{ doctor.last_name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Specialization:</span>
+                <span class="info-value">{{ doctor.specialization }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Appointment ID:</span>
+                <span class="info-value">#{{ appointment.id }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Date:</span>
+                <span class="info-value">{{ format_datetime(appointment.appointment_date) }}</span>
+            </div>
+        </div>
+
+        <!-- Total Amount -->
+        <div class="total-amount">
+            <div class="amount-label">Total Amount to Pay</div>
+            <div class="amount-value">KSh {{ "%.2f"|format(doctor.consultation_fee) }}</div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="payment-methods">
+            <h3 style="margin-bottom: 15px; color: #2d3748;">Select Payment Method</h3>
+            <div class="methods-grid">
+                <!-- M-Pesa -->
+                <div class="payment-method" data-method="mpesa" onclick="selectPaymentMethod('mpesa')">
+                    <div class="method-icon">📱</div>
+                    <div class="method-name">Lipa Na M-Pesa</div>
+                    <div class="method-description">Pay via M-Pesa</div>
+                </div>
+
+                <!-- PayPal -->
+                <div class="payment-method" data-method="paypal" onclick="selectPaymentMethod('paypal')">
+                    <div class="method-icon">💰</div>
+                    <div class="method-name">PayPal</div>
+                    <div class="method-description">Pay with PayPal</div>
+                </div>
+
+                <!-- Credit Card -->
+                <div class="payment-method" data-method="creditcard" onclick="selectPaymentMethod('creditcard')">
+                    <div class="method-icon">💳</div>
+                    <div class="method-name">Credit Card</div>
+                    <div class="method-description">Visa, MasterCard</div>
+                </div>
+
+                <!-- Debit Card -->
+                <div class="payment-method" data-method="debitcard" onclick="selectPaymentMethod('debitcard')">
+                    <div class="method-icon">🏦</div>
+                    <div class="method-name">Debit Card</div>
+                    <div class="method-description">Bank Debit Card</div>
+                </div>
+
+                <!-- Google Pay -->
+                <div class="payment-method" data-method="googlepay" onclick="selectPaymentMethod('googlepay')">
+                    <div class="method-icon">G</div>
+                    <div class="method-name">Google Pay</div>
+                    <div class="method-description">Fast & Secure</div>
+                </div>
+
+                <!-- Airtel Money -->
+                <div class="payment-method" data-method="airtel" onclick="selectPaymentMethod('airtel')">
+                    <div class="method-icon">📶</div>
+                    <div class="method-name">Airtel Money</div>
+                    <div class="method-description">Airtel Payments</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Forms -->
+        <!-- M-Pesa Form -->
+        <div id="mpesa-form" class="payment-form">
+            <div class="mpesa-steps">
+                <strong>How to pay:</strong>
+                <ol>
+                    <li>Enter your M-Pesa phone number</li>
+                    <li>Click "Pay with M-Pesa"</li>
+                    <li>Enter your M-Pesa PIN when prompted</li>
+                    <li>Wait for confirmation</li>
+                </ol>
+            </div>
+            <div class="form-group">
+                <label for="mpesa-phone">M-Pesa Phone Number</label>
+                <div class="phone-input">
+                    <span class="phone-prefix">+254</span>
+                    <input type="tel" id="mpesa-phone" class="form-control" placeholder="7XX XXX XXX" maxlength="9" pattern="[0-9]{9}">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="processMpesaPayment()">
+                📱 Pay with M-Pesa
+            </button>
+        </div>
+
+        <!-- PayPal Form -->
+        <div id="paypal-form" class="payment-form">
+            <div class="form-group">
+                <label>PayPal Email</label>
+                <input type="email" id="paypal-email" class="form-control" placeholder="your-email@example.com">
+            </div>
+            <button class="btn btn-primary" onclick="processPayPalPayment()">
+                💰 Pay with PayPal
+            </button>
+        </div>
+
+        <!-- Credit Card Form -->
+        <div id="creditcard-form" class="payment-form">
+            <div class="form-group">
+                <label for="card-number">Card Number</label>
+                <input type="text" id="card-number" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="card-expiry">Expiry Date</label>
+                    <input type="text" id="card-expiry" class="form-control" placeholder="MM/YY" maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label for="card-cvv">CVV</label>
+                    <input type="text" id="card-cvv" class="form-control" placeholder="123" maxlength="3">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="card-name">Cardholder Name</label>
+                <input type="text" id="card-name" class="form-control" placeholder="John Doe">
+            </div>
+            <button class="btn btn-primary" onclick="processCardPayment('credit')">
+                💳 Pay with Credit Card
+            </button>
+        </div>
+
+        <!-- Debit Card Form -->
+        <div id="debitcard-form" class="payment-form">
+            <div class="form-group">
+                <label for="debit-card-number">Card Number</label>
+                <input type="text" id="debit-card-number" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="debit-card-expiry">Expiry Date</label>
+                    <input type="text" id="debit-card-expiry" class="form-control" placeholder="MM/YY" maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label for="debit-card-cvv">CVV</label>
+                    <input type="text" id="debit-card-cvv" class="form-control" placeholder="123" maxlength="3">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="debit-card-name">Cardholder Name</label>
+                <input type="text" id="debit-card-name" class="form-control" placeholder="John Doe">
+            </div>
+            <button class="btn btn-primary" onclick="processCardPayment('debit')">
+                🏦 Pay with Debit Card
+            </button>
+        </div>
+
+        <!-- Google Pay Form -->
+        <div id="googlepay-form" class="payment-form">
+            <div class="form-group">
+                <label>Google Pay Account</label>
+                <input type="email" id="googlepay-email" class="form-control" placeholder="your-email@gmail.com">
+            </div>
+            <button class="btn btn-primary" onclick="processGooglePayPayment()">
+                G Pay with Google Pay
+            </button>
+        </div>
+
+        <!-- Airtel Money Form -->
+        <div id="airtel-form" class="payment-form">
+            <div class="form-group">
+                <label for="airtel-phone">Airtel Money Number</label>
+                <div class="phone-input">
+                    <span class="phone-prefix">+254</span>
+                    <input type="tel" id="airtel-phone" class="form-control" placeholder="7XX XXX XXX" maxlength="9" pattern="[0-9]{9}">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="processAirtelPayment()">
+                📶 Pay with Airtel Money
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <p>Processing your payment...</p>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="success-message">
+            <div class="success-icon">✅</div>
+            <h3>Payment Successful!</h3>
+            <p>Your appointment has been confirmed.</p>
+            <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                Transaction ID: <span id="transaction-id"></span>
+            </p>
+            <button class="btn btn-secondary" onclick="goToDashboard()" style="margin-top: 20px;">
+                🏠 Go to Dashboard
+            </button>
+        </div>
+
+        <!-- Security Notice -->
+        <div class="security-notice">
+            <i>🔒</i> Your payment is secure and encrypted. We do not store your payment details.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // ==================== INITIALIZATION ====================
+    let selectedMethod = null;
+    const appointmentId = {{ appointment.id }};
+    const amount = {{ doctor.consultation_fee }};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setupEventListeners();
+    });
+
+    // ==================== PAYMENT METHOD SELECTION ====================
+    function selectPaymentMethod(method) {
+        // Remove selected class from all methods
+        document.querySelectorAll('.payment-method').forEach(el => {
+            el.classList.remove('selected');
+        });
+
+        // Hide all forms
+        document.querySelectorAll('.payment-form').forEach(form => {
+            form.classList.remove('active');
+        });
+
+        // Add selected class to clicked method
+        const selectedElement = document.querySelector(`[data-method="${method}"]`);
+        if (selectedElement) {
+            selectedElement.classList.add('selected');
+        }
+
+        // Show corresponding form
+        const formElement = document.getElementById(`${method}-form`);
+        if (formElement) {
+            formElement.classList.add('active');
+        }
+
+        selectedMethod = method;
+    }
+
+    // ==================== VALIDATION FUNCTIONS ====================
+    function validatePhone(phone) {
+        const phoneRegex = /^[0-9]{9}$/;
+        return phoneRegex.test(phone);
+    }
+
+    function validateEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    function validateCardNumber(number) {
+        // Simple Luhn algorithm check
+        const cleaned = number.replace(/\s/g, '');
+        if (!/^\d+$/.test(cleaned)) return false;
+        
+        let sum = 0;
+        let shouldDouble = false;
+        for (let i = cleaned.length - 1; i >= 0; i--) {
+            let digit = parseInt(cleaned.charAt(i));
+            if (shouldDouble) {
+                digit *= 2;
+                if (digit > 9) digit -= 9;
+            }
+            sum += digit;
+            shouldDouble = !shouldDouble;
+        }
+        return sum % 10 === 0;
+    }
+
+    // ==================== UI STATE MANAGEMENT ====================
+    function showLoading() {
+        const loadingElement = document.getElementById('loading');
+        if (loadingElement) {
+            loadingElement.style.display = 'block';
+        }
+        document.querySelectorAll('.payment-form, .payment-methods').forEach(el => {
+            el.style.display = 'none';
+        });
+    }
+
+    function showSuccess(transactionId) {
+        const loadingElement = document.getElementById('loading');
+        const successElement = document.getElementById('success-message');
+        const transactionIdElement = document.getElementById('transaction-id');
+        
+        if (loadingElement) loadingElement.style.display = 'none';
+        if (successElement) successElement.style.display = 'block';
+        if (transactionIdElement) transactionIdElement.textContent = transactionId;
+    }
+
+    function showError(message) {
+        const loadingElement = document.getElementById('loading');
+        if (loadingElement) loadingElement.style.display = 'none';
+        
+        alert('Error: ' + message);
+        
+        // Show forms again
+        document.querySelectorAll('.payment-form, .payment-methods').forEach(el => {
+            el.style.display = 'block';
+        });
+    }
+
+    // ==================== CSRF TOKEN MANAGEMENT ====================
+    function getCSRFToken() {
+        // Method 1: Get from hidden input field
+        const inputToken = document.querySelector('input[name="csrf_token"]')?.value;
+        if (inputToken && inputToken.length > 0) {
+            return inputToken;
+        }
+        
+        // Method 2: Get from hidden input with id
+        const inputById = document.getElementById('csrf_token')?.value;
+        if (inputById && inputById.length > 0) {
+            return inputById;
+        }
+        
+        // Method 3: Get from meta tag
+        const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (metaToken && metaToken.length > 0) {
+            return metaToken;
+        }
+        
+        console.error('CSRF token not found. Please refresh the page.');
+        return '';
+    }
+
+    // ==================== PAYMENT PROCESSING FUNCTIONS ====================
+    async function processMpesaPayment() {
+        const phone = document.getElementById('mpesa-phone')?.value;
+        
+        if (!phone || !validatePhone(phone)) {
+            alert('Please enter a valid M-Pesa phone number (7XX XXX XXX)');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            const response = await fetch('/api/payment/mpesa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    phone: '254' + phone,
+                    amount: amount
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Simulate M-Pesa payment processing
+                setTimeout(() => {
+                    showSuccess(result.transaction_id);
+                }, 3000);
+            } else {
+                showError(result.error || 'M-Pesa payment failed');
+            }
+        } catch (error) {
+            showError('Network error: ' + error.message);
+        }
+    }
+
+    async function processPayPalPayment() {
+        const email = document.getElementById('paypal-email')?.value;
+        
+        if (!email || !validateEmail(email)) {
+            alert('Please enter a valid PayPal email address');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            const response = await fetch('/api/payment/paypal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    email: email,
+                    amount: amount
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                showSuccess(result.transaction_id);
+            } else {
+                showError(result.error || 'PayPal payment failed');
+            }
+        } catch (error) {
+            showError('Network error: ' + error.message);
+        }
+    }
+
+    async function processCardPayment(type) {
+        const cardNumber = document.getElementById(`${type === 'credit' ? 'card' : 'debit-card'}-number`)?.value;
+        const expiry = document.getElementById(`${type === 'credit' ? 'card' : 'debit-card'}-expiry`)?.value;
+        const cvv = document.getElementById(`${type === 'credit' ? 'card' : 'debit-card'}-cvv`)?.value;
+        const name = document.getElementById(`${type === 'credit' ? 'card' : 'debit-card'}-name`)?.value;
+
+        if (!cardNumber || !validateCardNumber(cardNumber)) {
+            alert('Please enter a valid card number');
+            return;
+        }
+
+        if (!expiry || !/^\d{2}\/\d{2}$/.test(expiry)) {
+            alert('Please enter a valid expiry date (MM/YY)');
+            return;
+        }
+
+        if (!cvv || !/^\d{3}$/.test(cvv)) {
+            alert('Please enter a valid CVV');
+            return;
+        }
+
+        if (!name || !name.trim()) {
+            alert('Please enter cardholder name');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            const response = await fetch('/api/payment/card', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    card_number: cardNumber.replace(/\s/g, ''),
+                    expiry: expiry,
+                    cvv: cvv,
+                    name: name,
+                    type: type,
+                    amount: amount
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                showSuccess(result.transaction_id);
+            } else {
+                showError(result.error || 'Card payment failed');
+            }
+        } catch (error) {
+            showError('Network error: ' + error.message);
+        }
+    }
+
+    async function processGooglePayPayment() {
+        const email = document.getElementById('googlepay-email')?.value;
+        
+        if (!email || !validateEmail(email)) {
+            alert('Please enter a valid Google Pay email');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            const response = await fetch('/api/payment/googlepay', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    email: email,
+                    amount: amount
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                showSuccess(result.transaction_id);
+            } else {
+                showError(result.error || 'Google Pay payment failed');
+            }
+        } catch (error) {
+            showError('Network error: ' + error.message);
+        }
+    }
+
+    async function processAirtelPayment() {
+        const phone = document.getElementById('airtel-phone')?.value;
+        
+        if (!phone || !validatePhone(phone)) {
+            alert('Please enter a valid Airtel Money number (7XX XXX XXX)');
+            return;
+        }
+
+        showLoading();
+
+        try {
+            const response = await fetch('/api/payment/airtel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    phone: '254' + phone,
+                    amount: amount
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Simulate Airtel payment processing
+                setTimeout(() => {
+                    showSuccess(result.transaction_id);
+                }, 3000);
+            } else {
+                showError(result.error || 'Airtel Money payment failed');
+            }
+        } catch (error) {
+            showError('Network error: ' + error.message);
+        }
+    }
+
+    // ==================== UTILITY FUNCTIONS ====================
+    function goToDashboard() {
+        window.location.href = '/patient-dashboard';
+    }
+
+    function setupEventListeners() {
+        // Format card number inputs
+        document.getElementById('card-number')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
+            value = value.replace(/(.{4})/g, '$1 ').trim();
+            e.target.value = value.substring(0, 19);
+        });
+
+        document.getElementById('debit-card-number')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
+            value = value.replace(/(.{4})/g, '$1 ').trim();
+            e.target.value = value.substring(0, 19);
+        });
+
+        // Format expiry date inputs
+        document.getElementById('card-expiry')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value.substring(0, 5);
+        });
+
+        document.getElementById('debit-card-expiry')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value.substring(0, 5);
+        });
+
+        // Format phone number inputs
+        document.getElementById('mpesa-phone')?.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '').substring(0, 9);
+        });
+
+        document.getElementById('airtel-phone')?.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '').substring(0, 9);
+        });
+
+        // Escape key to reset forms
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Reset all forms and selections
+                document.querySelectorAll('.payment-method').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                document.querySelectorAll('.payment-form').forEach(form => {
+                    form.classList.remove('active');
+                });
+                selectedMethod = null;
+            }
+        });
+    }
+
+    // ==================== GLOBAL FUNCTION EXPORTS ====================
+    window.selectPaymentMethod = selectPaymentMethod;
+    window.processMpesaPayment = processMpesaPayment;
+    window.processPayPalPayment = processPayPalPayment;
+    window.processCardPayment = processCardPayment;
+    window.processGooglePayPayment = processGooglePayPayment;
+    window.processAirtelPayment = processAirtelPayment;
+    window.goToDashboard = goToDashboard;
+</script>
+{% endblock %}

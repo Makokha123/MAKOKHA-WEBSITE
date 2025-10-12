@@ -1,5 +1,6 @@
 # app.py - ADD THIS AT THE VERY TOP
 import os
+from xml.dom.minidom import Document
 import eventlet
 
 # Monkey patch early to avoid issues
@@ -445,6 +446,23 @@ def format_datetime(dt, format_str="%Y-%m-%d %H:%M:%S %Z"):
     local_dt = convert_to_user_timezone(dt)
     return local_dt.strftime(format_str)
 
+# Add this to your app.py
+def generate_stars(rating):
+    """Generate star rating HTML"""
+    full_stars = int(rating)
+    half_star = 1 if rating - full_stars >= 0.5 else 0
+    empty_stars = 5 - full_stars - half_star
+    
+    stars = '★' * full_stars
+    if half_star:
+        stars += '½'
+    stars += '☆' * empty_stars
+    
+    return f'<span style="color: #fbbf24;">{stars}</span>'
+
+# Make it available to templates
+app.jinja_env.globals.update(generate_stars=generate_stars)
+
 # =============================================================================
 # MODELS (Updated with proper timezone handling)
 # =============================================================================
@@ -453,10 +471,10 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=True)  # Changed to nullable=True
+    password_hash = db.Column(db.String(128), nullable=True)
     google_id = db.Column(db.String(100), unique=True, nullable=True)
     role = db.Column(db.String(20), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())  # FIXED
     last_login = db.Column(db.DateTime)
     login_attempts = db.Column(db.Integer, default=0)
     account_locked_until = db.Column(db.DateTime)
@@ -465,7 +483,6 @@ class User(UserMixin, db.Model):
     # Profile relationships
     patient_profile = db.relationship('Patient', backref='user', uselist=False, cascade='all, delete-orphan')
     doctor_profile = db.relationship('Doctor', backref='user', uselist=False, cascade='all, delete-orphan')
-
     def is_account_locked(self):
         """Check if account is temporarily locked due to failed login attempts"""
         if self.account_locked_until and self.account_locked_until > datetime.utcnow():
@@ -589,10 +606,26 @@ class Doctor(db.Model):
     consultation_fee = db.Column(db.Float, nullable=False)
     available_hours = db.Column(db.Text)
     is_available = db.Column(db.Boolean, default=True)
-    timezone = db.Column(db.String(50), default='UTC')  # Doctor's timezone
-    
+    timezone = db.Column(db.String(50), default='UTC')
+    experience = db.Column(db.Integer, default=5)  # Years of experience
+    average_rating = db.Column(db.Float, default=0.0)
+    review_count = db.Column(db.Integer, default=0)
+    response_time = db.Column(db.String(50), default='< 1 hour')
+    patient_count = db.Column(db.Integer, default=0)
+    is_featured = db.Column(db.Boolean, default=False)
+    education = db.Column(db.Text)  # Educational background
+    certifications = db.Column(db.Text)  # Certifications
+    languages = db.Column(db.String(200), default='English, Swahili')
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     appointments = db.relationship('Appointment', backref='doctor', lazy=True, cascade='all, delete-orphan')
-
+    
+    def get_initials(self):
+        """Get doctor initials for avatar"""
+        first_initial = self.first_name[0] if self.first_name else ''
+        last_initial = self.last_name[0] if self.last_name else ''
+        return f"{first_initial}{last_initial}"
+        
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id', ondelete='CASCADE'), nullable=False)
@@ -699,6 +732,108 @@ class VoiceRecording(db.Model):
     file_size = db.Column(db.Integer)
     duration = db.Column(db.Integer)  # in seconds
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# =============================================================================
+# INITIALIZATION AND SAMPLE DATA - FIXED VERSION
+# =============================================================================
+
+def init_db():
+    """Initialize the database with sample data - FIXED VERSION"""
+    with app.app_context():
+        try:
+            # Create all tables first
+            print("🔄 Creating database tables...")
+            db.create_all()
+            print("✅ Database tables created successfully!")
+            
+            # Check if admin user already exists
+            admin_user = User.query.filter_by(email='admin@makokha.com').first()
+            if not admin_user:
+                print("🔄 Creating admin user...")
+                admin_user = User(
+                    email='admin@makokha.com',
+                    username='admin',
+                    role='admin',
+                    timezone='Africa/Nairobi'
+                )
+                admin_user.set_password('Admin123!')
+                db.session.add(admin_user)
+                db.session.commit()
+                print("✅ Admin user created: admin@makokha.com / Admin123!")
+            else:
+                print("ℹ️ Admin user already exists")
+            
+            # Create sample doctor
+            doctor_user = User.query.filter_by(email='doctor@makokha.com').first()
+            if not doctor_user:
+                print("🔄 Creating doctor user...")
+                doctor_user = User(
+                    email='doctor@makokha.com',
+                    username='drjohn',
+                    role='doctor',
+                    timezone='Africa/Nairobi'
+                )
+                doctor_user.set_password('Doctor123!')
+                db.session.add(doctor_user)
+                db.session.commit()
+                
+                # Create doctor profile
+                doctor = Doctor(
+                    user_id=doctor_user.id,
+                    first_name='John',
+                    last_name='Mwangi',
+                    specialization='Cardiologist',
+                    license_number='MED-12345',
+                    consultation_fee=2500.00,
+                    bio='Experienced cardiologist with 10+ years of practice.',
+                    available_hours='Mon-Fri: 9AM-5PM',
+                    timezone='Africa/Nairobi'
+                )
+                db.session.add(doctor)
+                db.session.commit()
+                print("✅ Sample doctor created: doctor@makokha.com / Doctor123!")
+            else:
+                print("ℹ️ Doctor user already exists")
+            
+            # Create sample patient
+            patient_user = User.query.filter_by(email='patient@makokha.com').first()
+            if not patient_user:
+                print("🔄 Creating patient user...")
+                patient_user = User(
+                    email='patient@makokha.com',
+                    username='patient1',
+                    role='patient',
+                    timezone='Africa/Nairobi'
+                )
+                patient_user.set_password('Patient123!')
+                db.session.add(patient_user)
+                db.session.commit()
+                
+                # Create patient profile
+                patient = Patient(
+                    user_id=patient_user.id,
+                    first_name='Mary',
+                    last_name='Wanjiku',
+                    phone='+254712345678',
+                    medical_history='No significant medical history'
+                )
+                db.session.add(patient)
+                db.session.commit()
+                print("✅ Sample patient created: patient@makokha.com / Patient123!")
+            else:
+                print("ℹ️ Patient user already exists")
+            
+            print("🎉 Database initialized successfully!")
+            
+        except Exception as e:
+            print(f"❌ Database initialization error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            db.session.rollback()
+            raise e
+
+
+
 
 # =============================================================================
 # UTILITY FUNCTIONS (Updated)
@@ -1913,6 +2048,245 @@ def utility_processor():
 # =============================================================================
 # PAYMENT ROUTES
 # =============================================================================
+@app.route('/api/payment/mpesa', methods=['POST'])
+@login_required
+def process_mpesa_payment():
+    """Process M-Pesa payment"""
+    try:
+        data = request.json
+        appointment_id = data.get('appointment_id')
+        phone = data.get('phone')
+        amount = data.get('amount')
+        
+        # Validate input
+        if not all([appointment_id, phone, amount]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # In a real implementation, integrate with M-Pesa API
+        # For demo purposes, simulate successful payment
+        transaction_id = f"MPESA_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        # Update appointment payment status
+        appointment = Appointment.query.get(appointment_id)
+        if appointment:
+            appointment.payment_status = 'completed'
+            appointment.payment_reference = transaction_id
+            
+            # Create payment record
+            payment = Payment(
+                appointment_id=appointment_id,
+                amount=amount,
+                payment_method='mpesa',
+                transaction_id=transaction_id,
+                status='completed'
+            )
+            db.session.add(payment)
+            db.session.commit()
+            
+            log_audit('payment_processed', current_user.id, f'M-Pesa: {transaction_id}')
+            return jsonify({'success': True, 'transaction_id': transaction_id})
+        else:
+            return jsonify({'success': False, 'error': 'Appointment not found'}), 404
+            
+    except Exception as e:
+        app.logger.error(f"M-Pesa payment error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Payment processing failed'}), 500
+
+@app.route('/api/payment/paypal', methods=['POST'])
+@login_required
+def process_paypal_payment():
+    """Process PayPal payment"""
+    try:
+        data = request.json
+        appointment_id = data.get('appointment_id')
+        email = data.get('email')
+        amount = data.get('amount')
+        
+        # Validate input
+        if not all([appointment_id, email, amount]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Simulate PayPal payment processing
+        transaction_id = f"PAYPAL_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        # Update appointment payment status
+        appointment = Appointment.query.get(appointment_id)
+        if appointment:
+            appointment.payment_status = 'completed'
+            appointment.payment_reference = transaction_id
+            
+            # Create payment record
+            payment = Payment(
+                appointment_id=appointment_id,
+                amount=amount,
+                payment_method='paypal',
+                transaction_id=transaction_id,
+                status='completed'
+            )
+            db.session.add(payment)
+            db.session.commit()
+            
+            log_audit('payment_processed', current_user.id, f'PayPal: {transaction_id}')
+            return jsonify({'success': True, 'transaction_id': transaction_id})
+        else:
+            return jsonify({'success': False, 'error': 'Appointment not found'}), 404
+            
+    except Exception as e:
+        app.logger.error(f"PayPal payment error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Payment processing failed'}), 500
+
+@app.route('/api/payment/card', methods=['POST'])
+@login_required
+def process_card_payment():
+    """Process credit/debit card payment"""
+    try:
+        data = request.json
+        appointment_id = data.get('appointment_id')
+        card_number = data.get('card_number')
+        expiry = data.get('expiry')
+        cvv = data.get('cvv')
+        name = data.get('name')
+        card_type = data.get('type')
+        amount = data.get('amount')
+        
+        # Validate input
+        if not all([appointment_id, card_number, expiry, cvv, name, card_type, amount]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Simulate card payment processing
+        transaction_id = f"{card_type.upper()}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        # Update appointment payment status
+        appointment = Appointment.query.get(appointment_id)
+        if appointment:
+            appointment.payment_status = 'completed'
+            appointment.payment_reference = transaction_id
+            
+            # Create payment record
+            payment = Payment(
+                appointment_id=appointment_id,
+                amount=amount,
+                payment_method=f'{card_type}_card',
+                transaction_id=transaction_id,
+                status='completed'
+            )
+            db.session.add(payment)
+            db.session.commit()
+            
+            log_audit('payment_processed', current_user.id, f'{card_type} card: {transaction_id}')
+            return jsonify({'success': True, 'transaction_id': transaction_id})
+        else:
+            return jsonify({'success': False, 'error': 'Appointment not found'}), 404
+            
+    except Exception as e:
+        app.logger.error(f"Card payment error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Payment processing failed'}), 500
+
+@app.route('/api/payment/googlepay', methods=['POST'])
+@login_required
+def process_googlepay_payment():
+    """Process Google Pay payment"""
+    try:
+        data = request.json
+        appointment_id = data.get('appointment_id')
+        email = data.get('email')
+        amount = data.get('amount')
+        
+        # Validate input
+        if not all([appointment_id, email, amount]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Simulate Google Pay payment processing
+        transaction_id = f"GOOGLEPAY_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        # Update appointment payment status
+        appointment = Appointment.query.get(appointment_id)
+        if appointment:
+            appointment.payment_status = 'completed'
+            appointment.payment_reference = transaction_id
+            
+            # Create payment record
+            payment = Payment(
+                appointment_id=appointment_id,
+                amount=amount,
+                payment_method='googlepay',
+                transaction_id=transaction_id,
+                status='completed'
+            )
+            db.session.add(payment)
+            db.session.commit()
+            
+            log_audit('payment_processed', current_user.id, f'Google Pay: {transaction_id}')
+            return jsonify({'success': True, 'transaction_id': transaction_id})
+        else:
+            return jsonify({'success': False, 'error': 'Appointment not found'}), 404
+            
+    except Exception as e:
+        app.logger.error(f"Google Pay payment error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Payment processing failed'}), 500
+
+@app.route('/api/payment/airtel', methods=['POST'])
+@login_required
+def process_airtel_payment():
+    """Process Airtel Money payment"""
+    try:
+        data = request.json
+        appointment_id = data.get('appointment_id')
+        phone = data.get('phone')
+        amount = data.get('amount')
+        
+        # Validate input
+        if not all([appointment_id, phone, amount]):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        # Simulate Airtel Money payment processing
+        transaction_id = f"AIRTEL_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        # Update appointment payment status
+        appointment = Appointment.query.get(appointment_id)
+        if appointment:
+            appointment.payment_status = 'completed'
+            appointment.payment_reference = transaction_id
+            
+            # Create payment record
+            payment = Payment(
+                appointment_id=appointment_id,
+                amount=amount,
+                payment_method='airtel',
+                transaction_id=transaction_id,
+                status='completed'
+            )
+            db.session.add(payment)
+            db.session.commit()
+            
+            log_audit('payment_processed', current_user.id, f'Airtel Money: {transaction_id}')
+            return jsonify({'success': True, 'transaction_id': transaction_id})
+        else:
+            return jsonify({'success': False, 'error': 'Appointment not found'}), 404
+            
+    except Exception as e:
+        app.logger.error(f"Airtel Money payment error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Payment processing failed'}), 500
+@app.route('/payment/<int:appointment_id>')
+@login_required
+def payment_page(appointment_id):
+    """Payment page for appointments"""
+    try:
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            flash('Access denied', 'error')
+            return redirect(url_for('patient_dashboard'))
+        
+        return render_template('payment.html', 
+                             appointment=appointment,
+                             doctor=appointment.doctor)
+    
+    except Exception as e:
+        app.logger.error(f"Error loading payment page: {str(e)}")
+        flash('Error loading payment page', 'error')
+        return redirect(url_for('patient_dashboard'))
 
 @app.route('/create-payment-intent', methods=['POST'])
 @login_required
@@ -2797,89 +3171,6 @@ def upload_message_file():
         app.logger.error(f"Error uploading message file: {str(e)}")
         return jsonify({'error': 'Failed to upload file'}), 500
 
-# =============================================================================
-# INITIALIZATION AND SAMPLE DATA
-# =============================================================================
-
-def init_db():
-    """Initialize the database with sample data"""
-    with app.app_context():
-        try:
-            # Create all tables
-            db.create_all()
-            print("✅ Database tables created successfully!")
-            
-            # Create admin user if not exists
-            admin_user = User.query.filter_by(email='admin@makokha.com').first()
-            if not admin_user:
-                admin_user = User(
-                    email='admin@makokha.com',
-                    username='admin',
-                    role='admin',
-                    timezone='Africa/Nairobi'
-                )
-                admin_user.set_password('Admin123!')
-                db.session.add(admin_user)
-                db.session.commit()
-                print("✅ Admin user created: admin@makokha.com / Admin123!")
-            
-            # Create sample doctor
-            doctor_user = User.query.filter_by(email='doctor@makokha.com').first()
-            if not doctor_user:
-                doctor_user = User(
-                    email='doctor@makokha.com',
-                    username='drjohn',
-                    role='doctor',
-                    timezone='Africa/Nairobi'
-                )
-                doctor_user.set_password('Doctor123!')
-                db.session.add(doctor_user)
-                db.session.commit()
-                
-                doctor = Doctor(
-                    user_id=doctor_user.id,
-                    first_name='John',
-                    last_name='Mwangi',
-                    specialization='Cardiologist',
-                    license_number='MED-12345',
-                    consultation_fee=2500.00,
-                    bio='Experienced cardiologist with 10+ years of practice.',
-                    available_hours='Mon-Fri: 9AM-5PM',
-                    timezone='Africa/Nairobi'
-                )
-                db.session.add(doctor)
-                db.session.commit()
-                print("✅ Sample doctor created: doctor@makokha.com / Doctor123!")
-            
-            # Create sample patient
-            patient_user = User.query.filter_by(email='patient@makokha.com').first()
-            if not patient_user:
-                patient_user = User(
-                    email='patient@makokha.com',
-                    username='patient1',
-                    role='patient',
-                    timezone='Africa/Nairobi'
-                )
-                patient_user.set_password('Patient123!')
-                db.session.add(patient_user)
-                db.session.commit()
-                
-                patient = Patient(
-                    user_id=patient_user.id,
-                    first_name='Mary',
-                    last_name='Wanjiku',
-                    phone='+254712345678',
-                    medical_history='No significant medical history'
-                )
-                db.session.add(patient)
-                db.session.commit()
-                print("✅ Sample patient created: patient@makokha.com / Patient123!")
-            
-            print("🎉 Database initialized successfully!")
-            
-        except Exception as e:
-            print(f"❌ Database initialization error: {str(e)}")
-            db.session.rollback()
 
 # =============================================================================
 # PROFILE ROUTES
@@ -3079,6 +3370,11 @@ def my_appointments():
                          appointments=appointments,
                          format_datetime=format_datetime)
 
+from datetime import datetime, timedelta
+
+from datetime import datetime, timedelta
+from sqlalchemy import func
+
 @app.route('/my-documents')
 @login_required
 def my_documents():
@@ -3087,17 +3383,122 @@ def my_documents():
         flash('Access denied', 'error')
         return redirect(url_for('index'))
     
-    documents = PatientDocument.query.filter_by(
-        patient_id=current_user.patient_profile.id
-    ).order_by(PatientDocument.uploaded_at.desc()).all()
-    
-    return render_template('patient_documents.html', documents=documents)
+    try:
+        # Get all documents for the patient
+        documents = PatientDocument.query.filter_by(
+            patient_id=current_user.patient_profile.id
+        ).order_by(PatientDocument.uploaded_at.desc()).all()
 
+        # Calculate recent uploads count (last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        recent_uploads_count = PatientDocument.query.filter(
+            PatientDocument.patient_id == current_user.patient_profile.id,
+            PatientDocument.uploaded_at >= thirty_days_ago
+        ).count()
+        
+        # Pass thirty_days_ago to the template
+        return render_template('patient_documents.html', 
+                             documents=documents,
+                             recent_uploads_count=recent_uploads_count,
+                             thirty_days_ago=thirty_days_ago)
+        
+    except Exception as e:
+        print(f"Error in my_documents: {e}")
+        # Fallback with safe values
+        return render_template('patient_documents.html', 
+                             documents=[],
+                             recent_uploads_count=0,
+                             thirty_days_ago=datetime.utcnow() - timedelta(days=30))
+ 
+@app.route('/api/doctors/featured')
+@login_required
+def get_featured_doctors():
+    """Get featured doctors"""
+    try:
+        featured_doctors = Doctor.query.filter_by(
+            is_featured=True, 
+            is_available=True
+        ).limit(6).all()
+        
+        doctors_data = []
+        for doctor in featured_doctors:
+            doctors_data.append({
+                'id': doctor.id,
+                'name': f'Dr. {doctor.first_name} {doctor.last_name}',
+                'specialization': doctor.specialization,
+                'consultation_fee': doctor.consultation_fee,
+                'experience': doctor.experience,
+                'rating': doctor.average_rating,
+                'review_count': doctor.review_count,
+                'bio': doctor.bio,
+                'image_url': f'/static/images/doctors/{doctor.id}.jpg'  # Adjust path as needed
+            })
+        
+        return jsonify(doctors_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting featured doctors: {str(e)}")
+        return jsonify({'error': 'Failed to load featured doctors'}), 500
+
+@app.route('/api/doctors/recent')
+@login_required
+def get_recent_doctors():
+    """Get recently added doctors"""
+    try:
+        recent_doctors = Doctor.query.filter_by(is_available=True)\
+                                   .order_by(Doctor.created_at.desc())\
+                                   .limit(6).all()
+        
+        doctors_data = []
+        for doctor in recent_doctors:
+            doctors_data.append({
+                'id': doctor.id,
+                'name': f'Dr. {doctor.first_name} {doctor.last_name}',
+                'specialization': doctor.specialization,
+                'consultation_fee': doctor.consultation_fee,
+                'experience': doctor.experience,
+                'rating': doctor.average_rating,
+                'created_at': doctor.created_at.isoformat() if doctor.created_at else None
+            })
+        
+        return jsonify(doctors_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting recent doctors: {str(e)}")
+        return jsonify({'error': 'Failed to load recent doctors'}), 500
+    
 @app.route('/find-doctors')
 @login_required
 def find_doctors():
-    """Find doctors page"""
-    doctors = Doctor.query.filter_by(is_available=True).all()
+    try:
+        # Use is_available instead of is_active
+        doctors = Doctor.query.filter_by(is_available=True).all()
+    except Exception as e:
+        print(f"Error fetching doctors: {e}")
+        # Fallback to empty list if there's an error
+        doctors = []
+    
+    # Ensure all doctors have safe default values for template rendering
+    for doctor in doctors:
+        doctor.first_name = doctor.first_name or ''
+        doctor.last_name = doctor.last_name or ''
+        doctor.specialization = doctor.specialization or 'General Practitioner'
+        doctor.consultation_fee = getattr(doctor, 'consultation_fee', 0.0) or 0.0
+        doctor.bio = doctor.bio or ''
+        # Add any missing attributes that your template expects
+        if not hasattr(doctor, 'experience'):
+            doctor.experience = '5'  # Default value
+        if not hasattr(doctor, 'average_rating'):
+            doctor.average_rating = 0.0
+        if not hasattr(doctor, 'review_count'):
+            doctor.review_count = 0
+        if not hasattr(doctor, 'response_time'):
+            doctor.response_time = '< 1 hour'
+        if not hasattr(doctor, 'patient_count'):
+            doctor.patient_count = '100+'
+        if not hasattr(doctor, 'is_featured'):
+            doctor.is_featured = False
+    
     return render_template('find_doctors.html', doctors=doctors)
 
 # =============================================================================
@@ -3492,15 +3893,64 @@ def create_app():
     """Application factory for production"""
     return app
 
-# Production server configuration
+# =============================================================================
+# APPLICATION STARTUP
+# =============================================================================
+
+def initialize_application():
+    """Initialize the application and database - FIXED VERSION"""
+    with app.app_context():
+        try:
+            print("🔄 Starting application initialization...")
+            
+            # Import all models to ensure they are registered with SQLAlchemy
+            from app import User, Patient, Doctor, Appointment, Message, Payment, PatientDocument, AuditLog, VoiceCall, VoiceRecording
+            
+            # Create tables if they don't exist
+            print("🔄 Creating database tables...")
+            db.create_all()
+            print("✅ Database tables checked/created successfully!")
+            
+            # Initialize with sample data
+            print("🔄 Initializing sample data...")
+            init_db()
+            
+            print("🎉 Application initialized successfully!")
+            
+        except Exception as e:
+            print(f"❌ Application initialization error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
+
+# =============================================================================
+# PRODUCTION SERVER CONFIGURATION - FIXED
+# =============================================================================
+
+def create_app():
+    """Application factory for production"""
+    return app
+
 if __name__ == '__main__':
-    # Use different servers for development vs production
-    if os.environ.get('RENDER') or os.environ.get('FLASK_ENV') == 'production':
-        # Production: Use Waitress (better for Render)
-        from waitress import serve
-        print("🚀 Starting production server with Waitress...")
-        serve(app, host='0.0.0.0', port=5000)
-    else:
-        # Development: Use Flask development server with SocketIO
-        print("🚀 Starting development server with Flask...")
-        socketio.run(app, debug=True, host='0.0.0.0', port=5000, log_output=True)
+    try:
+        # Initialize the application
+        print("🚀 Starting Makokha Medical Centre Application...")
+        initialize_application()
+        
+        # Use different servers for development vs production
+        if os.environ.get('RENDER') or os.environ.get('FLASK_ENV') == 'production':
+            # Production: Use Waitress (better for Render)
+            from waitress import serve
+            print("🚀 Starting production server with Waitress...")
+            print(f"📊 Database URL: {app.config['SQLALCHEMY_DATABASE_URI'].split('@')[1] if '@' in app.config['SQLALCHEMY_DATABASE_URI'] else 'SQLite'}")
+            serve(app, host='0.0.0.0', port=5000)
+        else:
+            # Development: Use Flask development server with SocketIO
+            print("🚀 Starting development server with Flask...")
+            print(f"📊 Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
+            socketio.run(app, debug=True, host='0.0.0.0', port=5000, log_output=True)
+            
+    except Exception as e:
+        print(f"💥 Failed to start application: {str(e)}")
+        import traceback
+        traceback.print_exc()

@@ -2,128 +2,1099 @@
 
 {% block title %}My Appointments - Makokha Medical Centre{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dashboard-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        min-height: 100vh;
+    }
+
+    .main-content {
+        padding: 2rem;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .welcome-message h1 {
+        font-size: 2rem;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .welcome-message p {
+        color: #718096;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #5a6fd8;
+    }
+
+    .btn-secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .btn-secondary:hover {
+        background: #cbd5e0;
+    }
+
+    .section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+        color: #2d3748;
+    }
+
+    .section-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table th {
+        background: #f7fafc;
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    .table tr:hover {
+        background: #f7fafc;
+    }
+
+    .status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .status-scheduled { background: #fed7d7; color: #742a2a; }
+    .status-confirmed { background: #c6f6d5; color: #22543d; }
+    .status-completed { background: #bee3f8; color: #1a365d; }
+    .status-cancelled { background: #e2e8f0; color: #4a5568; }
+
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .action-btn.primary {
+        background: #667eea;
+        color: white;
+    }
+
+    .action-btn.primary:hover {
+        background: #5a6fd8;
+    }
+
+    .action-btn.secondary {
+        background: #e2e8f0;
+        color: #4a5568;
+    }
+
+    .action-btn.secondary:hover {
+        background: #cbd5e0;
+    }
+
+    .action-btn.danger {
+        background: #f56565;
+        color: white;
+    }
+
+    .action-btn.danger:hover {
+        background: #e53e3e;
+    }
+
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal.active {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .modal-header h3 {
+        font-size: 1.5rem;
+        color: #2d3748;
+    }
+
+    .close-modal {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #718096;
+    }
+
+    .close-modal:hover {
+        color: #2d3748;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    /* Doctor Details Modal */
+    .doctor-details-modal .modal-content {
+        max-width: 800px;
+    }
+
+    .doctor-profile-header {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .doctor-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: #667eea;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+    }
+
+    .doctor-info h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #2d3748;
+    }
+
+    .doctor-specialization {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .doctor-rating {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stars {
+        color: #fbbf24;
+    }
+
+    .rating-text {
+        color: #718096;
+    }
+
+    .doctor-details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .detail-card {
+        background: #f7fafc;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+    }
+
+    .detail-card h4 {
+        margin-bottom: 1rem;
+        color: #2d3748;
+    }
+
+    .reviews-section {
+        margin-top: 2rem;
+    }
+
+    .review-item {
+        padding: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .review-patient {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .review-rating {
+        color: #fbbf24;
+    }
+
+    .review-comment {
+        color: #4a5568;
+        line-height: 1.5;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #718096;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            padding: 1rem;
+        }
+
+        .header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .doctor-details-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .section-actions {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .section-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">My Appointments</h1>
-                <a href="{{ url_for('find_doctors') }}" class="btn btn-primary">
-                    <i class="fas fa-calendar-plus"></i> Book New Appointment
-                </a>
-            </div>
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="header">
+        <div class="welcome-message">
+            <h1>My Appointments</h1>
+            <p>Manage your medical appointments</p>
+        </div>
+        <div class="user-menu">
+            <a href="{{ url_for('find_doctors') }}" class="btn btn-primary">
+                📅 Book New Appointment
+            </a>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">All Appointments</h5>
-                </div>
-                <div class="card-body">
-                    {% if appointments %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Doctor</th>
-                                    <th>Specialization</th>
-                                    <th>Date & Time</th>
-                                    <th>Status</th>
-                                    <th>Payment</th>
-                                    <th>Symptoms</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for appointment in appointments %}
-                                <tr>
-                                    <td>
-                                        <strong>Dr. {{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}</strong>
-                                    </td>
-                                    <td>{{ appointment.doctor.specialization }}</td>
-                                    <td>
-                                        {% if appointment.local_time %}
-                                            {{ appointment.local_time.strftime('%Y-%m-%d %H:%M') }}
-                                        {% else %}
-                                            {{ format_datetime(appointment.appointment_date) }}
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge 
-                                            {% if appointment.status == 'scheduled' %}bg-primary
-                                            {% elif appointment.status == 'confirmed' %}bg-success
-                                            {% elif appointment.status == 'completed' %}bg-secondary
-                                            {% elif appointment.status == 'cancelled' %}bg-danger
-                                            {% else %}bg-warning{% endif %}">
-                                            {{ appointment.status|title }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge 
-                                            {% if appointment.payment_status == 'completed' %}bg-success
-                                            {% elif appointment.payment_status == 'pending' %}bg-warning
-                                            {% else %}bg-secondary{% endif %}">
-                                            {{ appointment.payment_status|title }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if appointment.symptoms %}
-                                            {{ appointment.symptoms[:50] }}{% if appointment.symptoms|length > 50 %}...{% endif %}
-                                        {% else %}
-                                            <span class="text-muted">No symptoms listed</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('communication') }}?appointment_id={{ appointment.id }}" 
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-comments"></i> Chat
-                                            </a>
-                                            {% if appointment.payment_status == 'completed' %}
-                                            <a href="{{ url_for('video_call', appointment_id=appointment.id) }}" 
-                                               class="btn btn-sm btn-outline-success">
-                                                <i class="fas fa-video"></i> Video
-                                            </a>
-                                            {% endif %}
-                                            {% if appointment.status == 'scheduled' %}
-                                            <button class="btn btn-sm btn-outline-danger" 
-                                                    onclick="cancelAppointment({{ appointment.id }})">
-                                                <i class="fas fa-times"></i> Cancel
-                                            </button>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                        <h5>No appointments found</h5>
-                        <p class="text-muted">You don't have any appointments scheduled yet.</p>
-                        <a href="{{ url_for('find_doctors') }}" class="btn btn-primary">
-                            <i class="fas fa-calendar-plus"></i> Book Your First Appointment
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
+    <!-- Appointments Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Appointment History</h2>
+            <div class="section-actions">
+                <button class="btn btn-secondary" onclick="refreshAppointments()">
+                    🔄 Refresh
+                </button>
             </div>
         </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Doctor</th>
+                        <th>Date & Time</th>
+                        <th>Specialization</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="appointmentsTableBody">
+                    {% for appointment in appointments %}
+                    <tr>
+                        <td>
+                            <strong>Dr. {{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}</strong>
+                            <br>
+                            <button class="action-btn secondary" style="padding: 0.25rem 0.5rem; margin-top: 0.25rem;" 
+                                    onclick="viewDoctorDetails({{ appointment.doctor.id }})">
+                                👁️ View Profile
+                            </button>
+                        </td>
+                        <td>
+                            {% if appointment.local_time %}
+                                {{ appointment.local_time.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                {{ format_datetime(appointment.appointment_date) }}
+                            {% endif %}
+                        </td>
+                        <td>{{ appointment.doctor.specialization }}</td>
+                        <td>
+                            <span class="status status-{{ appointment.status }}">
+                                {{ appointment.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status status-{{ appointment.payment_status }}">
+                                {{ appointment.payment_status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                {% if appointment.status == 'scheduled' %}
+                                <button class="action-btn primary" 
+                                        onclick="confirmAppointment({{ appointment.id }})">
+                                    ✅ Confirm
+                                </button>
+                                <button class="action-btn danger" 
+                                        onclick="cancelAppointment({{ appointment.id }})">
+                                    ❌ Cancel
+                                </button>
+                                {% endif %}
+                                
+                                {% if appointment.status == 'confirmed' and appointment.payment_status == 'completed' %}
+                                <button class="action-btn secondary"
+                                        onclick="startVideoCall({{ appointment.id }})">
+                                    📹 Video Call
+                                </button>
+                                <button class="action-btn secondary"
+                                        onclick="startVoiceCall({{ appointment.id }})">
+                                    📞 Voice Call
+                                </button>
+                                <a href="{{ url_for('communication') }}?appointment_id={{ appointment.id }}" 
+                                   class="action-btn secondary">
+                                    💬 Message
+                                </a>
+                                {% elif appointment.status == 'confirmed' %}
+                                <button class="action-btn primary"
+                                        onclick="makePayment({{ appointment.id }})">
+                                    💳 Pay Now
+                                </button>
+                                {% endif %}
+
+                                {% if appointment.status == 'completed' %}
+                                <button class="action-btn secondary"
+                                        onclick="addReview({{ appointment.doctor.id }})">
+                                    ⭐ Review
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #718096; padding: 2rem;">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📅</div>
+                                <h4>No Appointments Found</h4>
+                                <p>You haven't booked any appointments yet.</p>
+                                <a href="{{ url_for('find_doctors') }}" class="btn btn-primary" style="margin-top: 1rem;">
+                                    📅 Book Your First Appointment
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Upcoming Appointments Section -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Upcoming Appointments</h2>
+        </div>
+        <div id="upcomingAppointmentsList">
+            <!-- Will be populated by JavaScript -->
+            <div class="empty-state">
+                <div class="empty-state-icon">⏰</div>
+                <p>Loading upcoming appointments...</p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Doctor Details Modal -->
+<div id="doctorDetailsModal" class="modal doctor-details-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Doctor Profile</h3>
+            <button class="close-modal" onclick="closeDoctorDetailsModal()">×</button>
+        </div>
+        <div id="doctorDetailsContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Book Appointment Modal -->
+<div id="bookAppointmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Book Appointment</h3>
+            <button class="close-modal" onclick="closeBookAppointmentModal()">×</button>
+        </div>
+        <form id="appointmentForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="doctorSelect">Select Doctor</label>
+                <select id="doctorSelect" class="form-control" required>
+                    <option value="">Choose a doctor...</option>
+                    {% for doctor in doctors %}
+                        {% if doctor.is_available %}
+                        <option value="{{ doctor.id }}" data-fee="{{ doctor.consultation_fee }}">
+                            Dr. {{ doctor.first_name }} {{ doctor.last_name }} - {{ doctor.specialization }} (KES {{ "%.2f"|format(doctor.consultation_fee) }})
+                        </option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="appointmentDate">Appointment Date & Time</label>
+                <input type="datetime-local" id="appointmentDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="symptoms">Symptoms / Reason for Visit</label>
+                <textarea id="symptoms" class="form-control" placeholder="Describe your symptoms or reason for consultation..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Consultation Fee: <span id="consultationFee">KES 0.00</span></label>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeBookAppointmentModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Book Appointment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Review Modal -->
+<div id="reviewModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Review</h3>
+            <button class="close-modal" onclick="closeReviewModal()">×</button>
+        </div>
+        <form id="reviewForm">
+            <input type="hidden" id="reviewDoctorId" name="doctor_id">
+            <div class="form-group">
+                <label>Rating</label>
+                <div class="rating-stars" style="font-size: 2rem; color: #e2e8f0; cursor: pointer;">
+                    <span onclick="setRating(1)">★</span>
+                    <span onclick="setRating(2)">★</span>
+                    <span onclick="setRating(3)">★</span>
+                    <span onclick="setRating(4)">★</span>
+                    <span onclick="setRating(5)">★</span>
+                </div>
+                <input type="hidden" id="ratingValue" name="rating" value="0">
+            </div>
+            <div class="form-group">
+                <label for="reviewComment">Your Review</label>
+                <textarea id="reviewComment" class="form-control" placeholder="Share your experience with this doctor..." required></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeReviewModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit Review</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function cancelAppointment(appointmentId) {
-    if (confirm('Are you sure you want to cancel this appointment?')) {
-        alert('Appointment cancellation functionality would be implemented for appointment ID: ' + appointmentId);
-        // In a real implementation, you would make an API call to cancel the appointment
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        loadUpcomingAppointments();
+        setupEventListeners();
+    });
+
+    // ==================== APPOINTMENT MANAGEMENT ====================
+    async function confirmAppointment(appointmentId) {
+        if (!confirm('Are you sure you want to confirm this appointment?')) return;
+
+        try {
+            const response = await fetch(`/confirm-appointment/${appointmentId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                }
+            });
+
+            if (response.ok) {
+                showNotification('Appointment confirmed successfully!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                const result = await response.json();
+                showNotification('Error: ' + (result.error || 'Failed to confirm appointment'), 'error');
+            }
+        } catch (error) {
+            showNotification('Error confirming appointment: ' + error.message, 'error');
+        }
     }
-}
+
+    async function cancelAppointment(appointmentId) {
+        if (!confirm('Are you sure you want to cancel this appointment?')) return;
+
+        try {
+            const response = await fetch(`/cancel-appointment/${appointmentId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                }
+            });
+
+            if (response.ok) {
+                showNotification('Appointment cancelled successfully!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                const result = await response.json();
+                showNotification('Error: ' + (result.error || 'Failed to cancel appointment'), 'error');
+            }
+        } catch (error) {
+            showNotification('Error cancelling appointment: ' + error.message, 'error');
+        }
+    }
+
+    async function makePayment(appointmentId) {
+        // Redirect to payment page or open payment modal
+        window.open(`/payment/${appointmentId}`, '_blank');
+    }
+
+    // ==================== DOCTOR DETAILS ====================
+    async function viewDoctorDetails(doctorId) {
+        try {
+            const response = await fetch(`/api/doctors/${doctorId}/details`);
+            if (response.ok) {
+                const doctor = await response.json();
+                displayDoctorDetails(doctor);
+            } else {
+                showNotification('Failed to load doctor details', 'error');
+            }
+        } catch (error) {
+            showNotification('Error loading doctor details: ' + error.message, 'error');
+        }
+    }
+
+    function displayDoctorDetails(doctor) {
+        const content = document.getElementById('doctorDetailsContent');
+        if (!content) return;
+
+        content.innerHTML = `
+            <div class="doctor-profile-header">
+                <div class="doctor-avatar">
+                    ${doctor.first_name.charAt(0)}${doctor.last_name.charAt(0)}
+                </div>
+                <div class="doctor-info">
+                    <h3>Dr. ${escapeHtml(doctor.first_name)} ${escapeHtml(doctor.last_name)}</h3>
+                    <div class="doctor-specialization">${escapeHtml(doctor.specialization)}</div>
+                    <div class="doctor-rating">
+                        <div class="stars">${generateStars(doctor.average_rating || 0)}</div>
+                        <span class="rating-text">${doctor.average_rating || 'No'} rating (${doctor.review_count || 0} reviews)</span>
+                    </div>
+                    <div style="color: #718096; margin-bottom: 1rem;">
+                        ${doctor.bio || 'No bio available'}
+                    </div>
+                    <button class="btn btn-primary" onclick="bookWithDoctor(${doctor.id})">
+                        📅 Book Appointment
+                    </button>
+                </div>
+            </div>
+
+            <div class="doctor-details-grid">
+                <div class="detail-card">
+                    <h4>Professional Information</h4>
+                    <p><strong>License:</strong> ${doctor.license_number || 'Not specified'}</p>
+                    <p><strong>Experience:</strong> ${doctor.experience || 'Not specified'}</p>
+                    <p><strong>Consultation Fee:</strong> KES ${(doctor.consultation_fee || 0).toFixed(2)}</p>
+                </div>
+
+                <div class="detail-card">
+                    <h4>Availability</h4>
+                    <p><strong>Status:</strong> ${doctor.is_available ? 'Available' : 'Not Available'}</p>
+                    <p><strong>Hours:</strong> ${doctor.available_hours || 'Not specified'}</p>
+                    <p><strong>Response Time:</strong> ${doctor.response_time || 'Not specified'}</p>
+                </div>
+            </div>
+
+            <div class="reviews-section">
+                <h4>Patient Reviews (${doctor.reviews ? doctor.reviews.length : 0})</h4>
+                ${doctor.reviews && doctor.reviews.length > 0 ? 
+                    doctor.reviews.map(review => `
+                        <div class="review-item">
+                            <div class="review-header">
+                                <span class="review-patient">${escapeHtml(review.patient_name)}</span>
+                                <span class="review-rating">${generateStars(review.rating)}</span>
+                            </div>
+                            <div class="review-comment">${escapeHtml(review.comment)}</div>
+                            <small style="color: #718096;">${formatDate(review.created_at)}</small>
+                        </div>
+                    `).join('') :
+                    '<p style="color: #718096; text-align: center;">No reviews yet</p>'
+                }
+            </div>
+        `;
+
+        document.getElementById('doctorDetailsModal').classList.add('active');
+    }
+
+    function closeDoctorDetailsModal() {
+        document.getElementById('doctorDetailsModal').classList.remove('active');
+    }
+
+    function bookWithDoctor(doctorId) {
+        closeDoctorDetailsModal();
+        openBookAppointmentModal(doctorId);
+    }
+
+    // ==================== REVIEW SYSTEM ====================
+    function addReview(doctorId) {
+        document.getElementById('reviewDoctorId').value = doctorId;
+        document.getElementById('reviewModal').classList.add('active');
+        resetRating();
+    }
+
+    function closeReviewModal() {
+        document.getElementById('reviewModal').classList.remove('active');
+        resetRating();
+    }
+
+    function setRating(rating) {
+        const stars = document.querySelectorAll('.rating-stars span');
+        const ratingValue = document.getElementById('ratingValue');
+        
+        stars.forEach((star, index) => {
+            star.style.color = index < rating ? '#fbbf24' : '#e2e8f0';
+        });
+        
+        ratingValue.value = rating;
+    }
+
+    function resetRating() {
+        setRating(0);
+        document.getElementById('reviewComment').value = '';
+    }
+
+    async function handleReviewSubmission(e) {
+        e.preventDefault();
+        
+        const formData = {
+            doctor_id: document.getElementById('reviewDoctorId').value,
+            rating: document.getElementById('ratingValue').value,
+            comment: document.getElementById('reviewComment').value
+        };
+
+        if (formData.rating === '0') {
+            showNotification('Please select a rating', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/reviews', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                showNotification('Review submitted successfully!', 'success');
+                closeReviewModal();
+            } else {
+                const result = await response.json();
+                showNotification('Error: ' + (result.error || 'Failed to submit review'), 'error');
+            }
+        } catch (error) {
+            showNotification('Error submitting review: ' + error.message, 'error');
+        }
+    }
+
+    // ==================== APPOINTMENT BOOKING ====================
+    function openBookAppointmentModal(doctorId = null) {
+        const modal = document.getElementById('bookAppointmentModal');
+        if (modal) {
+            modal.classList.add('active');
+            
+            if (doctorId) {
+                const doctorSelect = document.getElementById('doctorSelect');
+                if (doctorSelect) {
+                    doctorSelect.value = doctorId;
+                    updateConsultationFee();
+                }
+            }
+            
+            // Set minimum date to today
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const appointmentDate = document.getElementById('appointmentDate');
+            if (appointmentDate) {
+                appointmentDate.min = now.toISOString().slice(0, 16);
+            }
+        }
+    }
+
+    function closeBookAppointmentModal() {
+        const modal = document.getElementById('bookAppointmentModal');
+        if (modal) {
+            modal.classList.remove('active');
+            const appointmentForm = document.getElementById('appointmentForm');
+            if (appointmentForm) {
+                appointmentForm.reset();
+            }
+        }
+    }
+
+    function updateConsultationFee() {
+        const select = document.getElementById('doctorSelect');
+        const feeElement = document.getElementById('consultationFee');
+        if (select && feeElement) {
+            const selectedOption = select.options[select.selectedIndex];
+            const fee = selectedOption ? selectedOption.getAttribute('data-fee') || 0 : 0;
+            feeElement.textContent = 'KES ' + parseFloat(fee).toFixed(2);
+        }
+    }
+
+    async function handleAppointmentSubmission(e) {
+        e.preventDefault();
+        
+        const formData = {
+            doctor_id: document.getElementById('doctorSelect')?.value,
+            appointment_date: document.getElementById('appointmentDate')?.value,
+            symptoms: document.getElementById('symptoms')?.value
+        };
+
+        try {
+            const response = await fetch('/book-appointment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                showNotification('Appointment booked successfully!', 'success');
+                closeBookAppointmentModal();
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showNotification('Error: ' + (result.error || 'Failed to book appointment'), 'error');
+            }
+        } catch (error) {
+            showNotification('Error booking appointment: ' + error.message, 'error');
+        }
+    }
+
+    // ==================== DATA LOADING ====================
+    async function loadUpcomingAppointments() {
+        try {
+            const response = await fetch('/api/appointments/upcoming');
+            if (response.ok) {
+                const appointments = await response.json();
+                displayUpcomingAppointments(appointments);
+            } else {
+                showEmptyUpcomingAppointments();
+            }
+        } catch (error) {
+            console.error('Error loading upcoming appointments:', error);
+            showEmptyUpcomingAppointments();
+        }
+    }
+
+    function displayUpcomingAppointments(appointments) {
+        const container = document.getElementById('upcomingAppointmentsList');
+        if (!container) return;
+        
+        if (!appointments || appointments.length === 0) {
+            showEmptyUpcomingAppointments();
+            return;
+        }
+        
+        container.innerHTML = appointments.map(apt => `
+            <div class="appointment-communication" style="margin-bottom: 1rem;">
+                <div class="appointment-info">
+                    <h4>Dr. ${escapeHtml(apt.doctor_name)}</h4>
+                    <p>${escapeHtml(apt.specialization)} • ${formatAppointmentTime(apt.appointment_date)}</p>
+                    <small style="color: #718096;">Status: ${apt.status}</small>
+                </div>
+                <div class="communication-actions">
+                    <a href="{{ url_for('communication') }}?appointment_id=${apt.id}" 
+                       class="action-btn primary">
+                        💬 Message
+                    </a>
+                    ${apt.has_video_call ? `
+                    <button class="action-btn secondary" onclick="startVideoCall(${apt.id})">
+                        📹 Video
+                    </button>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showEmptyUpcomingAppointments() {
+        const container = document.getElementById('upcomingAppointmentsList');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏰</div>
+                    <p>No upcoming appointments</p>
+                </div>
+            `;
+        }
+    }
+
+    async function refreshAppointments() {
+        showNotification('Refreshing appointments...', 'info');
+        setTimeout(() => location.reload(), 1000);
+    }
+
+    // ==================== UTILITY FUNCTIONS ====================
+    function generateStars(rating) {
+        const fullStars = '★'.repeat(Math.floor(rating));
+        const emptyStars = '☆'.repeat(5 - Math.ceil(rating));
+        return `<span style="color: #fbbf24;">${fullStars}</span>${emptyStars}`;
+    }
+
+    function formatAppointmentTime(isoString) {
+        try {
+            const date = new Date(isoString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        } catch (error) {
+            return 'Invalid date';
+        }
+    }
+
+    function formatDate(isoString) {
+        try {
+            return new Date(isoString).toLocaleDateString();
+        } catch (error) {
+            return 'Unknown date';
+        }
+    }
+
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+               document.querySelector('input[name="csrf_token"]')?.value || '';
+    }
+
+    function showNotification(message, type = 'info') {
+        // Create a temporary notification
+        const notification = document.createElement('div');
+        notification.className = `flash-message flash-${type}`;
+        notification.textContent = message;
+        
+        const flashContainer = document.querySelector('.flash-messages');
+        if (flashContainer) {
+            flashContainer.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.transition = 'all 0.3s ease';
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        } else {
+            alert(message);
+        }
+    }
+
+    function setupEventListeners() {
+        // Appointment form
+        const appointmentForm = document.getElementById('appointmentForm');
+        if (appointmentForm) {
+            appointmentForm.addEventListener('submit', handleAppointmentSubmission);
+        }
+
+        // Review form
+        const reviewForm = document.getElementById('reviewForm');
+        if (reviewForm) {
+            reviewForm.addEventListener('submit', handleReviewSubmission);
+        }
+
+        // Doctor select change
+        const doctorSelect = document.getElementById('doctorSelect');
+        if (doctorSelect) {
+            doctorSelect.addEventListener('change', updateConsultationFee);
+        }
+
+        // Close modals when clicking outside
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                }
+            });
+        });
+
+        // Escape key to close modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    modal.classList.remove('active');
+                });
+            }
+        });
+    }
+
+    // Communication functions
+    function startVideoCall(appointmentId) {
+        window.open(`/video-call/${appointmentId}`, '_blank');
+    }
+
+    function startVoiceCall(appointmentId) {
+        window.open(`/voice-call/${appointmentId}`, '_blank');
+    }
+
+    // Make functions globally available
+    window.viewDoctorDetails = viewDoctorDetails;
+    window.closeDoctorDetailsModal = closeDoctorDetailsModal;
+    window.bookWithDoctor = bookWithDoctor;
+    window.addReview = addReview;
+    window.closeReviewModal = closeReviewModal;
+    window.setRating = setRating;
+    window.openBookAppointmentModal = openBookAppointmentModal;
+    window.closeBookAppointmentModal = closeBookAppointmentModal;
+    window.confirmAppointment = confirmAppointment;
+    window.cancelAppointment = cancelAppointment;
+    window.makePayment = makePayment;
+    window.startVideoCall = startVideoCall;
+    window.startVoiceCall = startVoiceCall;
+    window.refreshAppointments = refreshAppointments;
 </script>
 {% endblock %}
