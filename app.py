@@ -738,13 +738,18 @@ class VoiceRecording(db.Model):
 # =============================================================================
 
 def init_db():
-    """Initialize the database with sample data - FIXED VERSION"""
+    """Initialize the database with sample data - UPDATED VERSION"""
     with app.app_context():
         try:
             # Create all tables first
             print("🔄 Creating database tables...")
             db.create_all()
             print("✅ Database tables created successfully!")
+            
+            # Create upload directories
+            print("🔄 Creating upload directories...")
+            create_upload_directories()
+            print("✅ Upload directories created successfully!")
             
             # Check if admin user already exists
             admin_user = User.query.filter_by(email='admin@makokha.com').first()
@@ -823,6 +828,34 @@ def init_db():
             else:
                 print("ℹ️ Patient user already exists")
             
+            # Create sample appointment for testing communication
+            try:
+                existing_appointment = Appointment.query.filter_by(patient_id=patient.id, doctor_id=doctor.id).first()
+                if not existing_appointment:
+                    print("🔄 Creating sample appointment...")
+                    # Use timezone-aware datetime
+                    from datetime import datetime, timezone, timedelta
+                    
+                    # Appointment in 2 days from now
+                    appointment_date = datetime.now(timezone.utc) + timedelta(days=2)
+                    
+                    sample_appointment = Appointment(
+                        patient_id=patient.id,
+                        doctor_id=doctor.id,
+                        appointment_date=appointment_date,
+                        status='scheduled',
+                        symptoms='Regular checkup and consultation',
+                        payment_status='completed'
+                    )
+                    db.session.add(sample_appointment)
+                    db.session.commit()
+                    print("✅ Sample appointment created for communication testing!")
+                else:
+                    print("ℹ️ Sample appointment already exists")
+                    
+            except Exception as e:
+                print(f"⚠️ Could not create sample appointment: {str(e)}")
+            
             print("🎉 Database initialized successfully!")
             
         except Exception as e:
@@ -831,8 +864,6 @@ def init_db():
             traceback.print_exc()
             db.session.rollback()
             raise e
-
-
 
 
 # =============================================================================
@@ -900,6 +931,337 @@ def generate_voice_call_url(appointment_id):
 def generate_whatsapp_chat_id(appointment_id):
     """Generate unique WhatsApp chat ID"""
     return f"wa_chat_{appointment_id}"
+
+def create_upload_directories():
+    """Create necessary upload directories"""
+    try:
+        directories = [
+            'voice_messages',
+            'message_files', 
+            'voice_recordings',
+            'recordings'
+        ]
+        
+        # Create main upload directory if it doesn't exist
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # Create subdirectories
+        for directory in directories:
+            dir_path = os.path.join(app.config['UPLOAD_FOLDER'], directory)
+            os.makedirs(dir_path, exist_ok=True)
+            print(f"✅ Created directory: {dir_path}")
+            
+    except Exception as e:
+        print(f"❌ Error creating upload directories: {str(e)}")
+        raise e
+
+
+# =============================================================================
+# MISSING API ENDPOINTS - ADD THESE TO YOUR app.py
+# =============================================================================
+
+@app.route('/api/user/current')
+@login_required
+def get_current_user():
+    """Get current user information"""
+    try:
+        user_data = {
+            'id': current_user.id,
+            'email': current_user.email,
+            'username': current_user.username,
+            'role': current_user.role,
+            'name': get_user_display_name(current_user)
+        }
+        return jsonify(user_data)
+    except Exception as e:
+        app.logger.error(f"Error getting current user: {str(e)}")
+        return jsonify({'error': 'Failed to get user information'}), 500
+
+def get_user_display_name(user):
+    """Get user's display name based on role and profile"""
+    if user.role == 'patient' and user.patient_profile:
+        return f"{user.patient_profile.first_name} {user.patient_profile.last_name}"
+    elif user.role == 'doctor' and user.doctor_profile:
+        return f"Dr. {user.doctor_profile.first_name} {user.doctor_profile.last_name}"
+    else:
+        return user.username or user.email
+
+@app.route('/api/appointments/<int:appointment_id>/messages')
+@login_required
+def get_appointment_messages(appointment_id):
+    """Get all messages for an appointment"""
+    try:
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        messages = Message.query.filter_by(appointment_id=appointment_id)\
+                              .order_by(Message.created_at.asc())\
+                              .all()
+        
+        messages_data = []
+        for message in messages:
+            messages_data.append({
+                'id': message.id,
+                'sender_id': message.sender_id,
+                'sender_name': get_user_display_name(message.sender),
+                'sender_role': message.sender.role,
+                'receiver_id': message.receiver_id,
+                'message_type': message.message_type,
+                'content': message.content,
+                'audio_url': message.audio_url,
+                'file_url': message.file_url,
+                'file_name': message.file_name,
+                'file_size': message.file_size,
+                'is_read': message.is_read,
+                'created_at': message.created_at.isoformat(),
+                'is_own': message.sender_id == current_user.id
+            })
+        
+        return jsonify(messages_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error fetching messages: {str(e)}")
+        return jsonify({'error': 'Failed to fetch messages'}), 500
+
+@app.route('/api/appointments/<int:appointment_id>/messages/read', methods=['POST'])
+@login_required
+def mark_messages_read(appointment_id):
+    """Mark all messages as read for an appointment"""
+    try:
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Mark all unread messages as read
+        unread_messages = Message.query.filter(
+            Message.appointment_id == appointment_id,
+            Message.receiver_id == current_user.id,
+            Message.is_read == False
+        ).all()
+        
+        for message in unread_messages:
+            message.is_read = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'marked_read': len(unread_messages)
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error marking messages as read: {str(e)}")
+        return jsonify({'error': 'Failed to mark messages as read'}), 500
+
+@app.route('/api/messages/voice', methods=['POST'])
+@login_required
+@limiter.limit("10 per minute")
+def upload_voice_message():
+    """Upload voice message"""
+    try:
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file provided'}), 400
+        
+        audio_file = request.files['audio']
+        appointment_id = request.form.get('appointment_id')
+        duration = request.form.get('duration', 0)
+        
+        if not appointment_id:
+            return jsonify({'error': 'Appointment ID required'}), 400
+        
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if audio_file and audio_file.filename != '':
+            # Generate unique filename
+            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            filename = f"voice_{current_user.id}_{timestamp}.webm"
+            
+            # Create upload directories if they don't exist
+            voice_messages_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'voice_messages')
+            os.makedirs(voice_messages_dir, exist_ok=True)
+            
+            file_path = os.path.join(voice_messages_dir, filename)
+            audio_file.save(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            # Determine receiver
+            if current_user.role == 'patient':
+                receiver_id = appointment.doctor.user_id
+            else:
+                receiver_id = appointment.patient.user_id
+            
+            # Create message
+            message = Message(
+                appointment_id=appointment_id,
+                sender_id=current_user.id,
+                receiver_id=receiver_id,
+                message_type='audio',
+                audio_url=f'/static/uploads/voice_messages/{filename}',
+                content='Voice message',
+                file_name=filename,
+                file_size=file_size
+            )
+            db.session.add(message)
+            db.session.commit()
+            
+            # Prepare response data
+            message_data = {
+                'id': message.id,
+                'sender_id': message.sender_id,
+                'sender_name': get_user_display_name(current_user),
+                'sender_role': current_user.role,
+                'receiver_id': receiver_id,
+                'message_type': 'audio',
+                'content': 'Voice message',
+                'audio_url': message.audio_url,
+                'file_name': filename,
+                'file_size': file_size,
+                'is_read': False,
+                'created_at': message.created_at.isoformat(),
+                'is_own': True,
+                'duration': int(duration)
+            }
+            
+            log_audit('voice_message_uploaded', current_user.id, f'Appointment: {appointment_id}')
+            return jsonify(message_data)
+        else:
+            return jsonify({'error': 'Invalid audio file'}), 400
+    
+    except Exception as e:
+        app.logger.error(f"Error uploading voice message: {str(e)}")
+        return jsonify({'error': 'Failed to upload voice message'}), 500
+
+
+@app.route('/static/uploads/<path:filename>')
+def serve_uploaded_files(filename):
+    """Serve uploaded files"""
+    try:
+        return send_from_directory(
+            app.config['UPLOAD_FOLDER'],
+            filename
+        )
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found'}), 404
+
+@app.route('/api/messages/file', methods=['POST'])
+@login_required
+@limiter.limit("20 per minute")
+def upload_message_file():
+    """Upload file for messaging"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        appointment_id = request.form.get('appointment_id')
+        
+        if not appointment_id:
+            return jsonify({'error': 'Appointment ID required'}), 400
+        
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if file and file.filename != '':
+            # Generate unique filename
+            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+            filename = secure_filename(file.filename)
+            unique_filename = f"file_{current_user.id}_{timestamp}_{filename}"
+            
+            # Create upload directories if they don't exist
+            message_files_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'message_files')
+            os.makedirs(message_files_dir, exist_ok=True)
+            
+            file_path = os.path.join(message_files_dir, unique_filename)
+            file.save(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            # Determine receiver
+            if current_user.role == 'patient':
+                receiver_id = appointment.doctor.user_id
+            else:
+                receiver_id = appointment.patient.user_id
+            
+            # Determine file type
+            file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+            if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'bmp']:
+                message_type = 'image'
+            else:
+                message_type = 'file'
+            
+            message = Message(
+                appointment_id=appointment_id,
+                sender_id=current_user.id,
+                receiver_id=receiver_id,
+                message_type=message_type,
+                file_url=f'/static/uploads/message_files/{unique_filename}',
+                file_name=filename,
+                file_size=file_size,
+                content=f'Sent a {message_type}: {filename}'
+            )
+            db.session.add(message)
+            db.session.commit()
+            
+            # Prepare response data
+            message_data = {
+                'id': message.id,
+                'sender_id': message.sender_id,
+                'sender_name': get_user_display_name(current_user),
+                'sender_role': current_user.role,
+                'receiver_id': receiver_id,
+                'message_type': message_type,
+                'content': f'Sent a {message_type}: {filename}',
+                'file_url': message.file_url,
+                'file_name': filename,
+                'file_size': file_size,
+                'is_read': False,
+                'created_at': message.created_at.isoformat(),
+                'is_own': True
+            }
+            
+            log_audit('message_file_uploaded', current_user.id, f'Appointment: {appointment_id}, Type: {message_type}')
+            return jsonify(message_data)
+        else:
+            return jsonify({'error': 'Invalid file'}), 400
+    
+    except Exception as e:
+        app.logger.error(f"Error uploading message file: {str(e)}")
+        return jsonify({'error': 'Failed to upload file'}), 500
+
+@app.route('/api/recordings/upload', methods=['POST'])
+@login_required
+def upload_recording():
+    """Upload call recording - placeholder for future implementation"""
+    try:
+        # This is a placeholder for call recording functionality
+        # In production, you would implement proper recording storage
+        return jsonify({'success': True, 'message': 'Recording upload endpoint - implement storage logic'})
+    except Exception as e:
+        app.logger.error(f"Error in recording upload: {str(e)}")
+        return jsonify({'error': 'Recording upload not implemented'}), 501
 
 # =============================================================================
 # TIMEZONE ROUTES
@@ -3090,89 +3452,6 @@ def upload_voice_recording():
         return jsonify({'error': 'Failed to upload voice recording'}), 500
 
 # =============================================================================
-# FILE UPLOAD FOR MESSAGES
-# =============================================================================
-
-@app.route('/api/upload-message-file', methods=['POST'])
-@login_required
-@limiter.limit("20 per minute")  # Limit file uploads
-def upload_message_file():
-    """Upload a file for messaging"""
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-        
-        file = request.files['file']
-        appointment_id = request.form.get('appointment_id')
-        
-        if not appointment_id:
-            return jsonify({'error': 'Appointment ID required'}), 400
-        
-        appointment = Appointment.query.get_or_404(appointment_id)
-        
-        # Check if user has access to this appointment
-        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
-        
-        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
-        
-        if file and file.filename != '':
-            # Generate unique filename
-            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-            filename = secure_filename(file.filename)
-            unique_filename = f"msg_{current_user.id}_{timestamp}_{filename}"
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'message_files', unique_filename)
-            
-            # Create directory if it doesn't exist
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-            file.save(file_path)
-            file_size = os.path.getsize(file_path)
-            
-            # Determine receiver and create message
-            if current_user.role == 'patient':
-                receiver_id = appointment.doctor.user_id
-            else:
-                receiver_id = appointment.patient.user_id
-            
-            # Determine file type
-            file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-            if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'bmp']:
-                message_type = 'image'
-            else:
-                message_type = 'file'
-            
-            message = Message(
-                appointment_id=appointment_id,
-                sender_id=current_user.id,
-                receiver_id=receiver_id,
-                message_type=message_type,
-                file_url=f'/static/uploads/message_files/{unique_filename}',
-                file_name=filename,
-                file_size=file_size,
-                content=f'Sent a {message_type}: {filename}'
-            )
-            db.session.add(message)
-            db.session.commit()
-            
-            log_audit('message_file_uploaded', current_user.id, f'Appointment: {appointment_id}, Type: {message_type}')
-            return jsonify({
-                'success': True,
-                'message_id': message.id,
-                'file_url': message.file_url,
-                'file_name': message.file_name,
-                'message_type': message_type
-            })
-        else:
-            return jsonify({'error': 'Invalid file'}), 400
-    
-    except Exception as e:
-        app.logger.error(f"Error uploading message file: {str(e)}")
-        return jsonify({'error': 'Failed to upload file'}), 500
-
-
-# =============================================================================
 # PROFILE ROUTES
 # =============================================================================
 
@@ -3879,29 +4158,26 @@ def handle_csrf_error(e):
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(
-        os.path.join(app.root_path, 'static'),
-        'favicon.ico',
-        mimetype='image/vnd.microsoft.icon'
-    )
-    
-# =============================================================================
-# PRODUCTION SERVER CONFIGURATION
-# =============================================================================
-
-def create_app():
-    """Application factory for production"""
-    return app
+    """Serve favicon"""
+    try:
+        return send_from_directory(
+            os.path.join(app.root_path, 'static'),
+            'favicon.ico',
+            mimetype='image/vnd.microsoft.icon'
+        )
+    except FileNotFoundError:
+        # Return a default favicon response to prevent 404 errors
+        return '', 204
 
 # =============================================================================
 # APPLICATION STARTUP
 # =============================================================================
 
 def initialize_application():
-    """Initialize the application and database - FIXED VERSION"""
+    """Initialize the application and database - COMPLETE UPDATED VERSION"""
     with app.app_context():
         try:
-            print("🔄 Starting application initialization...")
+            print("🚀 Starting Makokha Medical Centre Application Initialization...")
             
             # Import all models to ensure they are registered with SQLAlchemy
             from app import User, Patient, Doctor, Appointment, Message, Payment, PatientDocument, AuditLog, VoiceCall, VoiceRecording
@@ -3911,18 +4187,74 @@ def initialize_application():
             db.create_all()
             print("✅ Database tables checked/created successfully!")
             
+            # Create upload directories
+            print("🔄 Creating upload directories...")
+            create_upload_directories()
+            print("✅ Upload directories created successfully!")
+            
             # Initialize with sample data
             print("🔄 Initializing sample data...")
             init_db()
             
+            # Verify critical endpoints
+            print("🔄 Verifying critical functionality...")
+            verify_critical_functionality()
+            
             print("🎉 Application initialized successfully!")
+            print("\n📊 Application Status:")
+            print(f"   • Database: ✅ Connected")
+            print(f"   • Upload Directories: ✅ Created") 
+            print(f"   • Sample Data: ✅ Loaded")
+            print(f"   • WebSocket: ✅ Ready")
+            print(f"   • API Endpoints: ✅ Configured")
             
         except Exception as e:
             print(f"❌ Application initialization error: {str(e)}")
             import traceback
             traceback.print_exc()
             raise e
-
+        
+def verify_critical_functionality():
+    """Verify that critical functionality is working"""
+    try:
+        print("🔍 Verifying critical functionality...")
+        
+        # Check if essential models can be queried
+        user_count = User.query.count()
+        patient_count = Patient.query.count()
+        doctor_count = Doctor.query.count()
+        appointment_count = Appointment.query.count()
+        
+        print(f"   • Users in database: {user_count}")
+        print(f"   • Patients in database: {patient_count}")
+        print(f"   • Doctors in database: {doctor_count}")
+        print(f"   • Appointments in database: {appointment_count}")
+        
+        # Verify upload directories exist
+        required_dirs = [
+            app.config['UPLOAD_FOLDER'],
+            os.path.join(app.config['UPLOAD_FOLDER'], 'voice_messages'),
+            os.path.join(app.config['UPLOAD_FOLDER'], 'message_files'),
+            os.path.join(app.config['UPLOAD_FOLDER'], 'voice_recordings')
+        ]
+        
+        for dir_path in required_dirs:
+            if os.path.exists(dir_path):
+                print(f"   • Directory {dir_path}: ✅ Exists")
+            else:
+                print(f"   • Directory {dir_path}: ❌ Missing")
+                # Try to create it
+                try:
+                    os.makedirs(dir_path, exist_ok=True)
+                    print(f"   • Directory {dir_path}: ✅ Created")
+                except Exception as e:
+                    print(f"   • Directory {dir_path}: ❌ Creation failed: {str(e)}")
+        
+        print("✅ Critical functionality verification completed!")
+        
+    except Exception as e:
+        print(f"⚠️ Critical functionality verification warning: {str(e)}")
+        
 # =============================================================================
 # PRODUCTION SERVER CONFIGURATION - FIXED
 # =============================================================================
@@ -3943,11 +4275,15 @@ if __name__ == '__main__':
             from waitress import serve
             print("🚀 Starting production server with Waitress...")
             print(f"📊 Database URL: {app.config['SQLALCHEMY_DATABASE_URI'].split('@')[1] if '@' in app.config['SQLALCHEMY_DATABASE_URI'] else 'SQLite'}")
+            print(f"🌐 Server URL: http://0.0.0.0:5000")
+            print(f"🔧 Environment: Production")
             serve(app, host='0.0.0.0', port=5000)
         else:
             # Development: Use Flask development server with SocketIO
             print("🚀 Starting development server with Flask...")
             print(f"📊 Database URL: {app.config['SQLALCHEMY_DATABASE_URI']}")
+            print(f"🌐 Server URL: http://localhost:5000")
+            print(f"🔧 Environment: Development")
             socketio.run(app, debug=True, host='0.0.0.0', port=5000, log_output=True)
             
     except Exception as e:

@@ -1636,17 +1636,21 @@
                     if (response.ok) {
                         currentUser = await response.json();
                         console.log('Current user:', currentUser);
+                    } else if (response.status === 401) {
+                        // User not logged in, redirect to login
+                        window.location.href = '/login';
+                        return;
                     } else {
-                        throw new Error('Failed to get current user');
+                        throw new Error(`Failed to get current user: ${response.status}`);
                     }
                 } catch (error) {
                     console.error('Error getting current user:', error);
-                    // For demo purposes, create a mock user
+                    // For development, create a mock user
                     currentUser = {
                         id: 1,
-                        name: 'John Doe',
+                        name: 'Demo User',
                         role: 'patient',
-                        email: 'john.doe@example.com'
+                        email: 'demo@example.com'
                     };
                 }
             }
@@ -1654,14 +1658,10 @@
             // Initialize WebSocket connection
             function initializeWebSocket() {
                 try {
-                    // Connect to WebSocket server
+                    // Connect to WebSocket server with correct path
                     socket = io({
                         transports: ['websocket', 'polling'],
-                        timeout: 10000,
-                        auth: {
-                            userId: currentUser.id,
-                            userRole: currentUser.role
-                        }
+                        timeout: 10000
                     });
 
                     socket.on('connect', () => {
@@ -1669,8 +1669,10 @@
                         isSocketConnected = true;
                         updateWebSocketStatus('connected', 'Connected');
                         
-                        // Join user's personal room
-                        socket.emit('join_user', { user_id: currentUser.id });
+                        // Join user's personal room using the correct event
+                        if (currentUser && currentUser.id) {
+                            socket.emit('join_appointment', { user_id: currentUser.id });
+                        }
                     });
 
                     socket.on('disconnect', (reason) => {
@@ -1697,7 +1699,6 @@
                     socket.on('call_accepted', handleCallAccepted);
                     socket.on('call_rejected', handleCallRejected);
                     socket.on('call_ended', handleCallEnded);
-                    socket.on('call_timeout', handleCallTimeout);
 
                     // WebRTC events
                     socket.on('webrtc_offer', handleWebRTCOffer);
@@ -1813,7 +1814,7 @@
                 try {
                     showLoadingState();
                     
-                    const response = await fetch('/api/appointments', {
+                    const response = await fetch('/api/communication/appointments', {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1944,7 +1945,7 @@
             // Load messages for an appointment
             async function loadMessages(appointmentId) {
                 try {
-                    const response = await fetch(`/api/appointments/${appointmentId}/messages`, {
+                    const response = await fetch(`/api/messages/${appointmentId}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -2086,7 +2087,7 @@
                     if (isSocketConnected) {
                         socket.emit('send_message', messageData);
                     } else {
-                        const response = await fetch(`/api/appointments/${currentAppointment.id}/messages`, {
+                        const response = await fetch(`/api/messages/${currentAppointment.id}`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2227,13 +2228,18 @@
             // Mark messages as read
             async function markMessagesAsRead(appointmentId) {
                 try {
-                    await fetch(`/api/appointments/${appointmentId}/messages/read`, {
+                    const response = await fetch(`/api/messages/${appointmentId}/mark_all_read`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-Token': getCSRFToken()
-                        }
+                        },
+                        body: JSON.stringify({}) // Send empty JSON object
                     });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to mark messages as read: ${response.status}`);
+                    }
                     
                     // Clear unread badge
                     const appointmentItem = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
@@ -2247,6 +2253,7 @@
                     console.error('Error marking messages as read:', error);
                 }
             }
+
 
             // Update unread count
             function updateUnreadCount(appointmentId, newMessageCount) {
@@ -2308,7 +2315,7 @@
                         caller_name: currentUser.name
                     };
                     
-                    socket.emit('initiate_call', callData);
+                    socket.emit('call_initiate', callData);
                     
                     // Set call timeout
                     setCallTimeout();
@@ -2391,7 +2398,7 @@
                         caller_name: currentUser.name
                     };
                     
-                    socket.emit('initiate_call', callData);
+                    socket.emit('call_initiate', callData);
                     
                     // Set call timeout
                     setCallTimeout();
@@ -2604,8 +2611,7 @@
                 
                 // Notify other participant
                 if (isSocketConnected && currentCall) {
-                    socket.emit('end_call', {
-                        call_id: currentCall.call_id,
+                    socket.emit('call_end', {
                         appointment_id: currentAppointment.id
                     });
                 }
@@ -2876,7 +2882,7 @@
                 hideIncomingCallNotification();
                 
                 // Notify caller
-                socket.emit('accept_call', {
+                socket.emit('call_accept', {
                     call_id: currentCall.call_id,
                     appointment_id: currentCall.appointment_id
                 });
@@ -2956,7 +2962,7 @@
                 hideIncomingCallNotification();
                 
                 // Notify caller
-                socket.emit('reject_call', {
+                socket.emit('call_reject', {
                     call_id: currentCall.call_id,
                     appointment_id: currentCall.appointment_id
                 });
@@ -2988,12 +2994,6 @@
             // Handle call ended
             function handleCallEnded(data) {
                 endCall();
-            }
-
-            // Handle call timeout
-            function handleCallTimeout(data) {
-                endCall();
-                showError('Call timed out. No answer from the other party.');
             }
 
             // Hide incoming call notification
@@ -3468,7 +3468,8 @@
                             const message = await response.json();
                             addMessageToChat(message, true);
                         } else {
-                            throw new Error('Failed to upload file');
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Failed to upload file');
                         }
                     } catch (error) {
                         console.error('Error uploading file:', error);
