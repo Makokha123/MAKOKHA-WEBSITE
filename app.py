@@ -738,7 +738,7 @@ class VoiceRecording(db.Model):
 # =============================================================================
 
 def init_db():
-    """Initialize the database with sample data - UPDATED VERSION"""
+    """Initialize the database with sample data - FIXED VERSION"""
     with app.app_context():
         try:
             # Create all tables first
@@ -798,6 +798,7 @@ def init_db():
                 db.session.commit()
                 print("✅ Sample doctor created: doctor@makokha.com / Doctor123!")
             else:
+                doctor = Doctor.query.filter_by(user_id=doctor_user.id).first()
                 print("ℹ️ Doctor user already exists")
             
             # Create sample patient
@@ -826,32 +827,36 @@ def init_db():
                 db.session.commit()
                 print("✅ Sample patient created: patient@makokha.com / Patient123!")
             else:
+                patient = Patient.query.filter_by(user_id=patient_user.id).first()
                 print("ℹ️ Patient user already exists")
             
-            # Create sample appointment for testing communication
+            # Create sample appointment for testing communication - FIXED SCOPE
             try:
-                existing_appointment = Appointment.query.filter_by(patient_id=patient.id, doctor_id=doctor.id).first()
-                if not existing_appointment:
-                    print("🔄 Creating sample appointment...")
-                    # Use timezone-aware datetime
-                    from datetime import datetime, timezone, timedelta
-                    
-                    # Appointment in 2 days from now
-                    appointment_date = datetime.now(timezone.utc) + timedelta(days=2)
-                    
-                    sample_appointment = Appointment(
-                        patient_id=patient.id,
-                        doctor_id=doctor.id,
-                        appointment_date=appointment_date,
-                        status='scheduled',
-                        symptoms='Regular checkup and consultation',
-                        payment_status='completed'
-                    )
-                    db.session.add(sample_appointment)
-                    db.session.commit()
-                    print("✅ Sample appointment created for communication testing!")
+                if patient and doctor:  # Check if both patient and doctor exist
+                    existing_appointment = Appointment.query.filter_by(patient_id=patient.id, doctor_id=doctor.id).first()
+                    if not existing_appointment:
+                        print("🔄 Creating sample appointment...")
+                        # Use timezone-aware datetime
+                        from datetime import datetime, timezone, timedelta
+                        
+                        # Appointment in 2 days from now
+                        appointment_date = datetime.now(timezone.utc) + timedelta(days=2)
+                        
+                        sample_appointment = Appointment(
+                            patient_id=patient.id,
+                            doctor_id=doctor.id,
+                            appointment_date=appointment_date,
+                            status='scheduled',
+                            symptoms='Regular checkup and consultation',
+                            payment_status='completed'
+                        )
+                        db.session.add(sample_appointment)
+                        db.session.commit()
+                        print("✅ Sample appointment created for communication testing!")
+                    else:
+                        print("ℹ️ Sample appointment already exists")
                 else:
-                    print("ℹ️ Sample appointment already exists")
+                    print("⚠️ Cannot create sample appointment: patient or doctor not found")
                     
             except Exception as e:
                 print(f"⚠️ Could not create sample appointment: {str(e)}")
@@ -986,19 +991,28 @@ def get_user_display_name(user):
     else:
         return user.username or user.email
 
-@app.route('/api/appointments/<int:appointment_id>/messages')
+@app.route('/api/messages/<int:appointment_id>')
 @login_required
 def get_appointment_messages(appointment_id):
-    """Get all messages for an appointment"""
+    """Get all messages for an appointment - FIXED VERSION"""
     try:
-        appointment = Appointment.query.get_or_404(appointment_id)
+        # Use session.get instead of Query.get
+        appointment = db.session.get(Appointment, appointment_id)
+        if not appointment:
+            return jsonify({'error': 'Appointment not found'}), 404
         
         # Check if user has access to this appointment
-        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
+        if current_user.role == 'patient':
+            if not current_user.patient_profile:
+                return jsonify({'error': 'Patient profile not found'}), 404
+            if appointment.patient_id != current_user.patient_profile.id:
+                return jsonify({'error': 'Access denied'}), 403
         
-        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
+        if current_user.role == 'doctor':
+            if not current_user.doctor_profile:
+                return jsonify({'error': 'Doctor profile not found'}), 404
+            if appointment.doctor_id != current_user.doctor_profile.id:
+                return jsonify({'error': 'Access denied'}), 403
         
         messages = Message.query.filter_by(appointment_id=appointment_id)\
                               .order_by(Message.created_at.asc())\
@@ -1028,7 +1042,6 @@ def get_appointment_messages(appointment_id):
     except Exception as e:
         app.logger.error(f"Error fetching messages: {str(e)}")
         return jsonify({'error': 'Failed to fetch messages'}), 500
-
 @app.route('/api/appointments/<int:appointment_id>/messages/read', methods=['POST'])
 @login_required
 def mark_messages_read(appointment_id):
@@ -4254,7 +4267,22 @@ def verify_critical_functionality():
         
     except Exception as e:
         print(f"⚠️ Critical functionality verification warning: {str(e)}")
-        
+
+@app.route('/api/debug/test')
+@login_required
+def debug_test():
+    """Debug endpoint to test API functionality"""
+    return jsonify({
+        'status': 'success',
+        'user': {
+            'id': current_user.id,
+            'email': current_user.email,
+            'role': current_user.role
+        },
+        'patient_profile': current_user.patient_profile.id if current_user.patient_profile else None,
+        'doctor_profile': current_user.doctor_profile.id if current_user.doctor_profile else None
+    })
+   
 # =============================================================================
 # PRODUCTION SERVER CONFIGURATION - FIXED
 # =============================================================================
