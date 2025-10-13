@@ -898,17 +898,22 @@ def sanitize_input(text):
     )
 
 def log_audit(action, user_id=None, details=None):
-    """Log security-related events"""
-    audit_log = AuditLog(
-        user_id=user_id,
-        action=action,
-        ip_address=request.remote_addr,
-        user_agent=request.headers.get('User-Agent'),
-        details=details,
-        timestamp=datetime.utcnow()
-    )
-    db.session.add(audit_log)
-    db.session.commit()
+    """Log security-related events - FIXED VERSION"""
+    try:
+        audit_log = AuditLog(
+            user_id=user_id,
+            action=action,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent'),
+            details=details,
+            timestamp=datetime.now(timezone.utc)  # FIXED: Use timezone-aware datetime
+        )
+        db.session.add(audit_log)
+        db.session.commit()
+        print(f"📝 Audit log: {action} for user {user_id}")
+    except Exception as e:
+        print(f"❌ Failed to write audit log: {str(e)}")
+        db.session.rollback()
 
 def validate_email(email):
     """Validate email format"""
@@ -1042,6 +1047,7 @@ def get_appointment_messages(appointment_id):
     except Exception as e:
         app.logger.error(f"Error fetching messages: {str(e)}")
         return jsonify({'error': 'Failed to fetch messages'}), 500
+    
 @app.route('/api/appointments/<int:appointment_id>/messages/read', methods=['POST'])
 @login_required
 def mark_messages_read(appointment_id):
@@ -1081,87 +1087,137 @@ def mark_messages_read(appointment_id):
 @login_required
 @limiter.limit("10 per minute")
 def upload_voice_message():
-    """Upload voice message"""
+    """Upload voice message - COMPLETELY REWRITTEN"""
     try:
+        print("🔍 DEBUG: Voice upload endpoint called")
+        print(f"🔍 DEBUG: Request files: {list(request.files.keys())}")
+        print(f"🔍 DEBUG: Request form: {dict(request.form)}")
+        
+        # Check for audio file
         if 'audio' not in request.files:
+            print("❌ DEBUG: No 'audio' file in request.files")
             return jsonify({'error': 'No audio file provided'}), 400
         
         audio_file = request.files['audio']
         appointment_id = request.form.get('appointment_id')
         duration = request.form.get('duration', 0)
         
+        print(f"🔍 DEBUG: Audio file: {audio_file.filename if audio_file else 'None'}")
+        print(f"🔍 DEBUG: Appointment ID: {appointment_id}")
+        print(f"🔍 DEBUG: Duration: {duration}")
+        
+        # Validate inputs
+        if not audio_file or audio_file.filename == '':
+            print("❌ DEBUG: Audio file is empty")
+            return jsonify({'error': 'No audio file selected'}), 400
+        
         if not appointment_id:
-            return jsonify({'error': 'Appointment ID required'}), 400
+            print("❌ DEBUG: No appointment ID provided")
+            return jsonify({'error': 'Appointment ID is required'}), 400
         
-        appointment = Appointment.query.get_or_404(appointment_id)
+        try:
+            appointment_id = int(appointment_id)
+        except ValueError:
+            print("❌ DEBUG: Invalid appointment ID format")
+            return jsonify({'error': 'Invalid appointment ID'}), 400
         
-        # Check if user has access to this appointment
-        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
+        # Get appointment
+        appointment = db.session.get(Appointment, appointment_id)
+        if not appointment:
+            print(f"❌ DEBUG: Appointment {appointment_id} not found")
+            return jsonify({'error': 'Appointment not found'}), 404
         
-        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
+        print(f"🔍 DEBUG: Found appointment - ID: {appointment.id}")
         
-        if audio_file and audio_file.filename != '':
-            # Generate unique filename
-            timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-            filename = f"voice_{current_user.id}_{timestamp}.webm"
+        # Check user access
+        if current_user.role == 'patient':
+            patient_profile = Patient.query.filter_by(user_id=current_user.id).first()
+            if not patient_profile:
+                print(f"❌ DEBUG: Patient profile not found for user {current_user.id}")
+                return jsonify({'error': 'Patient profile not found'}), 404
             
-            # Create upload directories if they don't exist
-            voice_messages_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'voice_messages')
-            os.makedirs(voice_messages_dir, exist_ok=True)
+            if appointment.patient_id != patient_profile.id:
+                print(f"❌ DEBUG: Access denied - patient mismatch")
+                return jsonify({'error': 'Access denied'}), 403
+                
+            receiver_id = appointment.doctor.user_id
+            print(f"🔍 DEBUG: Receiver (doctor) ID: {receiver_id}")
+                
+        elif current_user.role == 'doctor':
+            doctor_profile = Doctor.query.filter_by(user_id=current_user.id).first()
+            if not doctor_profile:
+                print(f"❌ DEBUG: Doctor profile not found for user {current_user.id}")
+                return jsonify({'error': 'Doctor profile not found'}), 404
             
-            file_path = os.path.join(voice_messages_dir, filename)
-            audio_file.save(file_path)
-            file_size = os.path.getsize(file_path)
-            
-            # Determine receiver
-            if current_user.role == 'patient':
-                receiver_id = appointment.doctor.user_id
-            else:
-                receiver_id = appointment.patient.user_id
-            
-            # Create message
-            message = Message(
-                appointment_id=appointment_id,
-                sender_id=current_user.id,
-                receiver_id=receiver_id,
-                message_type='audio',
-                audio_url=f'/static/uploads/voice_messages/{filename}',
-                content='Voice message',
-                file_name=filename,
-                file_size=file_size
-            )
-            db.session.add(message)
-            db.session.commit()
-            
-            # Prepare response data
-            message_data = {
-                'id': message.id,
-                'sender_id': message.sender_id,
-                'sender_name': get_user_display_name(current_user),
-                'sender_role': current_user.role,
-                'receiver_id': receiver_id,
-                'message_type': 'audio',
-                'content': 'Voice message',
-                'audio_url': message.audio_url,
-                'file_name': filename,
-                'file_size': file_size,
-                'is_read': False,
-                'created_at': message.created_at.isoformat(),
-                'is_own': True,
-                'duration': int(duration)
-            }
-            
-            log_audit('voice_message_uploaded', current_user.id, f'Appointment: {appointment_id}')
-            return jsonify(message_data)
+            if appointment.doctor_id != doctor_profile.id:
+                print(f"❌ DEBUG: Access denied - doctor mismatch")
+                return jsonify({'error': 'Access denied'}), 403
+                
+            receiver_id = appointment.patient.user_id
+            print(f"🔍 DEBUG: Receiver (patient) ID: {receiver_id}")
         else:
-            return jsonify({'error': 'Invalid audio file'}), 400
-    
+            print(f"❌ DEBUG: Invalid user role: {current_user.role}")
+            return jsonify({'error': 'Invalid user role'}), 403
+        
+        # Save the audio file
+        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        filename = f"voice_{current_user.id}_{timestamp}.webm"
+        voice_messages_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'voice_messages')
+        
+        # Ensure directory exists
+        os.makedirs(voice_messages_dir, exist_ok=True)
+        
+        file_path = os.path.join(voice_messages_dir, filename)
+        audio_file.save(file_path)
+        file_size = os.path.getsize(file_path)
+        
+        print(f"🔍 DEBUG: Saved voice file to {file_path}, size: {file_size} bytes")
+        
+        # Create message record
+        message = Message(
+            appointment_id=appointment_id,
+            sender_id=current_user.id,
+            receiver_id=receiver_id,
+            message_type='audio',
+            audio_url=f'/static/uploads/voice_messages/{filename}',
+            content='Voice message',
+            file_name=filename,
+            file_size=file_size,
+            created_at=datetime.now(timezone.utc)
+        )
+        
+        db.session.add(message)
+        db.session.commit()
+        
+        print(f"✅ DEBUG: Voice message saved to database with ID: {message.id}")
+        
+        # Prepare response
+        message_data = {
+            'id': message.id,
+            'sender_id': message.sender_id,
+            'sender_name': get_user_display_name(current_user),
+            'sender_role': current_user.role,
+            'receiver_id': receiver_id,
+            'message_type': 'audio',
+            'content': 'Voice message',
+            'audio_url': message.audio_url,
+            'file_name': filename,
+            'file_size': file_size,
+            'is_read': False,
+            'created_at': message.created_at.isoformat(),
+            'is_own': True,
+            'duration': int(duration)
+        }
+        
+        log_audit('voice_message_uploaded', current_user.id, f'Appointment: {appointment_id}')
+        return jsonify(message_data)
+        
     except Exception as e:
-        app.logger.error(f"Error uploading voice message: {str(e)}")
-        return jsonify({'error': 'Failed to upload voice message'}), 500
-
+        print(f"❌ DEBUG: Error in voice upload: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'error': f'Failed to upload voice message: {str(e)}'}), 500
 
 @app.route('/static/uploads/<path:filename>')
 def serve_uploaded_files(filename):
@@ -1173,6 +1229,67 @@ def serve_uploaded_files(filename):
         )
     except FileNotFoundError:
         return jsonify({'error': 'File not found'}), 404
+
+@app.route('/api/debug/user-profile')
+@login_required
+def debug_user_profile():
+    """Debug endpoint to check user profile data"""
+    patient_profile = Patient.query.filter_by(user_id=current_user.id).first()
+    doctor_profile = Doctor.query.filter_by(user_id=current_user.id).first()
+    
+    return jsonify({
+        'user': {
+            'id': current_user.id,
+            'email': current_user.email,
+            'role': current_user.role,
+            'username': current_user.username
+        },
+        'patient_profile': {
+            'exists': patient_profile is not None,
+            'id': patient_profile.id if patient_profile else None,
+            'first_name': patient_profile.first_name if patient_profile else None,
+            'last_name': patient_profile.last_name if patient_profile else None
+        } if patient_profile else None,
+        'doctor_profile': {
+            'exists': doctor_profile is not None,
+            'id': doctor_profile.id if doctor_profile else None,
+            'first_name': doctor_profile.first_name if doctor_profile else None,
+            'last_name': doctor_profile.last_name if doctor_profile else None
+        } if doctor_profile else None
+    })
+
+@app.route('/api/debug/appointment/<int:appointment_id>')
+@login_required
+def debug_appointment(appointment_id):
+    """Debug endpoint to check appointment data"""
+    appointment = db.session.get(Appointment, appointment_id)
+    if not appointment:
+        return jsonify({'error': 'Appointment not found'}), 404
+    
+    patient = db.session.get(Patient, appointment.patient_id)
+    doctor = db.session.get(Doctor, appointment.doctor_id)
+    
+    return jsonify({
+        'appointment': {
+            'id': appointment.id,
+            'patient_id': appointment.patient_id,
+            'doctor_id': appointment.doctor_id,
+            'status': appointment.status,
+            'payment_status': appointment.payment_status
+        },
+        'patient': {
+            'id': patient.id if patient else None,
+            'first_name': patient.first_name if patient else None,
+            'last_name': patient.last_name if patient else None,
+            'user_id': patient.user_id if patient else None
+        },
+        'doctor': {
+            'id': doctor.id if doctor else None,
+            'first_name': doctor.first_name if doctor else None,
+            'last_name': doctor.last_name if doctor else None,
+            'user_id': doctor.user_id if doctor else None
+        }
+    })
 
 @app.route('/api/messages/file', methods=['POST'])
 @login_required
@@ -2935,16 +3052,48 @@ def get_unread_message_count(appointment_id):
 @app.route('/api/messages/<int:appointment_id>/mark_all_read', methods=['POST'])
 @login_required
 def mark_all_messages_read(appointment_id):
-    """Mark all messages as read for an appointment"""
+    """Mark all messages as read for an appointment - COMPLETELY FIXED"""
     try:
-        appointment = Appointment.query.get_or_404(appointment_id)
+        print(f"🔍 DEBUG: Starting mark_all_read for appointment {appointment_id}")
+        print(f"🔍 DEBUG: Current user - ID: {current_user.id}, Role: {current_user.role}")
         
-        # Check if user has access to this appointment
-        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
+        # Get appointment using session.get
+        appointment = db.session.get(Appointment, appointment_id)
+        if not appointment:
+            print(f"❌ DEBUG: Appointment {appointment_id} not found")
+            return jsonify({'error': 'Appointment not found'}), 404
         
-        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
+        print(f"🔍 DEBUG: Found appointment - ID: {appointment.id}, Patient ID: {appointment.patient_id}, Doctor ID: {appointment.doctor_id}")
+        
+        # Check user access based on role
+        if current_user.role == 'patient':
+            print(f"🔍 DEBUG: User is patient, checking patient profile...")
+            patient_profile = Patient.query.filter_by(user_id=current_user.id).first()
+            if not patient_profile:
+                print(f"❌ DEBUG: Patient profile not found for user {current_user.id}")
+                return jsonify({'error': 'Patient profile not found'}), 404
+            
+            print(f"🔍 DEBUG: Patient profile ID: {patient_profile.id}, Appointment patient ID: {appointment.patient_id}")
+            
+            if appointment.patient_id != patient_profile.id:
+                print(f"❌ DEBUG: Access denied - patient {patient_profile.id} != appointment patient {appointment.patient_id}")
+                return jsonify({'error': 'Access denied'}), 403
+                
+        elif current_user.role == 'doctor':
+            print(f"🔍 DEBUG: User is doctor, checking doctor profile...")
+            doctor_profile = Doctor.query.filter_by(user_id=current_user.id).first()
+            if not doctor_profile:
+                print(f"❌ DEBUG: Doctor profile not found for user {current_user.id}")
+                return jsonify({'error': 'Doctor profile not found'}), 404
+            
+            print(f"🔍 DEBUG: Doctor profile ID: {doctor_profile.id}, Appointment doctor ID: {appointment.doctor_id}")
+            
+            if appointment.doctor_id != doctor_profile.id:
+                print(f"❌ DEBUG: Access denied - doctor {doctor_profile.id} != appointment doctor {appointment.doctor_id}")
+                return jsonify({'error': 'Access denied'}), 403
+        else:
+            print(f"❌ DEBUG: Invalid user role: {current_user.role}")
+            return jsonify({'error': 'Invalid user role'}), 403
         
         # Mark all unread messages as read
         unread_messages = Message.query.filter(
@@ -2953,19 +3102,30 @@ def mark_all_messages_read(appointment_id):
             Message.is_read == False
         ).all()
         
+        print(f"🔍 DEBUG: Found {len(unread_messages)} unread messages")
+        
         for message in unread_messages:
             message.is_read = True
+            print(f"🔍 DEBUG: Marked message {message.id} as read")
         
         db.session.commit()
         
-        return jsonify({
+        response_data = {
             'success': True,
-            'marked_read': len(unread_messages)
-        })
+            'marked_read': len(unread_messages),
+            'appointment_id': appointment_id,
+            'user_id': current_user.id
+        }
+        
+        print(f"✅ DEBUG: Successfully marked {len(unread_messages)} messages as read")
+        return jsonify(response_data)
     
     except Exception as e:
-        app.logger.error(f"Error marking messages as read: {str(e)}")
-        return jsonify({'error': 'Failed to mark messages as read'}), 500
+        print(f"❌ DEBUG: Error in mark_all_read: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'error': f'Failed to mark messages as read: {str(e)}'}), 500
 
 # =============================================================================
 # FILE DOWNLOAD ROUTES
