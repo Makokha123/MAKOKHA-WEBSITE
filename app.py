@@ -268,6 +268,22 @@ def handle_send_message(data):
         app.logger.error(f"WebSocket message error: {str(e)}")
         emit('message_error', {'error': 'Failed to send message'})
 
+
+@app.route('/api/csrf-token', methods=['GET'])
+def get_csrf_token():
+    """Provide CSRF token for frontend"""
+    return jsonify({
+        'csrf_token': generate_csrf_token()
+    })
+
+def generate_csrf_token():
+    """Generate CSRF token"""
+    if hasattr(g, 'csrf_token'):
+        return g.csrf_token
+    token = generate_csrf()
+    g.csrf_token = token
+    return token
+
 @socketio.on('typing_start')
 def handle_typing_start(data):
     """Handle typing start event"""

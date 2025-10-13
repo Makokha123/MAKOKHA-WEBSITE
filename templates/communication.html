@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Communication - Makokha Medical Centre</title>
+    
+    <!-- Add CSRF Token Meta Tag -->
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    
+    <!-- Toast Notification Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
@@ -986,76 +994,51 @@
             background: rgba(255, 193, 7, 0.8);
         }
 
-        /* Incoming Call Notification */
-        .incoming-call-notification {
+        /* Waiting Room */
+        .waiting-room {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 2000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            z-index: 1000;
             display: none;
-            width: 90%;
-            max-width: 400px;
-        }
-
-        .notification-content {
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .incoming-call-notification .caller-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
             color: white;
-            font-size: 2rem;
-            margin: 0 auto 1rem;
         }
 
-        .incoming-call-notification .caller-avatar.ringing {
-            animation: ring 1s infinite;
+        .waiting-room-content {
+            text-align: center;
+            max-width: 500px;
+            padding: 2rem;
         }
 
-        @keyframes ring {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .incoming-call-notification h3 {
-            margin-bottom: 0.5rem;
-            color: #333;
-        }
-
-        .incoming-call-notification p {
-            color: var(--gray-color);
+        .waiting-room-icon {
+            font-size: 4rem;
             margin-bottom: 1.5rem;
         }
 
-        .call-actions, .timeout-actions {
+        .waiting-room h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .waiting-room p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .waiting-room-actions {
             display: flex;
             gap: 1rem;
             justify-content: center;
         }
 
-        .accept-call-btn, .retry-call-btn {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-
-        .reject-call-btn, .cancel-call-btn {
+        .leave-waiting-btn {
             background: var(--danger-color);
             color: white;
             border: none;
@@ -1064,6 +1047,136 @@
             cursor: pointer;
             font-weight: 600;
             transition: background 0.3s;
+        }
+
+        .leave-waiting-btn:hover {
+            background: #c82333;
+        }
+
+        /* Admin Controls */
+        .admin-controls {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 8px;
+            z-index: 100;
+            display: none;
+            min-width: 250px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .admin-header {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .waiting-list {
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .waiting-user {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 0.7rem;
+            color: #ccc;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .admin-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .admit-btn {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .remove-btn {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .invite-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .invite-section h4 {
+            color: white;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .user-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #666;
+            border-radius: 4px;
+            background: #333;
+            color: white;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .invite-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            width: 100%;
         }
 
         /* WebSocket Status */
@@ -1221,6 +1334,12 @@
                 right: 10px;
                 min-width: 200px;
             }
+            
+            .admin-controls {
+                top: 60px;
+                left: 10px;
+                min-width: 200px;
+            }
         }
 
         /* Toggle Sidebar Button */
@@ -1338,22 +1457,17 @@
                 </div>
             </div>
 
-            <!-- Incoming Call Notification -->
-            <div class="incoming-call-notification" id="incomingCallNotification">
-                <div class="notification-content">
-                    <div class="caller-avatar" id="incomingCallAvatar">
-                        <i class="fas fa-user-md"></i>
+            <!-- Waiting Room -->
+            <div class="waiting-room" id="waitingRoom">
+                <div class="waiting-room-content">
+                    <div class="waiting-room-icon">
+                        <i class="fas fa-clock"></i>
                     </div>
-                    <div class="caller-info">
-                        <h3 id="incomingCallName">Incoming Call</h3>
-                        <p id="incomingCallType">Video Call</p>
-                    </div>
-                    <div class="call-actions">
-                        <button class="accept-call-btn" id="acceptCallBtn">
-                            <i class="fas fa-phone"></i> Accept
-                        </button>
-                        <button class="reject-call-btn" id="rejectCallBtn">
-                            <i class="fas fa-phone-slash"></i> Decline
+                    <h2>Waiting for Doctor</h2>
+                    <p>You are in the waiting room. The doctor will admit you to the meeting shortly.</p>
+                    <div class="waiting-room-actions">
+                        <button class="leave-waiting-btn" id="leaveWaitingBtn">
+                            <i class="fas fa-sign-out-alt"></i> Leave Waiting Room
                         </button>
                     </div>
                 </div>
@@ -1429,6 +1543,9 @@
                     </div>
                     <div class="call-duration" id="videoCallDuration">00:00</div>
                     <div class="header-controls">
+                        <button class="header-btn" id="adminControlsBtn" title="Admin Controls">
+                            <i class="fas fa-user-shield"></i>
+                        </button>
                         <button class="header-btn" id="participantsBtn" title="Participants">
                             <i class="fas fa-users"></i>
                         </button>
@@ -1443,6 +1560,29 @@
                 
                 <!-- Connection Status -->
                 <div class="connection-status" id="connectionStatus">Connecting...</div>
+                
+                <!-- Admin Controls Panel -->
+                <div class="admin-controls" id="adminControlsPanel">
+                    <div class="admin-header">
+                        <span>Meeting Controls</span>
+                        <button class="close-settings-btn" id="closeAdminBtn">×</button>
+                    </div>
+                    
+                    <div class="waiting-list" id="waitingList">
+                        <h4>Waiting Room</h4>
+                        <!-- Waiting users will be added here dynamically -->
+                    </div>
+                    
+                    <div class="invite-section">
+                        <h4>Invite Users</h4>
+                        <select class="user-select" id="userSelect">
+                            <option value="">Select user to invite...</option>
+                        </select>
+                        <button class="invite-btn" id="inviteUserBtn">
+                            <i class="fas fa-user-plus"></i> Invite
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- Device Settings Panel -->
                 <div class="device-settings-panel" id="deviceSettingsPanel">
@@ -1487,9 +1627,6 @@
                     <div class="participants-list" id="participantsList">
                         <!-- Participants will be added here dynamically -->
                     </div>
-                    <button class="invite-participant-btn" id="inviteParticipantBtn">
-                        <i class="fas fa-user-plus"></i> Invite Participant
-                    </button>
                 </div>
                 
                 <div class="video-container">
@@ -1596,8 +1733,7 @@
             let voiceRecordingTimer = null;
             let voiceRecordingSeconds = 0;
             let isVoiceRecording = false;
-            let currentCall = null;
-            let callTimeout = null;
+            let currentMeeting = null;
 
             // Device management variables
             let availableCameras = [];
@@ -1611,7 +1747,12 @@
 
             // Meeting participants management
             let meetingParticipants = [];
+            let waitingRoomUsers = [];
             let isDoctorAdmin = false;
+            let availableUsers = [];
+
+            // CSRF Token Management
+            let csrfToken = '';
 
             // WebRTC configuration
             const configuration = {
@@ -1669,12 +1810,6 @@
             const emojiBtn = document.getElementById('emojiBtn');
             const attachBtn = document.getElementById('attachBtn');
             const fileInput = document.getElementById('fileInput');
-            const incomingCallNotification = document.getElementById('incomingCallNotification');
-            const incomingCallName = document.getElementById('incomingCallName');
-            const incomingCallType = document.getElementById('incomingCallType');
-            const incomingCallAvatar = document.getElementById('incomingCallAvatar');
-            const acceptCallBtn = document.getElementById('acceptCallBtn');
-            const rejectCallBtn = document.getElementById('rejectCallBtn');
             const devicePermissionModal = document.getElementById('devicePermissionModal');
             const cameraSelect = document.getElementById('cameraSelect');
             const microphoneSelect = document.getElementById('microphoneSelect');
@@ -1694,7 +1829,14 @@
             const participantsPanel = document.getElementById('participantsPanel');
             const participantsList = document.getElementById('participantsList');
             const closeParticipantsBtn = document.getElementById('closeParticipantsBtn');
-            const inviteParticipantBtn = document.getElementById('inviteParticipantBtn');
+            const waitingRoom = document.getElementById('waitingRoom');
+            const leaveWaitingBtn = document.getElementById('leaveWaitingBtn');
+            const adminControlsBtn = document.getElementById('adminControlsBtn');
+            const adminControlsPanel = document.getElementById('adminControlsPanel');
+            const closeAdminBtn = document.getElementById('closeAdminBtn');
+            const waitingList = document.getElementById('waitingList');
+            const userSelect = document.getElementById('userSelect');
+            const inviteUserBtn = document.getElementById('inviteUserBtn');
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function() {
@@ -1704,7 +1846,10 @@
             // Initialize the application
             async function initializeApplication() {
                 try {
-                    // Get current user from session with CSRF token
+                    // Initialize CSRF token first
+                    await initializeCSRFToken();
+                    
+                    // Get current user from session
                     await getCurrentUser();
                     
                     // Initialize WebSocket connection
@@ -1726,18 +1871,90 @@
                     
                 } catch (error) {
                     console.error('Error initializing application:', error);
-                    showError('Failed to initialize application. Please refresh the page.');
+                    showToast('Failed to initialize application. Please refresh the page.', 'error');
                 }
             }
 
-            // Get current user from session with CSRF token fix
+            // Initialize CSRF Token
+            async function initializeCSRFToken() {
+                try {
+                    // Try multiple methods to get CSRF token
+                    csrfToken = getCSRFToken();
+                    
+                    if (!csrfToken) {
+                        // If no token found, try to fetch it from the server
+                        const response = await fetch('/api/csrf-token', {
+                            method: 'GET',
+                            credentials: 'same-origin'
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            csrfToken = data.csrf_token;
+                            console.log('CSRF token fetched from API:', csrfToken ? 'Success' : 'Failed');
+                        }
+                    }
+                    
+                    if (!csrfToken) {
+                        console.warn('CSRF token not available. Some features may not work properly.');
+                    } else {
+                        console.log('CSRF token initialized successfully');
+                    }
+                } catch (error) {
+                    console.error('Error initializing CSRF token:', error);
+                }
+            }
+
+            // Get CSRF token from multiple sources
+            function getCSRFToken() {
+                // Method 1: Check meta tag in head
+                const metaToken = document.querySelector('meta[name="csrf-token"]');
+                if (metaToken && metaToken.getAttribute('content')) {
+                    return metaToken.getAttribute('content');
+                }
+                
+                // Method 2: Check for hidden input field (common in forms)
+                const inputToken = document.querySelector('input[name="csrf_token"]');
+                if (inputToken && inputToken.value) {
+                    return inputToken.value;
+                }
+                
+                // Method 3: Check for data attribute on body
+                const bodyToken = document.body.getAttribute('data-csrf-token');
+                if (bodyToken) {
+                    return bodyToken;
+                }
+                
+                // Method 4: Check cookies (for Flask-WTF)
+                const cookieValue = getCookie('csrftoken') || getCookie('csrf_token') || getCookie('X-CSRFToken');
+                if (cookieValue) {
+                    return cookieValue;
+                }
+                
+                // Method 5: Check for window variable (if set by server-side template)
+                if (window.csrfToken) {
+                    return window.csrfToken;
+                }
+                
+                return '';
+            }
+
+            // Helper function to get cookie value
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+                return '';
+            }
+
+            // Get current user from session
             async function getCurrentUser() {
                 try {
                     const response = await fetch('/api/user/current', {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-Token': getCSRFToken()
+                            'X-CSRF-Token': csrfToken || ''
                         },
                         credentials: 'same-origin'
                     });
@@ -1758,13 +1975,7 @@
                     }
                 } catch (error) {
                     console.error('Error getting current user:', error);
-                    // For development, create a mock user
-                    currentUser = {
-                        id: 1,
-                        name: 'Demo User',
-                        role: 'patient',
-                        email: 'demo@example.com'
-                    };
+                    showToast('Failed to get user information', 'error');
                 }
             }
 
@@ -1807,21 +2018,19 @@
                     socket.on('user_online', handleUserOnline);
                     socket.on('user_offline', handleUserOffline);
 
-                    // Call events
-                    socket.on('incoming_call', handleIncomingCall);
-                    socket.on('call_accepted', handleCallAccepted);
-                    socket.on('call_rejected', handleCallRejected);
-                    socket.on('call_ended', handleCallEnded);
+                    // Meeting events
+                    socket.on('meeting_created', handleMeetingCreated);
+                    socket.on('meeting_joined', handleMeetingJoined);
+                    socket.on('meeting_left', handleMeetingLeft);
+                    socket.on('waiting_room_joined', handleWaitingRoomJoined);
+                    socket.on('user_admitted', handleUserAdmitted);
+                    socket.on('user_removed', handleUserRemoved);
+                    socket.on('meeting_invitation', handleMeetingInvitation);
 
                     // WebRTC events
                     socket.on('webrtc_offer', handleWebRTCOffer);
                     socket.on('webrtc_answer', handleWebRTCAnswer);
                     socket.on('webrtc_ice_candidate', handleWebRTCIceCandidate);
-
-                    // Meeting events
-                    socket.on('participant_joined', handleParticipantJoined);
-                    socket.on('participant_left', handleParticipantLeft);
-                    socket.on('meeting_invitation', handleMeetingInvitation);
 
                 } catch (error) {
                     console.error('Error initializing WebSocket:', error);
@@ -1904,10 +2113,6 @@
                 testAudioBtn.addEventListener('click', testAudioOutput);
                 testVideoBtn.addEventListener('click', testVideoOutput);
 
-                // Incoming call
-                acceptCallBtn.addEventListener('click', acceptIncomingCall);
-                rejectCallBtn.addEventListener('click', rejectIncomingCall);
-
                 // File attachment
                 attachBtn.addEventListener('click', () => {
                     fileInput.click();
@@ -1923,7 +2128,14 @@
                 // Meeting participants
                 participantsBtn.addEventListener('click', toggleParticipantsPanel);
                 closeParticipantsBtn.addEventListener('click', hideParticipantsPanel);
-                inviteParticipantBtn.addEventListener('click', inviteParticipant);
+
+                // Waiting room
+                leaveWaitingBtn.addEventListener('click', leaveWaitingRoom);
+
+                // Admin controls
+                adminControlsBtn.addEventListener('click', toggleAdminControls);
+                closeAdminBtn.addEventListener('click', hideAdminControls);
+                inviteUserBtn.addEventListener('click', inviteUserToMeeting);
             }
 
             // Check if this is first time user
@@ -1932,7 +2144,7 @@
                 isFirstTimeUser = !hasUsedVideoCall;
             }
 
-            // Load appointments for the current user with CSRF token
+            // Load appointments for the current user
             async function loadAppointments() {
                 try {
                     showLoadingState();
@@ -1941,7 +2153,7 @@
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-Token': getCSRFToken()
+                            'X-CSRF-Token': csrfToken || ''
                         },
                         credentials: 'same-origin'
                     });
@@ -2066,14 +2278,14 @@
                 contactStatus.textContent = `${specialization} • ${status || 'scheduled'}`;
             }
 
-            // Load messages for an appointment with CSRF token
+            // Load messages for an appointment
             async function loadMessages(appointmentId) {
                 try {
                     const response = await fetch(`/api/messages/${appointmentId}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-Token': getCSRFToken()
+                            'X-CSRF-Token': csrfToken || ''
                         },
                         credentials: 'same-origin'
                     });
@@ -2087,7 +2299,7 @@
                     
                 } catch (error) {
                     console.error('Error loading messages:', error);
-                    showError('Failed to load messages. Please try again.');
+                    showToast('Failed to load messages. Please try again.', 'error');
                     displayMessages([]);
                 }
             }
@@ -2167,7 +2379,7 @@
             function handleNewMessage(messageData) {
                 if (!currentAppointment || messageData.appointment_id !== currentAppointment.id) {
                     // Message for different appointment, show notification
-                    showNotification('New message received');
+                    showToast('New message received', 'info');
                     playNotificationSound();
                     return;
                 }
@@ -2195,7 +2407,7 @@
                 }
             }
 
-            // Send text message with CSRF token
+            // Send text message
             async function sendMessage() {
                 if (!currentAppointment || !messageInput.value.trim()) return;
                 
@@ -2216,7 +2428,7 @@
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-Token': getCSRFToken()
+                                'X-CSRF-Token': csrfToken || ''
                             },
                             credentials: 'same-origin',
                             body: JSON.stringify(messageData)
@@ -2239,7 +2451,7 @@
                     
                 } catch (error) {
                     console.error('Error sending message:', error);
-                    showError('Failed to send message. Please try again.');
+                    showToast('Failed to send message. Please try again.', 'error');
                 }
             }
 
@@ -2351,14 +2563,14 @@
                 messageInput.placeholder = "Type a message...";
             }
 
-            // Mark messages as read with CSRF token
+            // Mark messages as read
             async function markMessagesAsRead(appointmentId) {
                 try {
                     const response = await fetch(`/api/messages/${appointmentId}/mark_all_read`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-Token': getCSRFToken()
+                            'X-CSRF-Token': csrfToken || ''
                         },
                         credentials: 'same-origin',
                         body: JSON.stringify({})
@@ -2443,15 +2655,12 @@
                     
                     socket.emit('call_initiate', callData);
                     
-                    // Set call timeout
-                    setCallTimeout();
-                    
                     // Play outgoing ringtone
                     playOutgoingRingtone();
                     
                 } catch (error) {
                     console.error('Error starting voice call:', error);
-                    showError('Cannot access microphone. Please check permissions.');
+                    showToast('Cannot access microphone. Please check permissions.', 'error');
                 }
             }
 
@@ -2509,6 +2718,30 @@
                     });
                     
                     isVideoCall = true;
+                    
+                    // If user is doctor, create meeting immediately
+                    if (isDoctorAdmin) {
+                        await createMeeting(stream);
+                    } else {
+                        // If user is patient, join waiting room
+                        await joinWaitingRoom(stream);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error starting video call:', error);
+                    if (error.name === 'NotAllowedError') {
+                        showToast('Camera/microphone access was denied. Please allow permissions and try again.', 'error');
+                    } else if (error.name === 'NotFoundError') {
+                        showToast('No camera/microphone found. Please check your devices.', 'error');
+                    } else {
+                        showToast('Cannot access camera/microphone. Please check permissions.', 'error');
+                    }
+                }
+            }
+
+            // Create meeting (Doctor only)
+            async function createMeeting(stream) {
+                try {
                     showVideoCallInterface();
                     startCallTimer();
                     
@@ -2519,21 +2752,15 @@
                     
                     await initializeVideoCall(stream);
                     
-                    // Send call request
-                    const callData = {
+                    // Create meeting
+                    const meetingData = {
                         appointment_id: currentAppointment.id,
-                        call_type: 'video',
-                        caller_id: currentUser.id,
-                        caller_name: currentUser.name
+                        creator_id: currentUser.id,
+                        creator_name: currentUser.name,
+                        creator_role: currentUser.role
                     };
                     
-                    socket.emit('call_initiate', callData);
-                    
-                    // Set call timeout
-                    setCallTimeout();
-                    
-                    // Play outgoing ringtone
-                    playOutgoingRingtone();
+                    socket.emit('create_meeting', meetingData);
                     
                     // Add current user as first participant
                     addParticipant({
@@ -2544,15 +2771,45 @@
                         hasVideo: true
                     });
                     
+                    // Load available users for invitation
+                    await loadAvailableUsers();
+                    
+                    showToast('Meeting created successfully. You are the meeting admin.', 'success');
+                    
                 } catch (error) {
-                    console.error('Error starting video call:', error);
-                    if (error.name === 'NotAllowedError') {
-                        showError('Camera/microphone access was denied. Please allow permissions and try again.');
-                    } else if (error.name === 'NotFoundError') {
-                        showError('No camera/microphone found. Please check your devices.');
-                    } else {
-                        showError('Cannot access camera/microphone. Please check permissions.');
+                    console.error('Error creating meeting:', error);
+                    showToast('Failed to create meeting. Please try again.', 'error');
+                }
+            }
+
+            // Join waiting room (Patient)
+            async function joinWaitingRoom(stream) {
+                try {
+                    localStream = stream;
+                    
+                    // Display local video in waiting room
+                    if (localVideo) {
+                        localVideo.srcObject = stream;
                     }
+                    
+                    // Show waiting room
+                    showWaitingRoom();
+                    
+                    // Join waiting room
+                    const waitingData = {
+                        appointment_id: currentAppointment.id,
+                        user_id: currentUser.id,
+                        user_name: currentUser.name,
+                        user_role: currentUser.role
+                    };
+                    
+                    socket.emit('join_waiting_room', waitingData);
+                    
+                    showToast('You have joined the waiting room. The doctor will admit you shortly.', 'info');
+                    
+                } catch (error) {
+                    console.error('Error joining waiting room:', error);
+                    showToast('Failed to join waiting room. Please try again.', 'error');
                 }
             }
 
@@ -2696,8 +2953,36 @@
             // Show video call interface
             function showVideoCallInterface() {
                 videoCallInterface.style.display = 'flex';
-                videoCallStatus.textContent = 'Calling...';
+                videoCallStatus.textContent = 'Connected';
                 isInCall = true;
+            }
+
+            // Show waiting room
+            function showWaitingRoom() {
+                waitingRoom.style.display = 'flex';
+            }
+
+            // Hide waiting room
+            function hideWaitingRoom() {
+                waitingRoom.style.display = 'none';
+            }
+
+            // Leave waiting room
+            function leaveWaitingRoom() {
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
+                
+                hideWaitingRoom();
+                
+                // Notify server
+                socket.emit('leave_waiting_room', {
+                    appointment_id: currentAppointment.id,
+                    user_id: currentUser.id
+                });
+                
+                showToast('You have left the waiting room.', 'info');
             }
 
             // End call
@@ -2730,17 +3015,13 @@
                     stopRecording();
                 }
                 
-                // Clear call timeout
-                if (callTimeout) {
-                    clearTimeout(callTimeout);
-                    callTimeout = null;
-                }
-                
                 // Hide call interfaces
                 voiceCallInterface.style.display = 'none';
                 videoCallInterface.style.display = 'none';
+                hideWaitingRoom();
                 hideDeviceSettings();
                 hideParticipantsPanel();
+                hideAdminControls();
                 
                 // Remove remote participant
                 const remoteParticipant = document.getElementById('remoteParticipant');
@@ -2751,26 +3032,31 @@
                 // Stop timers
                 stopCallTimer();
                 
-                // Notify other participant
-                if (isSocketConnected && currentCall) {
-                    socket.emit('call_end', {
-                        appointment_id: currentAppointment.id
+                // Notify other participants
+                if (isSocketConnected && currentMeeting) {
+                    socket.emit('leave_meeting', {
+                        appointment_id: currentAppointment.id,
+                        user_id: currentUser.id
                     });
                 }
                 
                 // Reset call state
                 isVideoCall = false;
                 isInCall = false;
-                currentCall = null;
+                currentMeeting = null;
                 
                 // Clear participants
                 meetingParticipants = [];
+                waitingRoomUsers = [];
                 updateParticipantsList();
+                updateWaitingList();
                 
                 updateConnectionStatus('disconnected', 'Call ended');
                 
                 // Stop any playing audio
                 stopAllAudio();
+                
+                showToast('Call ended.', 'info');
             }
 
             // Toggle mute
@@ -2912,20 +3198,20 @@
                             const response = await fetch('/api/recordings/upload', {
                                 method: 'POST',
                                 headers: {
-                                    'X-CSRF-Token': getCSRFToken()
+                                    'X-CSRF-Token': csrfToken || ''
                                 },
                                 credentials: 'same-origin',
                                 body: formData
                             });
                             
                             if (response.ok) {
-                                showNotification('Call recording saved successfully');
+                                showToast('Call recording saved successfully', 'success');
                             } else {
                                 throw new Error('Failed to upload recording');
                             }
                         } catch (error) {
                             console.error('Error uploading recording:', error);
-                            showError('Failed to save recording');
+                            showToast('Failed to save recording', 'error');
                         }
                     };
                     
@@ -2935,7 +3221,7 @@
                     
                 } catch (error) {
                     console.error('Error starting recording:', error);
-                    showError('Failed to start recording');
+                    showToast('Failed to start recording', 'error');
                 }
             }
 
@@ -2978,16 +3264,6 @@
                 }
             }
 
-            // Set call timeout
-            function setCallTimeout() {
-                callTimeout = setTimeout(() => {
-                    if (isInCall && callStatus.textContent === 'Calling...') {
-                        endCall();
-                        showError('Call timed out. No answer from the other party.');
-                    }
-                }, 30000); // 30 seconds timeout
-            }
-
             // Update connection status
             function updateConnectionStatus(status, message) {
                 if (!connectionStatus) return;
@@ -3003,243 +3279,69 @@
                 }
             }
 
-            // ==================== INCOMING CALL FUNCTIONS ====================
+            // ==================== MEETING MANAGEMENT ====================
 
-            // Handle incoming call
-            function handleIncomingCall(callData) {
-                currentCall = callData;
-                
-                showIncomingCallNotification(callData.caller_name, callData.call_type);
-                
-                // Play incoming call sound with name announcement
-                playIncomingCallSound(callData.caller_name);
+            // Handle meeting created
+            function handleMeetingCreated(meetingData) {
+                currentMeeting = meetingData;
+                showToast('Meeting created successfully', 'success');
             }
 
-            // Show incoming call notification
-            function showIncomingCallNotification(callerName, callType) {
-                incomingCallName.textContent = callerName;
-                incomingCallType.textContent = callType === 'video' ? 'Video Call' : 'Voice Call';
-                incomingCallAvatar.innerHTML = callType === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-phone"></i>';
-                
-                incomingCallNotification.style.display = 'block';
-                incomingCallAvatar.classList.add('ringing');
+            // Handle meeting joined
+            function handleMeetingJoined(participantData) {
+                addParticipant(participantData);
+                showToast(`${participantData.name} has joined the meeting`, 'info');
             }
 
-            // Accept incoming call
-            async function acceptIncomingCall() {
-                if (!currentCall) return;
-                
-                stopIncomingCallSound();
-                hideIncomingCallNotification();
-                
-                // Notify caller
-                socket.emit('call_accept', {
-                    call_id: currentCall.call_id,
-                    appointment_id: currentCall.appointment_id
-                });
-                
-                // Start the appropriate call type
-                if (currentCall.call_type === 'video') {
-                    await startVideoCallForIncoming();
-                } else {
-                    await startVoiceCallForIncoming();
+            // Handle meeting left
+            function handleMeetingLeft(participantData) {
+                removeParticipant(participantData.id);
+                showToast(`${participantData.name} has left the meeting`, 'info');
+            }
+
+            // Handle waiting room joined
+            function handleWaitingRoomJoined(waitingData) {
+                addWaitingUser(waitingData);
+                if (isDoctorAdmin) {
+                    updateWaitingList();
+                    showToast(`${waitingData.user_name} is waiting to join the meeting`, 'info');
                 }
             }
 
-            // Start video call for incoming call
-            async function startVideoCallForIncoming() {
-                try {
-                    // Show device permission modal for first-time users
-                    if (isFirstTimeUser || !devicePermissionsGranted) {
-                        await showDevicePermissionModal();
-                        return;
-                    }
-                    
-                    // Get user media with selected devices
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: selectedCameraId ? { deviceId: { exact: selectedCameraId } } : true,
-                        audio: selectedMicrophoneId ? { deviceId: { exact: selectedMicrophoneId } } : true
-                    });
-                    
-                    isVideoCall = true;
+            // Handle user admitted
+            function handleUserAdmitted(userData) {
+                if (userData.user_id === currentUser.id) {
+                    // Current user was admitted, join the meeting
+                    hideWaitingRoom();
                     showVideoCallInterface();
                     startCallTimer();
                     
-                    // Update caller name
-                    videoCallerName.textContent = currentCall.caller_name;
-                    videoCallStatus.textContent = 'Connected';
+                    // Initialize video call with existing stream
+                    if (localStream) {
+                        initializeVideoCall(localStream);
+                    }
                     
-                    await initializeVideoCall(stream);
-                    
-                    // Add participants
-                    addParticipant({
-                        id: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role,
-                        isMuted: false,
-                        hasVideo: true
-                    });
-                    
-                } catch (error) {
-                    console.error('Error accepting video call:', error);
-                    showError('Cannot access camera/microphone. Please check permissions.');
-                    endCall();
-                }
-            }
-
-            // Start voice call for incoming call
-            async function startVoiceCallForIncoming() {
-                try {
-                    // Request permission for microphone only
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: true,
-                        video: false 
-                    });
-                    
-                    isVideoCall = false;
-                    showVoiceCallInterface();
-                    startCallTimer();
-                    
-                    // Update caller name
-                    document.getElementById('callerAvatar').innerHTML = '<i class="fas fa-user-md"></i>';
-                    callStatus.textContent = 'Connected';
-                    
-                    // Initialize voice call
-                    initializeVoiceCall(stream);
-                    
-                } catch (error) {
-                    console.error('Error accepting voice call:', error);
-                    showError('Cannot access microphone. Please check permissions.');
-                    endCall();
-                }
-            }
-
-            // Reject incoming call
-            function rejectIncomingCall() {
-                if (!currentCall) return;
-                
-                stopIncomingCallSound();
-                hideIncomingCallNotification();
-                
-                // Notify caller
-                socket.emit('call_reject', {
-                    call_id: currentCall.call_id,
-                    appointment_id: currentCall.appointment_id
-                });
-                
-                currentCall = null;
-            }
-
-            // Handle call accepted
-            function handleCallAccepted(data) {
-                if (isVideoCall) {
-                    videoCallStatus.textContent = 'Connected';
+                    showToast('You have been admitted to the meeting', 'success');
                 } else {
-                    callStatus.textContent = 'Connected';
+                    // Another user was admitted
+                    showToast(`${userData.user_name} has been admitted to the meeting`, 'info');
                 }
                 
-                // Clear call timeout
-                if (callTimeout) {
-                    clearTimeout(callTimeout);
-                    callTimeout = null;
+                // Remove from waiting list
+                removeWaitingUser(userData.user_id);
+            }
+
+            // Handle user removed
+            function handleUserRemoved(userData) {
+                if (userData.user_id === currentUser.id) {
+                    // Current user was removed
+                    endCall();
+                    showToast('You have been removed from the meeting', 'warning');
+                } else {
+                    // Another user was removed
+                    showToast(`${userData.user_name} has been removed from the meeting`, 'info');
+                    removeParticipant(userData.user_id);
                 }
-            }
-
-            // Handle call rejected
-            function handleCallRejected(data) {
-                endCall();
-                showError('Call was rejected by the other party.');
-            }
-
-            // Handle call ended
-            function handleCallEnded(data) {
-                endCall();
-            }
-
-            // Hide incoming call notification
-            function hideIncomingCallNotification() {
-                incomingCallNotification.style.display = 'none';
-                incomingCallAvatar.classList.remove('ringing');
-            }
-
-            // Play outgoing ringtone
-            function playOutgoingRingtone() {
-                const audio = new Audio('/static/ringtones/video_ringtone.mp3');
-                audio.loop = true;
-                audio.play().catch(e => console.log('Audio play failed:', e));
-                
-                // Store reference to stop later
-                window.outgoingRingtone = audio;
-            }
-
-            // Play incoming call sound with name announcement
-            function playIncomingCallSound(callerName) {
-                // First play the ringtone
-                const ringtone = new Audio('/static/ringtones/video_ringtone.mp3');
-                ringtone.loop = true;
-                ringtone.play().catch(e => console.log('Ringtone play failed:', e));
-                
-                // Create speech synthesis for name announcement
-                const speech = new SpeechSynthesisUtterance(`Incoming call from ${callerName}`);
-                speech.volume = 1;
-                speech.rate = 0.8;
-                speech.pitch = 1;
-                
-                // Play announcement after a short delay
-                setTimeout(() => {
-                    window.speechSynthesis.speak(speech);
-                }, 1000);
-                
-                // Store references to stop later
-                window.incomingRingtone = ringtone;
-                window.incomingSpeech = speech;
-            }
-
-            // Stop incoming call sound
-            function stopIncomingCallSound() {
-                if (window.incomingRingtone) {
-                    window.incomingRingtone.pause();
-                    window.incomingRingtone.currentTime = 0;
-                }
-                if (window.incomingSpeech) {
-                    window.speechSynthesis.cancel();
-                }
-            }
-
-            // Stop all audio
-            function stopAllAudio() {
-                if (window.outgoingRingtone) {
-                    window.outgoingRingtone.pause();
-                    window.outgoingRingtone.currentTime = 0;
-                }
-                if (window.incomingRingtone) {
-                    window.incomingRingtone.pause();
-                    window.incomingRingtone.currentTime = 0;
-                }
-                if (window.incomingSpeech) {
-                    window.speechSynthesis.cancel();
-                }
-            }
-
-            // ==================== MEETING PARTICIPANTS MANAGEMENT ====================
-
-            // Handle participant joined
-            function handleParticipantJoined(participantData) {
-                addParticipant(participantData);
-                
-                // Show notification
-                showNotification(`${participantData.name} (${participantData.role}) has joined the meeting`);
-                
-                // Play join sound (optional)
-                playJoinSound();
-            }
-
-            // Handle participant left
-            function handleParticipantLeft(participantData) {
-                removeParticipant(participantData.id);
-                
-                // Show notification
-                showNotification(`${participantData.name} has left the meeting`);
             }
 
             // Handle meeting invitation
@@ -3263,12 +3365,6 @@
                 if (existingIndex === -1) {
                     meetingParticipants.push(participant);
                     updateParticipantsList();
-                    
-                    // If this is the doctor joining, make them admin
-                    if (participant.role === 'doctor' && !isDoctorAdmin) {
-                        isDoctorAdmin = true;
-                        showNotification('Doctor is now the meeting admin');
-                    }
                 }
             }
 
@@ -3276,6 +3372,21 @@
             function removeParticipant(participantId) {
                 meetingParticipants = meetingParticipants.filter(p => p.id !== participantId);
                 updateParticipantsList();
+            }
+
+            // Add user to waiting room
+            function addWaitingUser(userData) {
+                // Check if user already exists in waiting room
+                const existingIndex = waitingRoomUsers.findIndex(u => u.user_id === userData.user_id);
+                if (existingIndex === -1) {
+                    waitingRoomUsers.push(userData);
+                }
+            }
+
+            // Remove user from waiting room
+            function removeWaitingUser(userId) {
+                waitingRoomUsers = waitingRoomUsers.filter(u => u.user_id !== userId);
+                updateWaitingList();
             }
 
             // Update participant mute status
@@ -3321,6 +3432,159 @@
                 });
             }
 
+            // Update waiting list in UI
+            function updateWaitingList() {
+                if (!waitingList) return;
+                
+                waitingList.innerHTML = '';
+                
+                if (waitingRoomUsers.length === 0) {
+                    waitingList.innerHTML = '<p style="color: #ccc; text-align: center;">No users waiting</p>';
+                    return;
+                }
+                
+                waitingRoomUsers.forEach(user => {
+                    const waitingUser = document.createElement('div');
+                    waitingUser.className = 'waiting-user';
+                    
+                    waitingUser.innerHTML = `
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                ${user.user_role === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>'}
+                            </div>
+                            <div class="user-details">
+                                <div class="user-name">${user.user_name}</div>
+                                <div class="user-role">${user.user_role}</div>
+                            </div>
+                        </div>
+                        <div class="admin-actions">
+                            <button class="admin-btn admit-btn" data-user-id="${user.user_id}">
+                                Admit
+                            </button>
+                            <button class="admin-btn remove-btn" data-user-id="${user.user_id}">
+                                Remove
+                            </button>
+                        </div>
+                    `;
+                    
+                    waitingList.appendChild(waitingUser);
+                });
+                
+                // Add event listeners to admit/remove buttons
+                document.querySelectorAll('.admit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        admitUser(userId);
+                    });
+                });
+                
+                document.querySelectorAll('.remove-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const userId = e.target.dataset.userId;
+                        removeUserFromWaiting(userId);
+                    });
+                });
+            }
+
+            // Admit user to meeting
+            function admitUser(userId) {
+                if (!isDoctorAdmin) {
+                    showToast('Only the meeting admin can admit users', 'error');
+                    return;
+                }
+                
+                socket.emit('admit_user', {
+                    appointment_id: currentAppointment.id,
+                    user_id: userId
+                });
+            }
+
+            // Remove user from waiting room
+            function removeUserFromWaiting(userId) {
+                if (!isDoctorAdmin) {
+                    showToast('Only the meeting admin can remove users', 'error');
+                    return;
+                }
+                
+                socket.emit('remove_user', {
+                    appointment_id: currentAppointment.id,
+                    user_id: userId
+                });
+            }
+
+            // Load available users for invitation
+            async function loadAvailableUsers() {
+                try {
+                    const response = await fetch('/api/users/available', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        availableUsers = await response.json();
+                        updateUserSelect();
+                    } else {
+                        throw new Error('Failed to load available users');
+                    }
+                } catch (error) {
+                    console.error('Error loading available users:', error);
+                    // For demo purposes, create some mock users
+                    availableUsers = [
+                        { id: 2, name: 'Dr. Smith', role: 'doctor' },
+                        { id: 3, name: 'Nurse Johnson', role: 'nurse' },
+                        { id: 4, name: 'Medical Assistant', role: 'assistant' }
+                    ];
+                    updateUserSelect();
+                }
+            }
+
+            // Update user select dropdown
+            function updateUserSelect() {
+                if (!userSelect) return;
+                
+                userSelect.innerHTML = '<option value="">Select user to invite...</option>';
+                
+                availableUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.name} (${user.role})`;
+                    userSelect.appendChild(option);
+                });
+            }
+
+            // Invite user to meeting
+            function inviteUserToMeeting() {
+                if (!isDoctorAdmin) {
+                    showToast('Only the meeting admin can invite users', 'error');
+                    return;
+                }
+                
+                const userId = userSelect.value;
+                if (!userId) {
+                    showToast('Please select a user to invite', 'warning');
+                    return;
+                }
+                
+                const user = availableUsers.find(u => u.id == userId);
+                if (!user) {
+                    showToast('Selected user not found', 'error');
+                    return;
+                }
+                
+                socket.emit('invite_user', {
+                    appointment_id: currentAppointment.id,
+                    user_id: userId,
+                    user_name: user.name
+                });
+                
+                showToast(`Invitation sent to ${user.name}`, 'success');
+                userSelect.value = '';
+            }
+
             // Toggle participants panel
             function toggleParticipantsPanel() {
                 if (participantsPanel.style.display === 'block') {
@@ -3334,6 +3598,7 @@
             function showParticipantsPanel() {
                 participantsPanel.style.display = 'block';
                 hideDeviceSettings();
+                hideAdminControls();
             }
 
             // Hide participants panel
@@ -3341,46 +3606,31 @@
                 participantsPanel.style.display = 'none';
             }
 
-            // Invite participant to meeting
-            function inviteParticipant() {
+            // Toggle admin controls
+            function toggleAdminControls() {
                 if (!isDoctorAdmin) {
-                    showError('Only the meeting admin can invite participants');
+                    showToast('Only the meeting admin can access these controls', 'error');
                     return;
                 }
                 
-                // In a real implementation, this would show a list of available users
-                // For now, we'll simulate inviting a user
-                const participantName = prompt('Enter the name of the participant to invite:');
-                if (participantName) {
-                    // Simulate sending invitation
-                    socket.emit('invite_to_meeting', {
-                        appointment_id: currentAppointment.id,
-                        participant_name: participantName,
-                        inviter_name: currentUser.name
-                    });
-                    
-                    showNotification(`Invitation sent to ${participantName}`);
+                if (adminControlsPanel.style.display === 'block') {
+                    hideAdminControls();
+                } else {
+                    showAdminControls();
                 }
             }
 
-            // Play join sound
-            function playJoinSound() {
-                // Simple beep sound for participant join
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
-                gainNode.gain.value = 0.1;
-                
-                oscillator.start();
-                setTimeout(() => {
-                    oscillator.stop();
-                }, 200);
+            // Show admin controls
+            function showAdminControls() {
+                adminControlsPanel.style.display = 'block';
+                hideDeviceSettings();
+                hideParticipantsPanel();
+                updateWaitingList();
+            }
+
+            // Hide admin controls
+            function hideAdminControls() {
+                adminControlsPanel.style.display = 'none';
             }
 
             // ==================== VOICE RECORDING FUNCTIONS ====================
@@ -3402,7 +3652,7 @@
             // Start voice recording
             function startVoiceRecording() {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showError('Audio recording is not supported in your browser');
+                    showToast('Audio recording is not supported in your browser', 'error');
                     return;
                 }
 
@@ -3418,7 +3668,7 @@
                         voiceMediaRecorder.onstop = async () => {
                             const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
                             
-                            // Upload voice recording to server with CSRF token
+                            // Upload voice recording to server
                             const formData = new FormData();
                             formData.append('audio', audioBlob, `voice-message-${new Date().getTime()}.webm`);
                             formData.append('appointment_id', currentAppointment.id);
@@ -3428,7 +3678,7 @@
                                 const response = await fetch('/api/messages/voice', {
                                     method: 'POST',
                                     headers: {
-                                        'X-CSRF-Token': getCSRFToken()
+                                        'X-CSRF-Token': csrfToken || ''
                                     },
                                     credentials: 'same-origin',
                                     body: formData
@@ -3437,12 +3687,13 @@
                                 if (response.ok) {
                                     const message = await response.json();
                                     addMessageToChat(message, true);
+                                    showToast('Voice message sent', 'success');
                                 } else {
                                     throw new Error('Failed to upload voice message');
                                 }
                             } catch (error) {
                                 console.error('Error uploading voice message:', error);
-                                showError('Failed to send voice message');
+                                showToast('Failed to send voice message', 'error');
                             }
                             
                             // Hide recorder
@@ -3464,7 +3715,7 @@
                     })
                     .catch(error => {
                         console.error('Error accessing microphone:', error);
-                        showError('Cannot access microphone. Please check permissions.');
+                        showToast('Cannot access microphone. Please check permissions.', 'error');
                     });
             }
 
@@ -3533,7 +3784,7 @@
                     devicePermissionModal.style.display = 'flex';
                 } catch (error) {
                     console.error('Error showing device permission modal:', error);
-                    showError('Error accessing devices. Please check your browser permissions.');
+                    showToast('Error accessing devices. Please check your browser permissions.', 'error');
                 }
             }
 
@@ -3646,19 +3897,12 @@
                 applySpeakerSelection();
                 
                 // Continue with the call
-                if (currentCall) {
-                    acceptIncomingCall();
-                } else {
-                    startVideoCall();
-                }
+                startVideoCall();
             }
 
             // Cancel device selection
             function cancelDeviceSelection() {
                 hideDevicePermissionModal();
-                if (currentCall) {
-                    rejectIncomingCall();
-                }
             }
 
             // Apply speaker selection
@@ -3691,6 +3935,7 @@
             function showDeviceSettings() {
                 deviceSettingsPanel.style.display = 'block';
                 hideParticipantsPanel();
+                hideAdminControls();
             }
 
             // Hide device settings
@@ -3818,7 +4063,7 @@
 
             // ==================== FILE UPLOAD ====================
 
-            // Handle file upload with CSRF token
+            // Handle file upload
             async function handleFileUpload(e) {
                 const file = e.target.files[0];
                 if (file && currentAppointment) {
@@ -3830,7 +4075,7 @@
                         const response = await fetch('/api/messages/file', {
                             method: 'POST',
                             headers: {
-                                'X-CSRF-Token': getCSRFToken()
+                                'X-CSRF-Token': csrfToken || ''
                             },
                             credentials: 'same-origin',
                             body: formData
@@ -3839,13 +4084,14 @@
                         if (response.ok) {
                             const message = await response.json();
                             addMessageToChat(message, true);
+                            showToast('File uploaded successfully', 'success');
                         } else {
                             const errorData = await response.json();
                             throw new Error(errorData.error || 'Failed to upload file');
                         }
                     } catch (error) {
                         console.error('Error uploading file:', error);
-                        showError('Failed to upload file. Please try again.');
+                        showToast('Failed to upload file. Please try again.', 'error');
                     }
                     
                     // Reset file input
@@ -3855,50 +4101,47 @@
 
             // ==================== UTILITY FUNCTIONS ====================
 
-            // Get CSRF token - FIXED VERSION
-            function getCSRFToken() {
-                // Method 1: Check meta tag
-                const metaToken = document.querySelector('meta[name="csrf-token"]');
-                if (metaToken) {
-                    return metaToken.getAttribute('content');
-                }
+            // Show toast notification
+            function showToast(message, type = 'info') {
+                const backgroundColor = {
+                    success: '#28a745',
+                    error: '#dc3545',
+                    warning: '#ffc107',
+                    info: '#17a2b8'
+                }[type] || '#17a2b8';
                 
-                // Method 2: Check for CSRF token in cookies
-                const cookieValue = document.cookie
-                    .split('; ')
-                    .find(row => row.startsWith('csrf_token='))
-                    ?.split('=')[1];
-                
-                if (cookieValue) {
-                    return cookieValue;
-                }
-                
-                // Method 3: Check for X-CSRF-TOKEN header (if set by server)
-                // This would require server-side rendering to set the header
-                
-                console.warn('CSRF token not found. Some features may not work properly.');
-                return '';
-            }
-
-            // Show notification
-            function showNotification(message) {
-                // In a real app, you might use a toast notification library
-                console.log('Notification:', message);
-                // Simple alert for demo
-                alert(message);
-            }
-
-            // Show error
-            function showError(message) {
-                console.error('Error:', message);
-                // Simple alert for demo
-                alert('Error: ' + message);
+                Toastify({
+                    text: message,
+                    duration: 3000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: backgroundColor,
+                    stopOnFocus: true
+                }).showToast();
             }
 
             // Play notification sound
             function playNotificationSound() {
                 // In a real app, this would play a sound
                 console.log('Playing notification sound');
+            }
+
+            // Play outgoing ringtone
+            function playOutgoingRingtone() {
+                const audio = new Audio('/static/ringtones/video_ringtone.mp3');
+                audio.loop = true;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+                
+                // Store reference to stop later
+                window.outgoingRingtone = audio;
+            }
+
+            // Stop all audio
+            function stopAllAudio() {
+                if (window.outgoingRingtone) {
+                    window.outgoingRingtone.pause();
+                    window.outgoingRingtone.currentTime = 0;
+                }
             }
 
             // Format time
