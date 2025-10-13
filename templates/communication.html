@@ -2803,6 +2803,28 @@
             // Create meeting (Doctor only)
             async function createMeeting(stream) {
                 try {
+                    console.log('Creating meeting for appointment:', currentAppointment.id);
+                    
+                    // First, create the meeting via API
+                    const response = await fetch('/api/meetings/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            appointment_id: currentAppointment.id
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to create meeting');
+                    }
+                    
+                    const meetingData = await response.json();
+                    currentMeeting = meetingData;
+                    
                     showVideoCallInterface();
                     startCallTimer();
                     
@@ -2813,20 +2835,18 @@
                     
                     await initializeVideoCall(stream);
                     
-                    // Create meeting
-                    const meetingData = {
+                    // Notify via WebSocket
+                    socket.emit('create_meeting', {
                         appointment_id: currentAppointment.id,
                         creator_id: currentUser.id,
-                        creator_name: currentUser.name,
+                        creator_name: currentUser.name || currentUser.email,
                         creator_role: currentUser.role
-                    };
-                    
-                    socket.emit('create_meeting', meetingData);
+                    });
                     
                     // Add current user as first participant
                     addParticipant({
                         id: currentUser.id,
-                        name: currentUser.name,
+                        name: currentUser.name || currentUser.email,
                         role: currentUser.role,
                         isMuted: false,
                         hasVideo: true
@@ -2835,11 +2855,38 @@
                     // Load available users for invitation
                     await loadAvailableUsers();
                     
+                    // Load waiting room users
+                    await loadWaitingRoomUsers();
+                    
                     showToast('Meeting created successfully. You are the meeting admin.', 'success');
                     
                 } catch (error) {
                     console.error('Error creating meeting:', error);
                     showToast('Failed to create meeting. Please try again.', 'error');
+                    throw error;
+                }
+            }
+
+            // Load waiting room users
+            async function loadWaitingRoomUsers() {
+                try {
+                    const response = await fetch(`/api/waiting-room/users?appointment_id=${currentAppointment.id}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        const waitingUsers = await response.json();
+                        waitingRoomUsers = waitingUsers;
+                        updateWaitingList();
+                        updateWaitingCount();
+                    }
+                } catch (error) {
+                    console.error('Error loading waiting room users:', error);
                 }
             }
 
@@ -3623,6 +3670,8 @@
             // Load available users for invitation
             async function loadAvailableUsers() {
                 try {
+                    console.log('Loading available users...');
+                    
                     const response = await fetch('/api/users/available', {
                         method: 'GET',
                         headers: {
@@ -3635,18 +3684,30 @@
                     if (response.ok) {
                         availableUsers = await response.json();
                         updateUserSelect();
+                        console.log('Available users loaded:', availableUsers);
                     } else {
-                        throw new Error('Failed to load available users');
+                        throw new Error(`Failed to load available users: ${response.status}`);
                     }
                 } catch (error) {
                     console.error('Error loading available users:', error);
-                    // For demo purposes, create some mock users
-                    availableUsers = [
-                        { id: 2, name: 'Dr. Smith', role: 'doctor' },
-                        { id: 3, name: 'Nurse Johnson', role: 'nurse' },
-                        { id: 4, name: 'Medical Assistant', role: 'assistant' }
-                    ];
-                    updateUserSelect();
+                    
+                    // Fallback: Get users from current appointment
+                    if (currentAppointment) {
+                        availableUsers = [
+                            {
+                                id: currentUser.role === 'doctor' ? 
+                                    currentAppointment.patient.user_id : 
+                                    currentAppointment.doctor.user_id,
+                                name: currentUser.role === 'doctor' ? 
+                                    `${currentAppointment.patient.first_name} ${currentAppointment.patient.last_name}` :
+                                    `Dr. ${currentAppointment.doctor.first_name} ${currentAppointment.doctor.last_name}`,
+                                role: currentUser.role === 'doctor' ? 'patient' : 'doctor'
+                            }
+                        ];
+                        updateUserSelect();
+                    }
+                    
+                    showToast('Using limited user list for invitations', 'info');
                 }
             }
 
