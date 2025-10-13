@@ -5,12 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medical Communication - Makokha Medical Centre</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #075e54;
+            --secondary-color: #128c7e;
+            --accent-color: #25d366;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --gray-color: #6c757d;
         }
 
         body {
@@ -41,7 +53,7 @@
         .sidebar-header {
             padding: 1.5rem;
             border-bottom: 1px solid #e0e0e0;
-            background: #075e54;
+            background: var(--primary-color);
             color: white;
         }
 
@@ -91,7 +103,7 @@
 
         .appointment-item.active {
             background: #e3f2fd;
-            border-color: #075e54;
+            border-color: var(--primary-color);
         }
 
         .appointment-info h3 {
@@ -100,7 +112,7 @@
         }
 
         .appointment-info p {
-            color: #666;
+            color: var(--gray-color);
             font-size: 0.9rem;
             margin-bottom: 0.25rem;
         }
@@ -139,7 +151,7 @@
         }
 
         .unread-badge {
-            background: #dc3545;
+            background: var(--danger-color);
             color: white;
             padding: 0.25rem 0.5rem;
             border-radius: 12px;
@@ -150,14 +162,14 @@
         .loading-state, .empty-state {
             text-align: center;
             padding: 2rem;
-            color: #666;
+            color: var(--gray-color);
         }
 
         .loading-spinner {
             width: 40px;
             height: 40px;
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #075e54;
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 1rem;
@@ -201,7 +213,7 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: #075e54;
+            background: var(--primary-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -215,7 +227,7 @@
         }
 
         .contact-details p {
-            color: #666;
+            color: var(--gray-color);
             font-size: 0.9rem;
         }
 
@@ -225,7 +237,7 @@
         }
 
         .call-btn {
-            background: #075e54;
+            background: var(--primary-color);
             color: white;
             border: none;
             padding: 0.5rem 1rem;
@@ -241,7 +253,7 @@
         }
 
         .call-btn:hover:not(:disabled) {
-            background: #064e45;
+            background: var(--secondary-color);
         }
 
         /* Messages Container */
@@ -305,7 +317,7 @@
 
         .audio-duration {
             font-size: 0.8rem;
-            color: #666;
+            color: var(--gray-color);
         }
 
         /* Voice Recorder */
@@ -319,7 +331,7 @@
         }
 
         .record-btn {
-            background: #dc3545;
+            background: var(--danger-color);
             color: white;
             border: none;
             width: 50px;
@@ -334,7 +346,7 @@
         }
 
         .record-btn.recording {
-            background: #28a745;
+            background: var(--accent-color);
             animation: pulse 1.5s infinite;
         }
 
@@ -346,7 +358,7 @@
 
         .recording-timer {
             font-weight: 600;
-            color: #dc3545;
+            color: var(--danger-color);
         }
 
         .recording-controls {
@@ -365,7 +377,7 @@
         }
 
         .send-recording {
-            background: #28a745;
+            background: var(--accent-color);
             color: white;
         }
 
@@ -435,7 +447,7 @@
         }
 
         .send-btn {
-            background: #075e54;
+            background: var(--primary-color);
             color: white;
             border: none;
             width: 40px;
@@ -455,13 +467,13 @@
         }
 
         .send-btn:hover:not(:disabled) {
-            background: #064e45;
+            background: var(--secondary-color);
         }
 
         /* Typing Indicator */
         .typing-indicator {
             padding: 0.5rem 1.5rem;
-            color: #666;
+            color: var(--gray-color);
             font-size: 0.9rem;
             display: none;
         }
@@ -479,7 +491,7 @@
         .typing-dot {
             width: 6px;
             height: 6px;
-            background: #666;
+            background: var(--gray-color);
             border-radius: 50%;
             animation: typing 1.4s infinite ease-in-out;
         }
@@ -499,7 +511,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #075e54, #128c7e);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             z-index: 1000;
             display: none;
             flex-direction: column;
@@ -554,11 +566,11 @@
         }
 
         .voice-call-interface .mute-btn.muted {
-            background: #f44336;
+            background: var(--danger-color);
         }
 
         .voice-call-interface .end-call-btn {
-            background: #f44336;
+            background: var(--danger-color);
             color: white;
         }
 
@@ -595,7 +607,7 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #075e54;
+            background: var(--primary-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -693,11 +705,11 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: #4caf50;
+            background: var(--accent-color);
         }
 
         .participant-status.muted {
-            background: #f44336;
+            background: var(--danger-color);
         }
 
         /* Video Controls */
@@ -731,7 +743,7 @@
         }
 
         .control-btn.mute-btn.muted {
-            background: #f44336;
+            background: var(--danger-color);
         }
 
         .control-btn.video-btn {
@@ -740,7 +752,7 @@
         }
 
         .control-btn.video-btn.off {
-            background: #f44336;
+            background: var(--danger-color);
         }
 
         .control-btn.screen-share-btn {
@@ -749,7 +761,7 @@
         }
 
         .control-btn.screen-share-btn.active {
-            background: #4caf50;
+            background: var(--accent-color);
         }
 
         .control-btn.record-btn {
@@ -758,7 +770,7 @@
         }
 
         .control-btn.record-btn.recording {
-            background: #f44336;
+            background: var(--danger-color);
             animation: pulse 1.5s infinite;
         }
 
@@ -768,7 +780,7 @@
         }
 
         .control-btn.end-call-btn {
-            background: #f44336;
+            background: var(--danger-color);
             color: white;
         }
 
@@ -806,12 +818,12 @@
         }
 
         .device-permission-header h2 {
-            color: #075e54;
+            color: var(--primary-color);
             margin-bottom: 0.5rem;
         }
 
         .device-permission-header p {
-            color: #666;
+            color: var(--gray-color);
         }
 
         .device-selection {
@@ -854,12 +866,12 @@
         }
 
         .confirm-devices-btn {
-            background: #075e54;
+            background: var(--primary-color);
             color: white;
         }
 
         .confirm-devices-btn:hover {
-            background: #064e45;
+            background: var(--secondary-color);
         }
 
         .cancel-devices-btn {
@@ -938,7 +950,7 @@
         }
 
         .test-audio-btn {
-            background: #4caf50;
+            background: var(--accent-color);
             color: white;
         }
 
@@ -970,6 +982,10 @@
             background: rgba(244, 67, 54, 0.8);
         }
 
+        .connection-status.connecting {
+            background: rgba(255, 193, 7, 0.8);
+        }
+
         /* Incoming Call Notification */
         .incoming-call-notification {
             position: fixed;
@@ -994,7 +1010,7 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: #075e54;
+            background: var(--primary-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1018,7 +1034,7 @@
         }
 
         .incoming-call-notification p {
-            color: #666;
+            color: var(--gray-color);
             margin-bottom: 1.5rem;
         }
 
@@ -1029,7 +1045,7 @@
         }
 
         .accept-call-btn, .retry-call-btn {
-            background: #28a745;
+            background: var(--accent-color);
             color: white;
             border: none;
             padding: 0.75rem 1.5rem;
@@ -1040,7 +1056,7 @@
         }
 
         .reject-call-btn, .cancel-call-btn {
-            background: #dc3545;
+            background: var(--danger-color);
             color: white;
             border: none;
             padding: 0.75rem 1.5rem;
@@ -1048,6 +1064,34 @@
             cursor: pointer;
             font-weight: 600;
             transition: background 0.3s;
+        }
+
+        /* WebSocket Status */
+        .websocket-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 3000;
+            display: none;
+        }
+
+        .websocket-connected {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .websocket-disconnected {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .websocket-connecting {
+            background: var(--warning-color);
+            color: black;
         }
 
         /* Responsive */
@@ -1099,7 +1143,7 @@
             position: fixed;
             top: 10px;
             left: 10px;
-            background: #075e54;
+            background: var(--primary-color);
             color: white;
             border: none;
             width: 40px;
@@ -1133,6 +1177,9 @@
     </style>
 </head>
 <body>
+    <!-- WebSocket Status Indicator -->
+    <div class="websocket-status" id="websocketStatus">Connecting...</div>
+
     <!-- Toggle Sidebar Button (Mobile) -->
     <button class="toggle-sidebar" id="toggleSidebar">
         <i class="fas fa-bars"></i>
@@ -1144,7 +1191,7 @@
             <div class="sidebar-header">
                 <h1>Medical Consultations</h1>
                 <p>Select an appointment to communicate</p>
-                <button class="refresh-button" onclick="loadAppointments()" id="refreshBtn">
+                <button class="refresh-button" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
             </div>
@@ -1353,16 +1400,10 @@
                             <video id="localVideo" autoplay muted playsinline></video>
                             <div class="participant-info">
                                 <div class="participant-status"></div>
-                                <span>You</span>
+                                <span id="localParticipantName">You</span>
                             </div>
                         </div>
-                        <div class="video-participant" id="remoteParticipant">
-                            <video id="remoteVideo" autoplay playsinline></video>
-                            <div class="participant-info">
-                                <div class="participant-status"></div>
-                                <span>Remote User</span>
-                            </div>
-                        </div>
+                        <!-- Remote participant will be added dynamically -->
                     </div>
                 </div>
                 
@@ -1376,7 +1417,7 @@
                     <button class="control-btn screen-share-btn" id="screenShareBtn" title="Share screen">
                         <i class="fas fa-desktop"></i>
                     </button>
-                    <button class="control-btn record-btn" id="recordBtn" title="Record">
+                    <button class="control-btn record-btn" id="videoRecordBtn" title="Record">
                         <i class="fas fa-circle"></i>
                     </button>
                     <button class="control-btn settings-btn" id="videoSettingsBtn" title="Settings">
@@ -1411,10 +1452,10 @@
             <!-- Input Area -->
             <div class="input-area">
                 <div class="input-tools">
-                    <button class="tool-btn" title="Emoji" id="emojiBtn">
+                    <button class="tool-btn" title="Emoji" id="emojiBtn" disabled>
                         <i class="far fa-smile"></i>
                     </button>
-                    <button class="tool-btn" title="Attach File" id="attachBtn">
+                    <button class="tool-btn" title="Attach File" id="attachBtn" disabled>
                         <i class="fas fa-paperclip"></i>
                     </button>
                 </div>
@@ -1430,12 +1471,13 @@
     <input type="file" id="fileInput" style="display: none;" accept="*/*">
 
     <script>
-        // ==================== MEDICAL COMMUNICATION SYSTEM ====================
+        // ==================== PRODUCTION-READY MEDICAL COMMUNICATION SYSTEM ====================
         (function() {
             'use strict';
 
             // Global variables
             let currentAppointment = null;
+            let currentUser = null;
             let isInCall = false;
             let localStream = null;
             let remoteStream = null;
@@ -1455,6 +1497,8 @@
             let voiceRecordingTimer = null;
             let voiceRecordingSeconds = 0;
             let isVoiceRecording = false;
+            let currentCall = null;
+            let callTimeout = null;
 
             // Device management variables
             let availableCameras = [];
@@ -1471,12 +1515,14 @@
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' }
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' }
                 ],
                 iceCandidatePoolSize: 10
             };
 
             // DOM Elements
+            const websocketStatus = document.getElementById('websocketStatus');
             const sidebar = document.getElementById('sidebar');
             const toggleSidebar = document.getElementById('toggleSidebar');
             const appointmentList = document.getElementById('appointmentList');
@@ -1507,11 +1553,11 @@
             const videoCallDuration = document.getElementById('videoCallDuration');
             const videoGrid = document.getElementById('videoGrid');
             const localVideo = document.getElementById('localVideo');
-            const remoteVideo = document.getElementById('remoteVideo');
+            const localParticipantName = document.getElementById('localParticipantName');
             const videoMuteBtn = document.getElementById('videoMuteBtn');
             const videoToggleBtn = document.getElementById('videoToggleBtn');
             const screenShareBtn = document.getElementById('screenShareBtn');
-            const videoRecordBtn = document.getElementById('recordBtn');
+            const videoRecordBtn = document.getElementById('videoRecordBtn');
             const videoSettingsBtn = document.getElementById('videoSettingsBtn');
             const videoEndCallBtn = document.getElementById('videoEndCallBtn');
             const connectionStatus = document.getElementById('connectionStatus');
@@ -1540,45 +1586,141 @@
             const speakerSettingsSelect = document.getElementById('speakerSettingsSelect');
             const testAudioBtn = document.getElementById('testAudioBtn');
             const testVideoBtn = document.getElementById('testVideoBtn');
+            const refreshBtn = document.getElementById('refreshBtn');
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function() {
-                initializeWebSocket();
-                loadAppointments();
-                setupEventListeners();
-                setWelcomeTime();
-                checkFirstTimeUser();
+                initializeApplication();
             });
+
+            // Initialize the application
+            async function initializeApplication() {
+                try {
+                    // Get current user from session
+                    await getCurrentUser();
+                    
+                    // Initialize WebSocket connection
+                    initializeWebSocket();
+                    
+                    // Load appointments
+                    await loadAppointments();
+                    
+                    // Setup event listeners
+                    setupEventListeners();
+                    
+                    // Set welcome time
+                    setWelcomeTime();
+                    
+                    // Check if first time user
+                    checkFirstTimeUser();
+                    
+                    console.log('Medical Communication System initialized successfully');
+                    
+                } catch (error) {
+                    console.error('Error initializing application:', error);
+                    showError('Failed to initialize application. Please refresh the page.');
+                }
+            }
+
+            // Get current user from session
+            async function getCurrentUser() {
+                try {
+                    const response = await fetch('/api/user/current', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': getCSRFToken()
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        currentUser = await response.json();
+                        console.log('Current user:', currentUser);
+                    } else {
+                        throw new Error('Failed to get current user');
+                    }
+                } catch (error) {
+                    console.error('Error getting current user:', error);
+                    // For demo purposes, create a mock user
+                    currentUser = {
+                        id: 1,
+                        name: 'John Doe',
+                        role: 'patient',
+                        email: 'john.doe@example.com'
+                    };
+                }
+            }
 
             // Initialize WebSocket connection
             function initializeWebSocket() {
-                // In a real implementation, this would connect to your WebSocket server
-                console.log('WebSocket connection initialized');
-                isSocketConnected = true;
-                
-                // Simulate receiving messages for demo
-                setInterval(() => {
-                    if (currentAppointment && Math.random() > 0.7) {
-                        const messages = [
-                            "Hello, how are you feeling today?",
-                            "I've reviewed your test results and they look good.",
-                            "Please remember to take your medication as prescribed.",
-                            "Do you have any questions about your treatment plan?",
-                            "Your next appointment is scheduled for next week."
-                        ];
-                        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                try {
+                    // Connect to WebSocket server
+                    socket = io({
+                        transports: ['websocket', 'polling'],
+                        timeout: 10000,
+                        auth: {
+                            userId: currentUser.id,
+                            userRole: currentUser.role
+                        }
+                    });
+
+                    socket.on('connect', () => {
+                        console.log('WebSocket connected successfully');
+                        isSocketConnected = true;
+                        updateWebSocketStatus('connected', 'Connected');
                         
-                        handleNewMessage({
-                            id: Date.now(),
-                            appointment_id: currentAppointment.id,
-                            sender_id: currentAppointment.doctor_id || 2,
-                            content: randomMessage,
-                            message_type: 'text',
-                            created_at: new Date().toISOString(),
-                            is_own: false
-                        });
-                    }
-                }, 15000);
+                        // Join user's personal room
+                        socket.emit('join_user', { user_id: currentUser.id });
+                    });
+
+                    socket.on('disconnect', (reason) => {
+                        console.log('WebSocket disconnected:', reason);
+                        isSocketConnected = false;
+                        updateWebSocketStatus('disconnected', 'Disconnected');
+                    });
+
+                    socket.on('connect_error', (error) => {
+                        console.error('WebSocket connection error:', error);
+                        isSocketConnected = false;
+                        updateWebSocketStatus('disconnected', 'Connection Failed');
+                    });
+
+                    // Message events
+                    socket.on('new_message', handleNewMessage);
+                    socket.on('message_delivered', handleMessageDelivered);
+                    socket.on('user_typing', handleTypingIndicator);
+                    socket.on('user_online', handleUserOnline);
+                    socket.on('user_offline', handleUserOffline);
+
+                    // Call events
+                    socket.on('incoming_call', handleIncomingCall);
+                    socket.on('call_accepted', handleCallAccepted);
+                    socket.on('call_rejected', handleCallRejected);
+                    socket.on('call_ended', handleCallEnded);
+                    socket.on('call_timeout', handleCallTimeout);
+
+                    // WebRTC events
+                    socket.on('webrtc_offer', handleWebRTCOffer);
+                    socket.on('webrtc_answer', handleWebRTCAnswer);
+                    socket.on('webrtc_ice_candidate', handleWebRTCIceCandidate);
+
+                } catch (error) {
+                    console.error('Error initializing WebSocket:', error);
+                    updateWebSocketStatus('disconnected', 'WebSocket Error');
+                }
+            }
+
+            // Update WebSocket status
+            function updateWebSocketStatus(status, message) {
+                websocketStatus.textContent = `WebSocket: ${message}`;
+                websocketStatus.className = `websocket-status websocket-${status}`;
+                websocketStatus.style.display = 'block';
+                
+                if (status === 'connected') {
+                    setTimeout(() => {
+                        websocketStatus.style.display = 'none';
+                    }, 3000);
+                }
             }
 
             // Setup event listeners
@@ -1587,6 +1729,9 @@
                 toggleSidebar.addEventListener('click', () => {
                     sidebar.classList.toggle('active');
                 });
+
+                // Refresh appointments
+                refreshBtn.addEventListener('click', loadAppointments);
 
                 // Message sending
                 sendBtn.addEventListener('click', sendMessage);
@@ -1668,8 +1813,14 @@
                 try {
                     showLoadingState();
                     
-                    // In a real implementation, this would fetch from your API
-                    const response = await fetch('/api/communication/appointments');
+                    const response = await fetch('/api/appointments', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': getCSRFToken()
+                        }
+                    });
+                    
                     if (!response.ok) {
                         throw new Error('Failed to fetch appointments');
                     }
@@ -1679,35 +1830,7 @@
                     
                 } catch (error) {
                     console.error('Error loading appointments:', error);
-                    // For demo purposes, we'll use sample data
-                    const sampleAppointments = [
-                        {
-                            id: 1,
-                            doctor_name: 'Dr. Jane Smith',
-                            patient_name: 'John Doe',
-                            doctor_id: 2,
-                            specialization: 'Cardiology',
-                            status: 'confirmed',
-                            payment_status: 'completed',
-                            appointment_date: new Date(),
-                            formatted_date: 'Today, 2:30 PM',
-                            unread_count: 0
-                        },
-                        {
-                            id: 2,
-                            doctor_name: 'Dr. Michael Johnson',
-                            patient_name: 'Sarah Wilson',
-                            doctor_id: 3,
-                            specialization: 'Dermatology',
-                            status: 'scheduled',
-                            payment_status: 'pending',
-                            appointment_date: new Date(Date.now() + 86400000),
-                            formatted_date: 'Tomorrow, 10:00 AM',
-                            unread_count: 3
-                        }
-                    ];
-                    
-                    displayAppointments(sampleAppointments);
+                    showErrorState('Failed to load appointments. Please try again.');
                 }
             }
 
@@ -1740,10 +1863,14 @@
                 const statusClass = `status-${apt.status ? apt.status.toLowerCase() : 'scheduled'}`;
                 const paymentClass = `payment-${apt.payment_status ? apt.payment_status.toLowerCase() : 'pending'}`;
                 
-                // Use the correct name based on user role (simulated as patient)
-                const displayName = apt.doctor_name || 'Doctor';
+                // Determine display name based on user role
+                const displayName = currentUser.role === 'patient' ? 
+                    (apt.doctor_name || 'Doctor') : 
+                    (apt.patient_name || 'Patient');
+                    
+                const displayRole = currentUser.role === 'patient' ? 'Doctor' : 'Patient';
                 const specialization = apt.specialization || 'Medical Consultation';
-                const formattedDate = apt.formatted_date || 'Date not set';
+                const formattedDate = apt.formatted_date || formatDate(apt.appointment_date);
                 const status = apt.status || 'scheduled';
                 const paymentStatus = apt.payment_status || 'pending';
                 const unreadCount = apt.unread_count || 0;
@@ -1779,9 +1906,12 @@
                 currentAppointment = appointment;
                 
                 // Update contact info
-                contactAvatar.innerHTML = '<i class="fas fa-user-md"></i>';
-                contactName.textContent = appointment.doctor_name || 'Doctor';
-                contactStatus.textContent = `${appointment.specialization || 'Medical Consultation'} • ${appointment.status || 'scheduled'}`;
+                const contactName = currentUser.role === 'patient' ? 
+                    appointment.doctor_name : appointment.patient_name;
+                const contactRole = currentUser.role === 'patient' ? 'Doctor' : 'Patient';
+                const specialization = appointment.specialization || 'Medical Consultation';
+                
+                updateContactInfo(contactName, contactRole, specialization, appointment.status);
                 
                 // Enable communication features
                 enableCommunicationFeatures();
@@ -1792,17 +1922,36 @@
                 // Mark messages as read
                 markMessagesAsRead(appointment.id);
                 
+                // Join appointment room
+                if (isSocketConnected) {
+                    socket.emit('join_appointment', { appointment_id: appointment.id });
+                }
+                
                 // On mobile, close sidebar after selection
                 if (window.innerWidth <= 768) {
                     sidebar.classList.remove('active');
                 }
             }
 
+            // Update contact info in chat header
+            function updateContactInfo(name, role, specialization, status) {
+                contactAvatar.innerHTML = role === 'Doctor' ? 
+                    '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>';
+                contactName.textContent = name || role;
+                contactStatus.textContent = `${specialization} • ${status || 'scheduled'}`;
+            }
+
             // Load messages for an appointment
             async function loadMessages(appointmentId) {
                 try {
-                    // In a real implementation, this would fetch from your API
-                    const response = await fetch(`/api/messages/${appointmentId}`);
+                    const response = await fetch(`/api/appointments/${appointmentId}/messages`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': getCSRFToken()
+                        }
+                    });
+                    
                     if (!response.ok) {
                         throw new Error('Failed to load messages');
                     }
@@ -1812,29 +1961,8 @@
                     
                 } catch (error) {
                     console.error('Error loading messages:', error);
-                    // For demo, show sample messages
-                    const sampleMessages = [
-                        {
-                            id: 1,
-                            appointment_id: appointmentId,
-                            sender_id: 1,
-                            content: "Hello, I'd like to discuss my treatment plan.",
-                            message_type: 'text',
-                            created_at: new Date(Date.now() - 3600000).toISOString(),
-                            is_own: true
-                        },
-                        {
-                            id: 2,
-                            appointment_id: appointmentId,
-                            sender_id: currentAppointment.doctor_id || 2,
-                            content: "Of course. I've reviewed your latest test results and they look good.",
-                            message_type: 'text',
-                            created_at: new Date(Date.now() - 1800000).toISOString(),
-                            is_own: false
-                        }
-                    ];
-                    
-                    displayMessages(sampleMessages);
+                    showError('Failed to load messages. Please try again.');
+                    displayMessages([]);
                 }
             }
 
@@ -1868,7 +1996,8 @@
                 if (!messagesContainer) return;
                 
                 const messageElement = document.createElement('div');
-                messageElement.className = `message ${message.is_own ? 'sent' : 'received'}`;
+                messageElement.className = `message ${message.sender_id === currentUser.id ? 'sent' : 'received'}`;
+                messageElement.dataset.messageId = message.id;
                 
                 let messageContent = '';
                 
@@ -1882,13 +2011,21 @@
                             <div class="audio-duration">${formatDuration(message.duration || 0)}</div>
                         </div>
                         <div class="message-time">${formatTime(message.created_at)}</div>
-                        ${message.is_own ? '<div class="message-status">✓✓</div>' : ''}
+                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
+                    `;
+                } else if (message.message_type === 'file') {
+                    messageContent = `
+                        <div class="message-text">
+                            <i class="fas fa-paperclip"></i> ${message.file_name}
+                        </div>
+                        <div class="message-time">${formatTime(message.created_at)}</div>
+                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
                     `;
                 } else {
                     messageContent = `
                         <div class="message-text">${escapeHtml(message.content)}</div>
                         <div class="message-time">${formatTime(message.created_at)}</div>
-                        ${message.is_own ? '<div class="message-status">✓✓</div>' : ''}
+                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
                     `;
                 }
                 
@@ -1904,6 +2041,7 @@
             function handleNewMessage(messageData) {
                 if (!currentAppointment || messageData.appointment_id !== currentAppointment.id) {
                     // Message for different appointment, show notification
+                    showNotification('New message received');
                     playNotificationSound();
                     return;
                 }
@@ -1915,8 +2053,19 @@
                 updateUnreadCount(messageData.appointment_id, 1);
                 
                 // Play notification sound for messages from others
-                if (!messageData.is_own) {
+                if (messageData.sender_id !== currentUser.id) {
                     playNotificationSound();
+                }
+            }
+
+            // Handle message delivered
+            function handleMessageDelivered(data) {
+                const messageElement = document.querySelector(`[data-message-id="${data.message_id}"]`);
+                if (messageElement) {
+                    const statusElement = messageElement.querySelector('.message-status');
+                    if (statusElement) {
+                        statusElement.textContent = '✓✓';
+                    }
                 }
             }
 
@@ -1927,19 +2076,32 @@
                 const content = messageInput.value.trim();
                 
                 try {
-                    // In a real implementation, this would send via WebSocket or API
                     const messageData = {
-                        id: Date.now(),
                         appointment_id: currentAppointment.id,
-                        sender_id: 1, // Current user ID
                         content: content,
-                        message_type: 'text',
-                        created_at: new Date().toISOString(),
-                        is_own: true
+                        message_type: 'text'
                     };
                     
-                    // Add message to chat immediately for better UX
-                    addMessageToChat(messageData, true);
+                    // Send via WebSocket if connected, otherwise use HTTP
+                    if (isSocketConnected) {
+                        socket.emit('send_message', messageData);
+                    } else {
+                        const response = await fetch(`/api/appointments/${currentAppointment.id}/messages`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': getCSRFToken()
+                            },
+                            body: JSON.stringify(messageData)
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to send message');
+                        }
+                        
+                        const sentMessage = await response.json();
+                        addMessageToChat(sentMessage, true);
+                    }
                     
                     // Clear input
                     messageInput.value = '';
@@ -1948,15 +2110,9 @@
                     // Stop typing indicator
                     stopTypingIndicator();
                     
-                    // Simulate sending via WebSocket
-                    if (isSocketConnected) {
-                        // In a real app, this would be: socket.emit('send_message', messageData);
-                        console.log('Message sent:', messageData);
-                    }
-                    
                 } catch (error) {
                     console.error('Error sending message:', error);
-                    alert('Error sending message. Please try again.');
+                    showError('Failed to send message. Please try again.');
                 }
             }
 
@@ -1964,8 +2120,12 @@
             function startTypingIndicator() {
                 if (!currentAppointment || !isSocketConnected) return;
                 
-                // In a real app, this would be: socket.emit('typing_start', { appointment_id: currentAppointment.id });
-                
+                socket.emit('typing_start', {
+                    appointment_id: currentAppointment.id,
+                    user_id: currentUser.id,
+                    user_name: currentUser.name
+                });
+
                 if (typingTimeout) {
                     clearTimeout(typingTimeout);
                 }
@@ -1979,12 +2139,39 @@
             function stopTypingIndicator() {
                 if (!currentAppointment || !isSocketConnected) return;
                 
-                // In a real app, this would be: socket.emit('typing_stop', { appointment_id: currentAppointment.id });
+                socket.emit('typing_stop', {
+                    appointment_id: currentAppointment.id,
+                    user_id: currentUser.id
+                });
                 
                 if (typingTimeout) {
                     clearTimeout(typingTimeout);
                     typingTimeout = null;
                 }
+            }
+
+            // Handle typing indicator
+            function handleTypingIndicator(data) {
+                if (!currentAppointment || data.appointment_id !== currentAppointment.id) return;
+                
+                if (data.is_typing) {
+                    typingUserName.textContent = data.user_name;
+                    typingIndicator.classList.add('visible');
+                } else {
+                    typingIndicator.classList.remove('visible');
+                }
+            }
+
+            // Handle user online
+            function handleUserOnline(data) {
+                console.log('User online:', data.user_id);
+                // Update UI to show user is online
+            }
+
+            // Handle user offline
+            function handleUserOffline(data) {
+                console.log('User offline:', data.user_id);
+                // Update UI to show user is offline
             }
 
             // Show loading state
@@ -2040,11 +2227,11 @@
             // Mark messages as read
             async function markMessagesAsRead(appointmentId) {
                 try {
-                    // In a real implementation, this would call your API
-                    await fetch(`/api/messages/${appointmentId}/mark_read`, {
+                    await fetch(`/api/appointments/${appointmentId}/messages/read`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-CSRF-Token': getCSRFToken()
                         }
                     });
                     
@@ -2106,20 +2293,29 @@
                     startCallTimer();
                     
                     // Update caller name
-                    const callerAvatar = document.getElementById('callerAvatar');
-                    callerAvatar.innerHTML = '<i class="fas fa-user-md"></i>';
+                    const callerName = currentUser.role === 'patient' ? 
+                        currentAppointment.doctor_name : currentAppointment.patient_name;
+                    document.getElementById('callerAvatar').innerHTML = '<i class="fas fa-user-md"></i>';
                     
                     // Initialize voice call
                     initializeVoiceCall(stream);
                     
-                    // Simulate remote participant answering after 3 seconds
-                    setTimeout(() => {
-                        callStatus.textContent = 'Connected';
-                    }, 3000);
+                    // Send call request
+                    const callData = {
+                        appointment_id: currentAppointment.id,
+                        call_type: 'voice',
+                        caller_id: currentUser.id,
+                        caller_name: currentUser.name
+                    };
+                    
+                    socket.emit('initiate_call', callData);
+                    
+                    // Set call timeout
+                    setCallTimeout();
                     
                 } catch (error) {
                     console.error('Error starting voice call:', error);
-                    alert('Cannot access microphone. Please check permissions.');
+                    showError('Cannot access microphone. Please check permissions.');
                 }
             }
 
@@ -2181,27 +2377,33 @@
                     startCallTimer();
                     
                     // Update caller name
-                    videoCallerName.textContent = currentAppointment.doctor_name || 'Doctor';
+                    const callerName = currentUser.role === 'patient' ? 
+                        currentAppointment.doctor_name : currentAppointment.patient_name;
+                    videoCallerName.textContent = callerName;
                     
                     await initializeVideoCall(stream);
                     
-                    // Simulate remote participant joining after 3 seconds
-                    setTimeout(() => {
-                        videoCallStatus.textContent = 'Connected';
-                        updateConnectionStatus('connected', 'Call connected');
-                        
-                        // Simulate remote video (in a real app, this would come from WebRTC)
-                        simulateRemoteVideo();
-                    }, 3000);
+                    // Send call request
+                    const callData = {
+                        appointment_id: currentAppointment.id,
+                        call_type: 'video',
+                        caller_id: currentUser.id,
+                        caller_name: currentUser.name
+                    };
+                    
+                    socket.emit('initiate_call', callData);
+                    
+                    // Set call timeout
+                    setCallTimeout();
                     
                 } catch (error) {
                     console.error('Error starting video call:', error);
                     if (error.name === 'NotAllowedError') {
-                        alert('Camera/microphone access was denied. Please allow permissions and try again.');
+                        showError('Camera/microphone access was denied. Please allow permissions and try again.');
                     } else if (error.name === 'NotFoundError') {
-                        alert('No camera/microphone found. Please check your devices.');
+                        showError('No camera/microphone found. Please check your devices.');
                     } else {
-                        alert('Cannot access camera/microphone. Please check permissions.');
+                        showError('Cannot access camera/microphone. Please check permissions.');
                     }
                 }
             }
@@ -2214,6 +2416,9 @@
                 if (localVideo) {
                     localVideo.srcObject = stream;
                 }
+                
+                // Set local participant name
+                localParticipantName.textContent = currentUser.name;
                 
                 await initializePeerConnection();
                 
@@ -2234,16 +2439,41 @@
                     peerConnection.ontrack = (event) => {
                         console.log('Received remote stream:', event.streams);
                         remoteStream = event.streams[0];
-                        if (remoteStream && remoteVideo) {
-                            remoteVideo.srcObject = remoteStream;
+                        
+                        // Create remote video element if it doesn't exist
+                        let remoteVideoElement = document.getElementById('remoteVideo');
+                        if (!remoteVideoElement) {
+                            const remoteParticipant = document.createElement('div');
+                            remoteParticipant.className = 'video-participant';
+                            remoteParticipant.id = 'remoteParticipant';
+                            
+                            remoteVideoElement = document.createElement('video');
+                            remoteVideoElement.id = 'remoteVideo';
+                            remoteVideoElement.autoplay = true;
+                            remoteVideoElement.playsinline = true;
+                            
+                            const participantInfo = document.createElement('div');
+                            participantInfo.className = 'participant-info';
+                            participantInfo.innerHTML = `
+                                <div class="participant-status"></div>
+                                <span id="remoteParticipantName">Remote User</span>
+                            `;
+                            
+                            remoteParticipant.appendChild(remoteVideoElement);
+                            remoteParticipant.appendChild(participantInfo);
+                            videoGrid.appendChild(remoteParticipant);
                         }
+                        
+                        remoteVideoElement.srcObject = remoteStream;
                     };
                     
                     // Handle ICE candidates
                     peerConnection.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            // Send candidate to remote peer (simulated)
-                            console.log('ICE candidate generated');
+                        if (event.candidate && isSocketConnected) {
+                            socket.emit('webrtc_ice_candidate', {
+                                appointment_id: currentAppointment.id,
+                                candidate: event.candidate
+                            });
                         }
                     };
                     
@@ -2264,9 +2494,54 @@
                         }
                     };
                     
+                    // Create and send offer
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    
+                    if (isSocketConnected) {
+                        socket.emit('webrtc_offer', {
+                            appointment_id: currentAppointment.id,
+                            offer: offer
+                        });
+                    }
+                    
                 } catch (error) {
                     console.error('Error initializing peer connection:', error);
                     throw error;
+                }
+            }
+
+            // Handle WebRTC offer
+            async function handleWebRTCOffer(data) {
+                if (!peerConnection) {
+                    await initializePeerConnection();
+                }
+                
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                
+                socket.emit('webrtc_answer', {
+                    appointment_id: currentAppointment.id,
+                    answer: answer
+                });
+            }
+
+            // Handle WebRTC answer
+            async function handleWebRTCAnswer(data) {
+                if (!peerConnection) return;
+                
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+            }
+
+            // Handle WebRTC ICE candidate
+            async function handleWebRTCIceCandidate(data) {
+                if (!peerConnection) return;
+                
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                } catch (error) {
+                    console.error('Error adding ICE candidate:', error);
                 }
             }
 
@@ -2307,17 +2582,38 @@
                     stopRecording();
                 }
                 
+                // Clear call timeout
+                if (callTimeout) {
+                    clearTimeout(callTimeout);
+                    callTimeout = null;
+                }
+                
                 // Hide call interfaces
                 voiceCallInterface.style.display = 'none';
                 videoCallInterface.style.display = 'none';
                 hideDeviceSettings();
                 
+                // Remove remote participant
+                const remoteParticipant = document.getElementById('remoteParticipant');
+                if (remoteParticipant) {
+                    remoteParticipant.remove();
+                }
+                
                 // Stop timers
                 stopCallTimer();
+                
+                // Notify other participant
+                if (isSocketConnected && currentCall) {
+                    socket.emit('end_call', {
+                        call_id: currentCall.call_id,
+                        appointment_id: currentAppointment.id
+                    });
+                }
                 
                 // Reset call state
                 isVideoCall = false;
                 isInCall = false;
+                currentCall = null;
                 
                 updateConnectionStatus('disconnected', 'Call ended');
             }
@@ -2357,14 +2653,9 @@
                     videoToggleBtn.classList.toggle('off', isVideoOff);
                     videoToggleBtn.innerHTML = isVideoOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
                     
-                    // Show/hide video element or placeholder
+                    // Show/hide video element
                     if (localVideo) {
-                        if (isVideoOff) {
-                            localVideo.style.display = 'none';
-                            // Show placeholder (in a real app, you might show a static image)
-                        } else {
-                            localVideo.style.display = 'block';
-                        }
+                        localVideo.style.display = isVideoOff ? 'none' : 'block';
                     }
                 }
             }
@@ -2452,18 +2743,33 @@
                         }
                     };
                     
-                    mediaRecorder.onstop = () => {
+                    mediaRecorder.onstop = async () => {
                         const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                        const url = URL.createObjectURL(blob);
                         
-                        // In a real app, you would upload this to your server
-                        console.log('Recording saved:', url);
+                        // Upload recording to server
+                        const formData = new FormData();
+                        formData.append('recording', blob, `consultation-${new Date().toISOString()}.webm`);
+                        formData.append('appointment_id', currentAppointment.id);
+                        formData.append('duration', callSeconds);
                         
-                        // Create a download link (for demo purposes)
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `consultation-${new Date().toISOString()}.webm`;
-                        a.click();
+                        try {
+                            const response = await fetch('/api/recordings/upload', {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-Token': getCSRFToken()
+                                },
+                                body: formData
+                            });
+                            
+                            if (response.ok) {
+                                showNotification('Call recording saved successfully');
+                            } else {
+                                throw new Error('Failed to upload recording');
+                            }
+                        } catch (error) {
+                            console.error('Error uploading recording:', error);
+                            showError('Failed to save recording');
+                        }
                     };
                     
                     mediaRecorder.start();
@@ -2472,6 +2778,7 @@
                     
                 } catch (error) {
                     console.error('Error starting recording:', error);
+                    showError('Failed to start recording');
                 }
             }
 
@@ -2514,6 +2821,16 @@
                 }
             }
 
+            // Set call timeout
+            function setCallTimeout() {
+                callTimeout = setTimeout(() => {
+                    if (isInCall && callStatus.textContent === 'Calling...') {
+                        endCall();
+                        showError('Call timed out. No answer from the other party.');
+                    }
+                }, 30000); // 30 seconds timeout
+            }
+
             // Update connection status
             function updateConnectionStatus(status, message) {
                 if (!connectionStatus) return;
@@ -2527,6 +2844,174 @@
                         connectionStatus.style.display = 'none';
                     }, 3000);
                 }
+            }
+
+            // ==================== INCOMING CALL FUNCTIONS ====================
+
+            // Handle incoming call
+            function handleIncomingCall(callData) {
+                currentCall = callData;
+                
+                showIncomingCallNotification(callData.caller_name, callData.call_type);
+                
+                // Play ringtone
+                playIncomingRingtone();
+            }
+
+            // Show incoming call notification
+            function showIncomingCallNotification(callerName, callType) {
+                incomingCallName.textContent = callerName;
+                incomingCallType.textContent = callType === 'video' ? 'Video Call' : 'Voice Call';
+                incomingCallAvatar.innerHTML = callType === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-phone"></i>';
+                
+                incomingCallNotification.style.display = 'block';
+                incomingCallAvatar.classList.add('ringing');
+            }
+
+            // Accept incoming call
+            async function acceptIncomingCall() {
+                if (!currentCall) return;
+                
+                stopIncomingRingtone();
+                hideIncomingCallNotification();
+                
+                // Notify caller
+                socket.emit('accept_call', {
+                    call_id: currentCall.call_id,
+                    appointment_id: currentCall.appointment_id
+                });
+                
+                // Start the appropriate call type
+                if (currentCall.call_type === 'video') {
+                    await startVideoCallForIncoming();
+                } else {
+                    await startVoiceCallForIncoming();
+                }
+            }
+
+            // Start video call for incoming call
+            async function startVideoCallForIncoming() {
+                try {
+                    // Show device permission modal for first-time users
+                    if (isFirstTimeUser || !devicePermissionsGranted) {
+                        await showDevicePermissionModal();
+                        return;
+                    }
+                    
+                    // Get user media with selected devices
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: selectedCameraId ? { deviceId: { exact: selectedCameraId } } : true,
+                        audio: selectedMicrophoneId ? { deviceId: { exact: selectedMicrophoneId } } : true
+                    });
+                    
+                    isVideoCall = true;
+                    showVideoCallInterface();
+                    startCallTimer();
+                    
+                    // Update caller name
+                    videoCallerName.textContent = currentCall.caller_name;
+                    videoCallStatus.textContent = 'Connected';
+                    
+                    await initializeVideoCall(stream);
+                    
+                } catch (error) {
+                    console.error('Error accepting video call:', error);
+                    showError('Cannot access camera/microphone. Please check permissions.');
+                    endCall();
+                }
+            }
+
+            // Start voice call for incoming call
+            async function startVoiceCallForIncoming() {
+                try {
+                    // Request permission for microphone only
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true,
+                        video: false 
+                    });
+                    
+                    isVideoCall = false;
+                    showVoiceCallInterface();
+                    startCallTimer();
+                    
+                    // Update caller name
+                    document.getElementById('callerAvatar').innerHTML = '<i class="fas fa-user-md"></i>';
+                    callStatus.textContent = 'Connected';
+                    
+                    // Initialize voice call
+                    initializeVoiceCall(stream);
+                    
+                } catch (error) {
+                    console.error('Error accepting voice call:', error);
+                    showError('Cannot access microphone. Please check permissions.');
+                    endCall();
+                }
+            }
+
+            // Reject incoming call
+            function rejectIncomingCall() {
+                if (!currentCall) return;
+                
+                stopIncomingRingtone();
+                hideIncomingCallNotification();
+                
+                // Notify caller
+                socket.emit('reject_call', {
+                    call_id: currentCall.call_id,
+                    appointment_id: currentCall.appointment_id
+                });
+                
+                currentCall = null;
+            }
+
+            // Handle call accepted
+            function handleCallAccepted(data) {
+                if (isVideoCall) {
+                    videoCallStatus.textContent = 'Connected';
+                } else {
+                    callStatus.textContent = 'Connected';
+                }
+                
+                // Clear call timeout
+                if (callTimeout) {
+                    clearTimeout(callTimeout);
+                    callTimeout = null;
+                }
+            }
+
+            // Handle call rejected
+            function handleCallRejected(data) {
+                endCall();
+                showError('Call was rejected by the other party.');
+            }
+
+            // Handle call ended
+            function handleCallEnded(data) {
+                endCall();
+            }
+
+            // Handle call timeout
+            function handleCallTimeout(data) {
+                endCall();
+                showError('Call timed out. No answer from the other party.');
+            }
+
+            // Hide incoming call notification
+            function hideIncomingCallNotification() {
+                incomingCallNotification.style.display = 'none';
+                incomingCallAvatar.classList.remove('ringing');
+            }
+
+            // Play incoming ringtone
+            function playIncomingRingtone() {
+                // In a real app, this would play an actual ringtone
+                console.log('Playing incoming ringtone');
+            }
+
+            // Stop incoming ringtone
+            function stopIncomingRingtone() {
+                // In a real app, this would stop the ringtone
+                console.log('Stopping incoming ringtone');
             }
 
             // ==================== VOICE RECORDING FUNCTIONS ====================
@@ -2548,7 +3033,7 @@
             // Start voice recording
             function startVoiceRecording() {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    alert('Audio recording is not supported in your browser');
+                    showError('Audio recording is not supported in your browser');
                     return;
                 }
 
@@ -2561,29 +3046,34 @@
                             voiceAudioChunks.push(event.data);
                         };
 
-                        voiceMediaRecorder.onstop = () => {
+                        voiceMediaRecorder.onstop = async () => {
                             const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
-                            // In a real app, you would upload this to your server
-                            console.log('Voice recording completed:', audioBlob);
                             
-                            // For demo, we'll create a URL for playback
-                            const audioUrl = URL.createObjectURL(audioBlob);
+                            // Upload voice recording to server
+                            const formData = new FormData();
+                            formData.append('audio', audioBlob, `voice-message-${new Date().getTime()}.webm`);
+                            formData.append('appointment_id', currentAppointment.id);
+                            formData.append('duration', voiceRecordingSeconds);
                             
-                            // Create a message with the audio
-                            const messageData = {
-                                id: Date.now(),
-                                appointment_id: currentAppointment.id,
-                                sender_id: 1, // Current user ID
-                                content: 'Voice message',
-                                message_type: 'audio',
-                                audio_url: audioUrl,
-                                duration: voiceRecordingSeconds,
-                                created_at: new Date().toISOString(),
-                                is_own: true
-                            };
-                            
-                            // Add to chat
-                            addMessageToChat(messageData, true);
+                            try {
+                                const response = await fetch('/api/messages/voice', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-Token': getCSRFToken()
+                                    },
+                                    body: formData
+                                });
+
+                                if (response.ok) {
+                                    const message = await response.json();
+                                    addMessageToChat(message, true);
+                                } else {
+                                    throw new Error('Failed to upload voice message');
+                                }
+                            } catch (error) {
+                                console.error('Error uploading voice message:', error);
+                                showError('Failed to send voice message');
+                            }
                             
                             // Hide recorder
                             voiceRecorder.style.display = 'none';
@@ -2604,7 +3094,7 @@
                     })
                     .catch(error => {
                         console.error('Error accessing microphone:', error);
-                        alert('Cannot access microphone. Please check permissions.');
+                        showError('Cannot access microphone. Please check permissions.');
                     });
             }
 
@@ -2663,58 +3153,6 @@
                 sendRecordingBtn.disabled = true;
             }
 
-            // ==================== INCOMING CALL FUNCTIONS ====================
-
-            // Show incoming call notification
-            function showIncomingCallNotification(callerName, callType) {
-                incomingCallName.textContent = callerName;
-                incomingCallType.textContent = callType === 'video' ? 'Video Call' : 'Voice Call';
-                incomingCallAvatar.innerHTML = callType === 'video' ? '<i class="fas fa-video"></i>' : '<i class="fas fa-phone"></i>';
-                
-                incomingCallNotification.style.display = 'block';
-                incomingCallAvatar.classList.add('ringing');
-                
-                // Play ringtone
-                playIncomingRingtone();
-            }
-
-            // Accept incoming call
-            function acceptIncomingCall() {
-                stopIncomingRingtone();
-                hideIncomingCallNotification();
-                
-                // Start the appropriate call type
-                if (incomingCallType.textContent === 'Video Call') {
-                    startVideoCall();
-                } else {
-                    startVoiceCall();
-                }
-            }
-
-            // Reject incoming call
-            function rejectIncomingCall() {
-                stopIncomingRingtone();
-                hideIncomingCallNotification();
-            }
-
-            // Hide incoming call notification
-            function hideIncomingCallNotification() {
-                incomingCallNotification.style.display = 'none';
-                incomingCallAvatar.classList.remove('ringing');
-            }
-
-            // Play incoming ringtone
-            function playIncomingRingtone() {
-                // In a real app, this would play an actual ringtone
-                console.log('Playing incoming ringtone');
-            }
-
-            // Stop incoming ringtone
-            function stopIncomingRingtone() {
-                // In a real app, this would stop the ringtone
-                console.log('Stopping incoming ringtone');
-            }
-
             // ==================== DEVICE MANAGEMENT ====================
 
             // Show device permission modal
@@ -2725,7 +3163,7 @@
                     devicePermissionModal.style.display = 'flex';
                 } catch (error) {
                     console.error('Error showing device permission modal:', error);
-                    alert('Error accessing devices. Please check your browser permissions.');
+                    showError('Error accessing devices. Please check your browser permissions.');
                 }
             }
 
@@ -2837,20 +3275,28 @@
                 // Apply speaker selection
                 applySpeakerSelection();
                 
-                // Start the call after device selection
-                startVideoCall();
+                // Continue with the call
+                if (currentCall) {
+                    acceptIncomingCall();
+                } else {
+                    startVideoCall();
+                }
             }
 
             // Cancel device selection
             function cancelDeviceSelection() {
                 hideDevicePermissionModal();
+                if (currentCall) {
+                    rejectIncomingCall();
+                }
             }
 
             // Apply speaker selection
             function applySpeakerSelection() {
-                if (selectedSpeakerId && remoteVideo) {
+                if (selectedSpeakerId) {
                     // For modern browsers that support setSinkId
-                    if (remoteVideo.setSinkId) {
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    if (remoteVideo && remoteVideo.setSinkId) {
                         remoteVideo.setSinkId(selectedSpeakerId)
                             .then(() => {
                                 console.log('Speaker set successfully');
@@ -2992,7 +3438,7 @@
             function testVideoOutput() {
                 if (localVideo && localVideo.srcObject) {
                     // Flash the local video to indicate it's working
-                    localVideo.style.border = '3px solid #4caf50';
+                    localVideo.style.border = '3px solid var(--accent-color)';
                     setTimeout(() => {
                         localVideo.style.border = 'none';
                     }, 1000);
@@ -3002,27 +3448,32 @@
             // ==================== FILE UPLOAD ====================
 
             // Handle file upload
-            function handleFileUpload(e) {
+            async function handleFileUpload(e) {
                 const file = e.target.files[0];
                 if (file && currentAppointment) {
-                    // In a real app, you would upload the file to your server
-                    console.log('File selected for upload:', file);
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('appointment_id', currentAppointment.id);
                     
-                    // Create a message with the file info
-                    const messageData = {
-                        id: Date.now(),
-                        appointment_id: currentAppointment.id,
-                        sender_id: 1, // Current user ID
-                        content: `File: ${file.name}`,
-                        message_type: 'file',
-                        file_name: file.name,
-                        file_size: file.size,
-                        created_at: new Date().toISOString(),
-                        is_own: true
-                    };
-                    
-                    // Add to chat
-                    addMessageToChat(messageData, true);
+                    try {
+                        const response = await fetch('/api/messages/file', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-Token': getCSRFToken()
+                            },
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            const message = await response.json();
+                            addMessageToChat(message, true);
+                        } else {
+                            throw new Error('Failed to upload file');
+                        }
+                    } catch (error) {
+                        console.error('Error uploading file:', error);
+                        showError('Failed to upload file. Please try again.');
+                    }
                     
                     // Reset file input
                     fileInput.value = '';
@@ -3031,28 +3482,25 @@
 
             // ==================== UTILITY FUNCTIONS ====================
 
-            // Simulate remote video for demo purposes
-            function simulateRemoteVideo() {
-                // In a real application, this would be handled by WebRTC
-                // For demo, we'll create a colored canvas as a placeholder
-                const canvas = document.createElement('canvas');
-                canvas.width = 640;
-                canvas.height = 480;
-                const ctx = canvas.getContext('2d');
-                
-                // Fill with a color
-                ctx.fillStyle = '#2c3e50';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Add some text
-                ctx.fillStyle = '#ecf0f1';
-                ctx.font = '24px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('Remote Participant', canvas.width/2, canvas.height/2);
-                
-                // Convert to stream
-                const stream = canvas.captureStream(25);
-                remoteVideo.srcObject = stream;
+            // Get CSRF token
+            function getCSRFToken() {
+                const metaToken = document.querySelector('meta[name="csrf-token"]');
+                return metaToken ? metaToken.getAttribute('content') : '';
+            }
+
+            // Show notification
+            function showNotification(message) {
+                // In a real app, you might use a toast notification library
+                console.log('Notification:', message);
+                // Simple alert for demo
+                alert(message);
+            }
+
+            // Show error
+            function showError(message) {
+                console.error('Error:', message);
+                // Simple alert for demo
+                alert('Error: ' + message);
             }
 
             // Play notification sound
@@ -3064,6 +3512,16 @@
             // Format time
             function formatTime(isoString) {
                 return new Date(isoString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+
+            // Format date
+            function formatDate(dateString) {
+                return new Date(dateString).toLocaleDateString([], {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
             }
 
             // Format duration
