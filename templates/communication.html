@@ -1135,6 +1135,176 @@
             display: none;
         }
 
+        /* Admin Controls Panel */
+        .admin-controls {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            width: 350px;
+            border-radius: 12px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 1rem;
+        }
+
+        .admin-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .admin-section {
+            margin: 1rem 0;
+        }
+
+        .admin-section h4 {
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+
+        .admin-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            margin-bottom: 0.5rem;
+            transition: background 0.3s;
+        }
+
+        .admin-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .participants-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .participant-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.25rem;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .participant-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .participant-details {
+            flex: 1;
+        }
+
+        .participant-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .participant-role {
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        .participant-status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-color);
+        }
+
+        .participant-status-indicator.muted {
+            background: var(--danger-color);
+        }
+
+        /* Enhanced Waiting Room */
+        .waiting-room {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .waiting-room-content {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .waiting-room-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .waiting-room h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .waiting-room p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .leave-waiting-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 auto;
+        }
+
+        .leave-waiting-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             .communication-container {
@@ -1175,6 +1345,10 @@
             .meeting-chat-panel {
                 width: 300px;
                 height: 400px;
+            }
+
+            .admin-controls {
+                width: 300px;
             }
         }
 
@@ -1660,6 +1834,9 @@
             const meetingChatMessages = document.getElementById('meetingChatMessages');
             const meetingChatInput = document.getElementById('meetingChatInput');
             const closeChatBtn = document.getElementById('closeChatBtn');
+            const closeAdminBtn = document.getElementById('closeAdminBtn');
+            const recordMeetingBtn = document.getElementById('recordMeetingBtn');
+            const inviteParticipantsBtn = document.getElementById('inviteParticipantsBtn');
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function() {
@@ -1951,6 +2128,7 @@
 
                 // Admin controls
                 adminControlsBtn.addEventListener('click', toggleAdminControls);
+                closeAdminBtn.addEventListener('click', hideAdminControls);
 
                 // Waiting room
                 leaveWaitingBtn.addEventListener('click', leaveWaitingRoom);
@@ -2014,6 +2192,7 @@
             // Show meeting chat
             function showMeetingChat() {
                 meetingChatPanel.style.display = 'flex';
+                hideAdminControls();
             }
 
             // Hide meeting chat
@@ -2035,6 +2214,32 @@
                     
                     meetingChatInput.value = '';
                 }
+            }
+
+            // Toggle admin controls
+            function toggleAdminControls() {
+                if (!isDoctorAdmin) {
+                    showToast('Only the meeting admin can access these controls', 'error');
+                    return;
+                }
+                
+                if (adminControlsPanel.style.display === 'block') {
+                    hideAdminControls();
+                } else {
+                    showAdminControls();
+                }
+            }
+
+            // Show admin controls
+            function showAdminControls() {
+                adminControlsPanel.style.display = 'block';
+                hideMeetingChat();
+                updateParticipantsList();
+            }
+
+            // Hide admin controls
+            function hideAdminControls() {
+                adminControlsPanel.style.display = 'none';
             }
 
             // Check if this is first time user
@@ -2564,14 +2769,31 @@
             }
 
             // Accept incoming call
-            function acceptIncomingCall(callData) {
-                socket.emit('call_accept', {
-                    call_id: callData.call_id,
-                    appointment_id: currentAppointment.id
-                });
-                
-                // Start voice call
-                startVoiceCall();
+            async function acceptIncomingCall(callData) {
+                try {
+                    // Automatically enable microphone and speaker when call is accepted
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true,
+                        video: false 
+                    });
+                    
+                    socket.emit('call_accept', {
+                        call_id: callData.call_id,
+                        appointment_id: currentAppointment.id
+                    });
+                    
+                    // Start voice call with the stream
+                    isVideoCall = false;
+                    showVoiceCallInterface();
+                    startCallTimer();
+                    initializeVoiceCall(stream);
+                    
+                    callStatus.textContent = 'Connected';
+                    
+                } catch (error) {
+                    console.error('Error accepting call:', error);
+                    showToast('Cannot access microphone. Please check permissions.', 'error');
+                }
             }
 
             // Reject incoming call
@@ -3173,6 +3395,11 @@
                         
                     } catch (error) {
                         console.error('Error starting screen share:', error);
+                        if (error.name === 'NotAllowedError') {
+                            showToast('Screen sharing was denied. Please allow permissions to share your screen.', 'error');
+                        } else {
+                            showToast('Failed to start screen sharing. Please try again.', 'error');
+                        }
                     }
                 } else {
                     stopScreenShare();
@@ -3403,31 +3630,6 @@
                     participant.hasVideo = hasVideo;
                     updateParticipantsList();
                 }
-            }
-
-            // Toggle admin controls
-            function toggleAdminControls() {
-                if (!isDoctorAdmin) {
-                    showToast('Only the meeting admin can access these controls', 'error');
-                    return;
-                }
-                
-                if (adminControlsPanel.style.display === 'block') {
-                    hideAdminControls();
-                } else {
-                    showAdminControls();
-                }
-            }
-
-            // Show admin controls
-            function showAdminControls() {
-                adminControlsPanel.style.display = 'block';
-                hideMeetingChat();
-            }
-
-            // Hide admin controls
-            function hideAdminControls() {
-                adminControlsPanel.style.display = 'none';
             }
 
             // ==================== VOICE RECORDING FUNCTIONS ====================
@@ -3732,19 +3934,21 @@
 
             // Show toast notification
             function showToast(message, type = 'info') {
-                const backgroundColor = {
+                const backgroundColors = {
                     success: '#28a745',
                     error: '#dc3545',
                     warning: '#ffc107',
                     info: '#17a2b8'
-                }[type] || '#17a2b8';
+                };
                 
                 Toastify({
                     text: message,
                     duration: 3000,
                     gravity: "top",
                     position: "right",
-                    backgroundColor: backgroundColor,
+                    style: {
+                        background: backgroundColors[type] || '#17a2b8'
+                    },
                     stopOnFocus: true
                 }).showToast();
             }
