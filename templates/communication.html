@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     
+    <!-- Emoji Picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.12.0/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.12.0/index.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
@@ -46,7 +50,7 @@
             height: 100vh;
         }
 
-        /* Sidebar Styles */
+        /* Enhanced Sidebar Styles */
         .sidebar {
             width: 350px;
             background: white;
@@ -103,6 +107,7 @@
             cursor: pointer;
             transition: all 0.3s;
             border: 1px solid #e0e0e0;
+            position: relative;
         }
 
         .appointment-item:hover {
@@ -112,6 +117,16 @@
         .appointment-item.active {
             background: #e3f2fd;
             border-color: var(--primary-color);
+        }
+
+        .appointment-item.payment-pending {
+            background: #fff8e1;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .appointment-item.payment-completed {
+            background: #e8f5e8;
+            border-left: 4px solid var(--accent-color);
         }
 
         .appointment-info h3 {
@@ -167,6 +182,14 @@
             font-weight: 600;
         }
 
+        .feature-locked {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: var(--danger-color);
+            font-size: 0.8rem;
+        }
+
         .loading-state, .empty-state {
             text-align: center;
             padding: 2rem;
@@ -193,7 +216,7 @@
             margin-bottom: 1rem;
         }
 
-        /* Chat Area Styles */
+        /* Enhanced Chat Area */
         .chat-area {
             flex: 1;
             display: flex;
@@ -253,6 +276,9 @@
             cursor: pointer;
             font-weight: 600;
             transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .call-btn:disabled {
@@ -264,33 +290,24 @@
             background: var(--secondary-color);
         }
 
-        /* Waiting Room Badge */
-        .waiting-room-badge {
+        .call-btn.locked {
+            background: var(--gray-color);
             position: relative;
         }
 
-        .waiting-count {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: var(--danger-color);
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 0.7rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
+        .call-btn.locked::after {
+            content: '🔒';
+            margin-left: 0.5rem;
         }
 
-        /* Messages Container */
+        /* Enhanced Messages Container */
         .messages-container {
             flex: 1;
             overflow-y: auto;
             padding: 1.5rem;
             background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
         }
 
         .message {
@@ -299,6 +316,18 @@
             padding: 0.75rem 1rem;
             border-radius: 12px;
             position: relative;
+            animation: messageAppear 0.3s ease-out;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.sent {
@@ -315,6 +344,7 @@
         .message-text {
             margin-bottom: 0.5rem;
             line-height: 1.4;
+            word-wrap: break-word;
         }
 
         .message-time {
@@ -331,7 +361,7 @@
             right: 1rem;
         }
 
-        /* Audio Message Styles */
+        /* Enhanced Audio Message Styles */
         .audio-message {
             display: flex;
             align-items: center;
@@ -342,6 +372,7 @@
         .audio-player {
             flex: 1;
             height: 40px;
+            border-radius: 20px;
         }
 
         .audio-duration {
@@ -349,7 +380,46 @@
             color: var(--gray-color);
         }
 
-        /* Voice Recorder */
+        /* File Message Styles */
+        .file-message {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: var(--gray-color);
+        }
+
+        .download-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Enhanced Voice Recorder */
         .voice-recorder {
             background: white;
             padding: 1rem 1.5rem;
@@ -357,6 +427,16 @@
             display: none;
             align-items: center;
             gap: 1rem;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
         }
 
         .record-btn {
@@ -388,6 +468,7 @@
         .recording-timer {
             font-weight: 600;
             color: var(--danger-color);
+            font-size: 1.1rem;
         }
 
         .recording-controls {
@@ -420,7 +501,7 @@
             color: #333;
         }
 
-        /* Input Area */
+        /* Enhanced Input Area */
         .input-area {
             background: white;
             padding: 1rem 1.5rem;
@@ -443,6 +524,7 @@
             padding: 0.5rem;
             border-radius: 50%;
             transition: background 0.3s;
+            color: var(--gray-color);
         }
 
         .tool-btn:hover {
@@ -468,6 +550,11 @@
             font-size: 1rem;
             max-height: 120px;
             outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .message-input:focus {
+            border-color: var(--primary-color);
         }
 
         .message-input:disabled {
@@ -499,16 +586,18 @@
             background: var(--secondary-color);
         }
 
-        /* Typing Indicator */
+        /* Enhanced Typing Indicator */
         .typing-indicator {
             padding: 0.5rem 1.5rem;
             color: var(--gray-color);
             font-size: 0.9rem;
             display: none;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .typing-indicator.visible {
-            display: block;
+            display: flex;
+            align-items: center;
         }
 
         .typing-dots {
@@ -533,7 +622,12 @@
             40% { transform: scale(1); }
         }
 
-        /* Voice Call Interface */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Enhanced Voice Call Interface */
         .voice-call-interface {
             position: fixed;
             top: 0;
@@ -547,6 +641,7 @@
             justify-content: center;
             align-items: center;
             color: white;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .voice-call-interface .caller-avatar {
@@ -603,7 +698,7 @@
             color: white;
         }
 
-        /* Video Call Interface */
+        /* Enhanced Video Call Interface - Google Meet Style */
         .video-call-interface {
             position: fixed;
             top: 0;
@@ -614,6 +709,7 @@
             z-index: 1000;
             display: none;
             flex-direction: column;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .video-call-header {
@@ -681,7 +777,7 @@
             background: rgba(255,255,255,0.3);
         }
 
-        /* Video Container */
+        /* Enhanced Video Container */
         .video-container {
             flex: 1;
             display: flex;
@@ -708,6 +804,11 @@
             height: 100%;
             max-height: 400px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+        }
+
+        .video-participant:hover {
+            transform: scale(1.02);
         }
 
         .video-participant video {
@@ -741,7 +842,7 @@
             background: var(--danger-color);
         }
 
-        /* Video Controls */
+        /* Enhanced Video Controls */
         .video-controls {
             position: absolute;
             bottom: 20px;
@@ -817,7 +918,53 @@
             transform: scale(1.1);
         }
 
-        /* Device Permission Modal */
+        /* Meeting Chat Panel */
+        .meeting-chat-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            width: 350px;
+            height: 500px;
+            border-radius: 12px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-panel-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-panel-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            color: white;
+        }
+
+        .chat-panel-input {
+            padding: 1rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .chat-panel-input input {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            outline: none;
+        }
+
+        /* Enhanced Device Permission Modal */
         .device-permission-modal {
             position: fixed;
             top: 0;
@@ -830,6 +977,7 @@
             align-items: center;
             z-index: 3000;
             display: none;
+            animation: fadeIn 0.3s ease-out;
         }
 
         .device-permission-content {
@@ -839,6 +987,7 @@
             width: 90%;
             max-width: 500px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease-out;
         }
 
         .device-permission-header {
@@ -912,441 +1061,81 @@
             background: #e0e0e0;
         }
 
-        /* Device Settings Panel */
-        .device-settings-panel {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 1rem;
-            border-radius: 8px;
-            z-index: 100;
-            display: none;
-            min-width: 250px;
-        }
-
-        .device-settings-header {
-            color: white;
-            margin-bottom: 1rem;
-            font-size: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .close-settings-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        .device-settings-group {
-            margin-bottom: 1rem;
-        }
-
-        .device-settings-group label {
-            display: block;
-            color: white;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .device-settings-select {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #666;
-            border-radius: 4px;
-            background: #333;
-            color: white;
-            font-size: 0.8rem;
-        }
-
-        .device-test-buttons {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .test-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            flex: 1;
-        }
-
-        .test-audio-btn {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .test-video-btn {
-            background: #2196f3;
-            color: white;
-        }
-
-        /* Connection Status */
-        .connection-status {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            z-index: 5;
-            display: none;
-        }
-
-        .connection-status.connected {
-            background: rgba(76, 175, 80, 0.8);
-        }
-
-        .connection-status.disconnected {
-            background: rgba(244, 67, 54, 0.8);
-        }
-
-        .connection-status.connecting {
-            background: rgba(255, 193, 7, 0.8);
-        }
-
-        /* Waiting Room */
-        .waiting-room {
+        /* Payment Required Modal */
+        .payment-required-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
             justify-content: center;
             align-items: center;
-            color: white;
+            z-index: 3000;
+            display: none;
         }
 
-        .waiting-room-content {
-            text-align: center;
-            max-width: 500px;
+        .payment-required-content {
+            background: white;
+            border-radius: 12px;
             padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
         }
 
-        .waiting-room-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .waiting-room h2 {
-            font-size: 2rem;
+        .payment-required-icon {
+            font-size: 3rem;
+            color: var(--warning-color);
             margin-bottom: 1rem;
         }
 
-        .waiting-room p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
+        .payment-required-content h2 {
+            color: var(--dark-color);
+            margin-bottom: 1rem;
         }
 
-        .waiting-room-actions {
+        .payment-required-content p {
+            color: var(--gray-color);
+            margin-bottom: 2rem;
+        }
+
+        .payment-required-actions {
             display: flex;
             gap: 1rem;
             justify-content: center;
         }
 
-        .leave-waiting-btn {
-            background: var(--danger-color);
-            color: white;
-            border: none;
+        .payment-btn {
             padding: 0.75rem 1.5rem;
+            border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-        }
-
-        .leave-waiting-btn:hover {
-            background: #c82333;
-        }
-
-        /* Admin Controls */
-        .admin-controls {
-            position: absolute;
-            top: 80px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 1rem;
-            border-radius: 8px;
-            z-index: 100;
-            display: none;
-            min-width: 300px;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .admin-header {
-            color: white;
-            margin-bottom: 1rem;
-            font-size: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .admin-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .admin-section h4 {
-            color: white;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-            padding-bottom: 0.5rem;
-        }
-
-        .waiting-list {
-            color: white;
-        }
-
-        .waiting-user {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .user-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.8rem;
-        }
-
-        .user-details {
-            flex: 1;
-        }
-
-        .user-name {
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .user-role {
-            font-size: 0.7rem;
-            color: #ccc;
-        }
-
-        .admin-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .admin-btn {
-            padding: 0.4rem 0.8rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.7rem;
             font-weight: 600;
             transition: all 0.3s;
         }
 
-        .admit-btn {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .admit-btn:hover {
-            background: #1ea952;
-        }
-
-        .remove-btn {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .remove-btn:hover {
-            background: #c82333;
-        }
-
-        .invite-section {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .invite-section h4 {
-            color: white;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .user-select {
-            width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #666;
-            border-radius: 4px;
-            background: #333;
-            color: white;
-            font-size: 0.8rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .invite-btn {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            width: 100%;
-            transition: background 0.3s;
-        }
-
-        .invite-btn:hover {
-            background: #1ea952;
-        }
-
-        .empty-waiting {
-            color: #ccc;
-            text-align: center;
-            font-style: italic;
-            padding: 1rem 0;
-        }
-
-        /* WebSocket Status */
-        .websocket-status {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            z-index: 3000;
-            display: none;
-        }
-
-        .websocket-connected {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .websocket-disconnected {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .websocket-connecting {
-            background: var(--warning-color);
-            color: black;
-        }
-
-        /* Meeting Participants Panel */
-        .participants-panel {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 1rem;
-            border-radius: 8px;
-            z-index: 100;
-            display: none;
-            min-width: 250px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .participants-header {
-            color: white;
-            margin-bottom: 1rem;
-            font-size: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .participants-list {
-            color: white;
-        }
-
-        .participant-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .participant-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
+        .go-to-payment-btn {
             background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             color: white;
-            font-size: 0.8rem;
         }
 
-        .participant-details {
-            flex: 1;
+        .cancel-payment-btn {
+            background: #f5f5f5;
+            color: #333;
         }
 
-        .participant-name {
-            font-size: 0.9rem;
-            font-weight: 600;
+        /* Emoji Picker */
+        .emoji-picker-container {
+            position: absolute;
+            bottom: 70px;
+            left: 50px;
+            z-index: 1000;
+            display: none;
         }
 
-        .participant-role {
-            font-size: 0.7rem;
-            color: #ccc;
-        }
-
-        .participant-status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--accent-color);
-        }
-
-        .participant-status-indicator.muted {
-            background: var(--danger-color);
-        }
-
-        .invite-participant-btn {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            margin-top: 1rem;
-            width: 100%;
-        }
-
-        /* Responsive */
+        /* Responsive Design */
         @media (max-width: 768px) {
             .communication-container {
                 flex-direction: column;
@@ -1383,16 +1172,9 @@
                 font-size: 1.2rem;
             }
             
-            .device-settings-panel {
-                top: 60px;
-                right: 10px;
-                min-width: 200px;
-            }
-            
-            .admin-controls {
-                top: 60px;
-                left: 10px;
-                min-width: 250px;
+            .meeting-chat-panel {
+                width: 300px;
+                height: 400px;
             }
         }
 
@@ -1511,7 +1293,22 @@
                 </div>
             </div>
 
-            <!-- Waiting Room -->
+            <!-- Payment Required Modal -->
+            <div class="payment-required-modal" id="paymentRequiredModal">
+                <div class="payment-required-content">
+                    <div class="payment-required-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2>Payment Required</h2>
+                    <p>Please complete your payment to access all communication features including voice calls, video calls, and messaging.</p>
+                    <div class="payment-required-actions">
+                        <button class="payment-btn cancel-payment-btn" id="cancelPaymentBtn">Cancel</button>
+                        <button class="payment-btn go-to-payment-btn" id="goToPaymentBtn">Go to Payment</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Waiting Room -->
             <div class="waiting-room" id="waitingRoom">
                 <div class="waiting-room-content">
                     <div class="waiting-room-icon">
@@ -1541,17 +1338,16 @@
                     <button class="call-btn" id="voiceCallBtn" disabled>
                         <i class="fas fa-phone"></i> Voice Call
                     </button>
-                    <button class="call-btn waiting-room-badge" id="videoCallBtn" disabled>
+                    <button class="call-btn" id="videoCallBtn" disabled>
                         <i class="fas fa-video"></i> Video Call
-                        <span class="waiting-count" id="waitingCount" style="display: none;">0</span>
                     </button>
-                    <button class="call-btn recording" id="startRecordingBtn" disabled>
+                    <button class="call-btn" id="startRecordingBtn" disabled>
                         <i class="fas fa-microphone"></i> Record
                     </button>
                 </div>
             </div>
 
-            <!-- Voice Recorder -->
+            <!-- Enhanced Voice Recorder -->
             <div class="voice-recorder" id="voiceRecorder">
                 <button class="record-btn" id="recordBtn">
                     <i class="fas fa-circle"></i>
@@ -1567,7 +1363,7 @@
                 </div>
             </div>
 
-            <!-- Voice Call Interface -->
+            <!-- Enhanced Voice Call Interface -->
             <div class="voice-call-interface" id="voiceCallInterface">
                 <div class="caller-avatar" id="callerAvatar">
                     <i class="fas fa-user-md"></i>
@@ -1584,7 +1380,7 @@
                 </div>
             </div>
 
-            <!-- Video Call Interface -->
+            <!-- Enhanced Video Call Interface -->
             <div class="video-call-interface" id="videoCallInterface">
                 <div class="video-call-header">
                     <div class="caller-info">
@@ -1598,14 +1394,13 @@
                     </div>
                     <div class="call-duration" id="videoCallDuration">00:00</div>
                     <div class="header-controls">
-                        <button class="header-btn waiting-room-badge" id="adminControlsBtn" title="Waiting Room">
+                        <button class="header-btn" id="adminControlsBtn" title="Admin Controls">
                             <i class="fas fa-user-shield"></i>
-                            <span class="waiting-count" id="adminWaitingCount" style="display: none;">0</span>
                         </button>
                         <button class="header-btn" id="participantsBtn" title="Participants">
                             <i class="fas fa-users"></i>
                         </button>
-                        <button class="header-btn" id="chatBtn" title="Chat">
+                        <button class="header-btn" id="meetingChatBtn" title="Chat">
                             <i class="fas fa-comment"></i>
                         </button>
                         <button class="header-btn" id="deviceSettingsBtn" title="Settings">
@@ -1617,73 +1412,42 @@
                 <!-- Connection Status -->
                 <div class="connection-status" id="connectionStatus">Connecting...</div>
                 
+                <!-- Meeting Chat Panel -->
+                <div class="meeting-chat-panel" id="meetingChatPanel">
+                    <div class="chat-panel-header">
+                        <span>Meeting Chat</span>
+                        <button class="close-settings-btn" id="closeChatBtn">×</button>
+                    </div>
+                    <div class="chat-panel-messages" id="meetingChatMessages">
+                        <!-- Meeting chat messages will appear here -->
+                    </div>
+                    <div class="chat-panel-input">
+                        <input type="text" id="meetingChatInput" placeholder="Type a message...">
+                    </div>
+                </div>
+
                 <!-- Admin Controls Panel -->
                 <div class="admin-controls" id="adminControlsPanel">
                     <div class="admin-header">
-                        <span>Waiting Room Management</span>
+                        <span>Meeting Controls</span>
                         <button class="close-settings-btn" id="closeAdminBtn">×</button>
                     </div>
                     
                     <div class="admin-section">
-                        <h4>Users Waiting to Join</h4>
-                        <div class="waiting-list" id="waitingList">
-                            <div class="empty-waiting">No users waiting</div>
-                        </div>
+                        <h4>Meeting Actions</h4>
+                        <button class="admin-btn" id="recordMeetingBtn">
+                            <i class="fas fa-circle"></i> Start Recording
+                        </button>
+                        <button class="admin-btn" id="inviteParticipantsBtn">
+                            <i class="fas fa-user-plus"></i> Invite Participants
+                        </button>
                     </div>
                     
                     <div class="admin-section">
-                        <h4>Invite Additional Users</h4>
-                        <select class="user-select" id="userSelect">
-                            <option value="">Select user to invite...</option>
-                        </select>
-                        <button class="invite-btn" id="inviteUserBtn">
-                            <i class="fas fa-user-plus"></i> Send Invitation
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Device Settings Panel -->
-                <div class="device-settings-panel" id="deviceSettingsPanel">
-                    <div class="device-settings-header">
-                        <span>Device Settings</span>
-                        <button class="close-settings-btn" id="closeSettingsBtn">×</button>
-                    </div>
-                    
-                    <div class="device-settings-group">
-                        <label for="cameraSettingsSelect">Camera:</label>
-                        <select id="cameraSettingsSelect" class="device-settings-select">
-                            <option value="">Loading cameras...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="device-settings-group">
-                        <label for="microphoneSettingsSelect">Microphone:</label>
-                        <select id="microphoneSettingsSelect" class="device-settings-select">
-                            <option value="">Loading microphones...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="device-settings-group">
-                        <label for="speakerSettingsSelect">Speaker:</label>
-                        <select id="speakerSettingsSelect" class="device-settings-select">
-                            <option value="">Loading speakers...</option>
-                        </select>
-                    </div>
-                    
-                    <div class="device-test-buttons">
-                        <button class="test-btn test-audio-btn" id="testAudioBtn">Test Audio</button>
-                        <button class="test-btn test-video-btn" id="testVideoBtn">Test Video</button>
-                    </div>
-                </div>
-
-                <!-- Participants Panel -->
-                <div class="participants-panel" id="participantsPanel">
-                    <div class="participants-header">
-                        <span>Meeting Participants</span>
-                        <button class="close-settings-btn" id="closeParticipantsBtn">×</button>
-                    </div>
-                    <div class="participants-list" id="participantsList">
-                        <!-- Participants will be added here dynamically -->
+                        <h4>Participants</h4>
+                        <div class="participants-list" id="meetingParticipantsList">
+                            <!-- Participants will be listed here -->
+                        </div>
                     </div>
                 </div>
                 
@@ -1697,7 +1461,6 @@
                                 <span id="localParticipantName">You</span>
                             </div>
                         </div>
-                        <!-- Remote participant will be added dynamically -->
                     </div>
                 </div>
                 
@@ -1723,7 +1486,7 @@
                 </div>
             </div>
 
-            <!-- Messages Container -->
+            <!-- Enhanced Messages Container -->
             <div class="messages-container" id="messagesContainer">
                 <div class="message received">
                     <div class="message-text">
@@ -1733,7 +1496,7 @@
                 </div>
             </div>
 
-            <!-- Typing Indicator -->
+            <!-- Enhanced Typing Indicator -->
             <div class="typing-indicator" id="typingIndicator">
                 <span class="typing-dots">
                     <span class="typing-dot"></span>
@@ -1743,7 +1506,7 @@
                 <span id="typingUserName">Someone</span> is typing...
             </div>
 
-            <!-- Input Area -->
+            <!-- Enhanced Input Area -->
             <div class="input-area">
                 <div class="input-tools">
                     <button class="tool-btn" title="Emoji" id="emojiBtn" disabled>
@@ -1757,6 +1520,11 @@
                 <button class="send-btn" id="sendBtn" disabled>
                     <i class="fas fa-paper-plane"></i>
                 </button>
+            </div>
+
+            <!-- Emoji Picker -->
+            <div class="emoji-picker-container" id="emojiPickerContainer">
+                <emoji-picker></emoji-picker>
             </div>
         </div>
     </div>
@@ -1792,6 +1560,8 @@
             let voiceRecordingSeconds = 0;
             let isVoiceRecording = false;
             let currentMeeting = null;
+            let incomingCallAudio = null;
+            let outgoingCallAudio = null;
 
             // Device management variables
             let availableCameras = [];
@@ -1875,28 +1645,21 @@
             const confirmDevicesBtn = document.getElementById('confirmDevicesBtn');
             const cancelDevicesBtn = document.getElementById('cancelDevicesBtn');
             const deviceSettingsBtn = document.getElementById('deviceSettingsBtn');
-            const deviceSettingsPanel = document.getElementById('deviceSettingsPanel');
-            const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-            const cameraSettingsSelect = document.getElementById('cameraSettingsSelect');
-            const microphoneSettingsSelect = document.getElementById('microphoneSettingsSelect');
-            const speakerSettingsSelect = document.getElementById('speakerSettingsSelect');
-            const testAudioBtn = document.getElementById('testAudioBtn');
-            const testVideoBtn = document.getElementById('testVideoBtn');
             const refreshBtn = document.getElementById('refreshBtn');
             const participantsBtn = document.getElementById('participantsBtn');
-            const participantsPanel = document.getElementById('participantsPanel');
-            const participantsList = document.getElementById('participantsList');
-            const closeParticipantsBtn = document.getElementById('closeParticipantsBtn');
             const waitingRoom = document.getElementById('waitingRoom');
             const leaveWaitingBtn = document.getElementById('leaveWaitingBtn');
             const adminControlsBtn = document.getElementById('adminControlsBtn');
             const adminControlsPanel = document.getElementById('adminControlsPanel');
-            const closeAdminBtn = document.getElementById('closeAdminBtn');
-            const waitingList = document.getElementById('waitingList');
-            const userSelect = document.getElementById('userSelect');
-            const inviteUserBtn = document.getElementById('inviteUserBtn');
-            const waitingCount = document.getElementById('waitingCount');
-            const adminWaitingCount = document.getElementById('adminWaitingCount');
+            const paymentRequiredModal = document.getElementById('paymentRequiredModal');
+            const goToPaymentBtn = document.getElementById('goToPaymentBtn');
+            const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
+            const emojiPickerContainer = document.getElementById('emojiPickerContainer');
+            const meetingChatBtn = document.getElementById('meetingChatBtn');
+            const meetingChatPanel = document.getElementById('meetingChatPanel');
+            const meetingChatMessages = document.getElementById('meetingChatMessages');
+            const meetingChatInput = document.getElementById('meetingChatInput');
+            const closeChatBtn = document.getElementById('closeChatBtn');
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function() {
@@ -1938,11 +1701,9 @@
             // Initialize CSRF Token
             async function initializeCSRFToken() {
                 try {
-                    // Try multiple methods to get CSRF token
                     csrfToken = getCSRFToken();
                     
                     if (!csrfToken) {
-                        // If no token found, try to fetch it from the server
                         const response = await fetch('/api/csrf-token', {
                             method: 'GET',
                             credentials: 'same-origin'
@@ -1951,14 +1712,11 @@
                         if (response.ok) {
                             const data = await response.json();
                             csrfToken = data.csrf_token;
-                            console.log('CSRF token fetched from API:', csrfToken ? 'Success' : 'Failed');
                         }
                     }
                     
                     if (!csrfToken) {
                         console.warn('CSRF token not available. Some features may not work properly.');
-                    } else {
-                        console.log('CSRF token initialized successfully');
                     }
                 } catch (error) {
                     console.error('Error initializing CSRF token:', error);
@@ -1967,31 +1725,26 @@
 
             // Get CSRF token from multiple sources
             function getCSRFToken() {
-                // Method 1: Check meta tag in head
                 const metaToken = document.querySelector('meta[name="csrf-token"]');
                 if (metaToken && metaToken.getAttribute('content')) {
                     return metaToken.getAttribute('content');
                 }
                 
-                // Method 2: Check for hidden input field (common in forms)
                 const inputToken = document.querySelector('input[name="csrf_token"]');
                 if (inputToken && inputToken.value) {
                     return inputToken.value;
                 }
                 
-                // Method 3: Check for data attribute on body
                 const bodyToken = document.body.getAttribute('data-csrf-token');
                 if (bodyToken) {
                     return bodyToken;
                 }
                 
-                // Method 4: Check cookies (for Flask-WTF)
                 const cookieValue = getCookie('csrftoken') || getCookie('csrf_token') || getCookie('X-CSRFToken');
                 if (cookieValue) {
                     return cookieValue;
                 }
                 
-                // Method 5: Check for window variable (if set by server-side template)
                 if (window.csrfToken) {
                     return window.csrfToken;
                 }
@@ -2021,13 +1774,8 @@
                     
                     if (response.ok) {
                         currentUser = await response.json();
-                        console.log('Current user:', currentUser);
-                        
-                        // Check if user is doctor for admin privileges
                         isDoctorAdmin = currentUser.role === 'doctor';
-                        
                     } else if (response.status === 401) {
-                        // User not logged in, redirect to login
                         window.location.href = '/login';
                         return;
                     } else {
@@ -2042,7 +1790,6 @@
             // Initialize WebSocket connection
             function initializeWebSocket() {
                 try {
-                    // Connect to WebSocket server with correct path
                     socket = io({
                         transports: ['websocket', 'polling'],
                         timeout: 10000
@@ -2053,7 +1800,6 @@
                         isSocketConnected = true;
                         updateWebSocketStatus('connected', 'Connected');
                         
-                        // Join user's personal room using the correct event
                         if (currentUser && currentUser.id) {
                             socket.emit('join_appointment', { user_id: currentUser.id });
                         }
@@ -2075,17 +1821,17 @@
                     socket.on('new_message', handleNewMessage);
                     socket.on('message_delivered', handleMessageDelivered);
                     socket.on('user_typing', handleTypingIndicator);
-                    socket.on('user_online', handleUserOnline);
-                    socket.on('user_offline', handleUserOffline);
+
+                    // Call events
+                    socket.on('incoming_call', handleIncomingCall);
+                    socket.on('call_accepted', handleCallAccepted);
+                    socket.on('call_rejected', handleCallRejected);
+                    socket.on('call_ended', handleCallEnded);
 
                     // Meeting events
                     socket.on('meeting_created', handleMeetingCreated);
-                    socket.on('meeting_joined', handleMeetingJoined);
-                    socket.on('meeting_left', handleMeetingLeft);
-                    socket.on('waiting_room_joined', handleWaitingRoomJoined);
-                    socket.on('waiting_room_left', handleWaitingRoomLeft);
-                    socket.on('user_admitted', handleUserAdmitted);
-                    socket.on('user_removed', handleUserRemoved);
+                    socket.on('user_joined_meeting', handleUserJoinedMeeting);
+                    socket.on('user_left_meeting', handleUserLeftMeeting);
                     socket.on('meeting_invitation', handleMeetingInvitation);
 
                     // WebRTC events
@@ -2101,6 +1847,8 @@
 
             // Update WebSocket status
             function updateWebSocketStatus(status, message) {
+                if (!websocketStatus) return;
+                
                 websocketStatus.textContent = `WebSocket: ${message}`;
                 websocketStatus.className = `websocket-status websocket-${status}`;
                 websocketStatus.style.display = 'block';
@@ -2140,9 +1888,16 @@
                     this.style.height = Math.min(this.scrollHeight, 120) + 'px';
                 });
 
-                // Call buttons
-                voiceCallBtn.addEventListener('click', startVoiceCall);
-                videoCallBtn.addEventListener('click', startVideoCall);
+                // Call buttons with payment check
+                voiceCallBtn.addEventListener('click', () => {
+                    if (checkPaymentRequired()) return;
+                    startVoiceCall();
+                });
+                
+                videoCallBtn.addEventListener('click', () => {
+                    if (checkPaymentRequired()) return;
+                    startVideoCall();
+                });
 
                 // Voice recording
                 startRecordingBtn.addEventListener('click', showVoiceRecorder);
@@ -2165,38 +1920,118 @@
                 confirmDevicesBtn.addEventListener('click', confirmDeviceSelection);
                 cancelDevicesBtn.addEventListener('click', cancelDeviceSelection);
 
-                // Device settings
-                deviceSettingsBtn.addEventListener('click', toggleDeviceSettings);
-                closeSettingsBtn.addEventListener('click', hideDeviceSettings);
-                videoSettingsBtn.addEventListener('click', toggleDeviceSettings);
+                // Payment modal
+                goToPaymentBtn.addEventListener('click', goToPayment);
+                cancelPaymentBtn.addEventListener('click', hidePaymentRequiredModal);
 
-                // Device testing
-                testAudioBtn.addEventListener('click', testAudioOutput);
-                testVideoBtn.addEventListener('click', testVideoOutput);
+                // Emoji picker
+                emojiBtn.addEventListener('click', toggleEmojiPicker);
+                document.addEventListener('click', (e) => {
+                    if (!emojiPickerContainer.contains(e.target) && e.target !== emojiBtn) {
+                        emojiPickerContainer.style.display = 'none';
+                    }
+                });
 
                 // File attachment
                 attachBtn.addEventListener('click', () => {
+                    if (checkPaymentRequired()) return;
                     fileInput.click();
                 });
 
                 fileInput.addEventListener('change', handleFileUpload);
 
-                // Device change listeners
-                cameraSettingsSelect.addEventListener('change', handleCameraChange);
-                microphoneSettingsSelect.addEventListener('change', handleMicrophoneChange);
-                speakerSettingsSelect.addEventListener('change', handleSpeakerChange);
-
-                // Meeting participants
-                participantsBtn.addEventListener('click', toggleParticipantsPanel);
-                closeParticipantsBtn.addEventListener('click', hideParticipantsPanel);
-
-                // Waiting room
-                leaveWaitingBtn.addEventListener('click', leaveWaitingRoom);
+                // Meeting chat
+                meetingChatBtn.addEventListener('click', toggleMeetingChat);
+                closeChatBtn.addEventListener('click', hideMeetingChat);
+                meetingChatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendMeetingChatMessage();
+                    }
+                });
 
                 // Admin controls
                 adminControlsBtn.addEventListener('click', toggleAdminControls);
-                closeAdminBtn.addEventListener('click', hideAdminControls);
-                inviteUserBtn.addEventListener('click', inviteUserToMeeting);
+            }
+
+            // Check if payment is required
+            function checkPaymentRequired() {
+                if (!currentAppointment) return true;
+                
+                if (currentUser.role === 'doctor' && currentAppointment.payment_status !== 'completed') {
+                    showPaymentRequiredModal();
+                    return true;
+                }
+                
+                return false;
+            }
+
+            // Show payment required modal
+            function showPaymentRequiredModal() {
+                paymentRequiredModal.style.display = 'flex';
+            }
+
+            // Hide payment required modal
+            function hidePaymentRequiredModal() {
+                paymentRequiredModal.style.display = 'none';
+            }
+
+            // Go to payment page
+            function goToPayment() {
+                if (currentAppointment) {
+                    window.location.href = `/payment/${currentAppointment.id}`;
+                }
+            }
+
+            // Toggle emoji picker
+            function toggleEmojiPicker() {
+                if (emojiPickerContainer.style.display === 'block') {
+                    emojiPickerContainer.style.display = 'none';
+                } else {
+                    emojiPickerContainer.style.display = 'block';
+                    const emojiPicker = document.querySelector('emoji-picker');
+                    if (emojiPicker) {
+                        emojiPicker.addEventListener('emoji-click', event => {
+                            const emoji = event.detail.unicode;
+                            messageInput.value += emoji;
+                            messageInput.focus();
+                        });
+                    }
+                }
+            }
+
+            // Toggle meeting chat
+            function toggleMeetingChat() {
+                if (meetingChatPanel.style.display === 'flex') {
+                    hideMeetingChat();
+                } else {
+                    showMeetingChat();
+                }
+            }
+
+            // Show meeting chat
+            function showMeetingChat() {
+                meetingChatPanel.style.display = 'flex';
+            }
+
+            // Hide meeting chat
+            function hideMeetingChat() {
+                meetingChatPanel.style.display = 'none';
+            }
+
+            // Send meeting chat message
+            function sendMeetingChatMessage() {
+                const message = meetingChatInput.value.trim();
+                if (message && currentMeeting) {
+                    // Send meeting chat message via WebSocket
+                    socket.emit('meeting_chat_message', {
+                        meeting_id: currentMeeting.id,
+                        message: message,
+                        user_id: currentUser.id,
+                        user_name: currentUser.name
+                    });
+                    
+                    meetingChatInput.value = '';
+                }
             }
 
             // Check if this is first time user
@@ -2255,13 +2090,12 @@
             // Create appointment element
             function createAppointmentElement(apt) {
                 const appointmentItem = document.createElement('div');
-                appointmentItem.className = 'appointment-item';
+                appointmentItem.className = `appointment-item ${apt.payment_status === 'completed' ? 'payment-completed' : 'payment-pending'}`;
                 appointmentItem.dataset.appointmentId = apt.id;
                 
                 const statusClass = `status-${apt.status ? apt.status.toLowerCase() : 'scheduled'}`;
                 const paymentClass = `payment-${apt.payment_status ? apt.payment_status.toLowerCase() : 'pending'}`;
                 
-                // Determine display name based on user role
                 const displayName = currentUser.role === 'patient' ? 
                     (apt.doctor_name || 'Doctor') : 
                     (apt.patient_name || 'Patient');
@@ -2272,6 +2106,7 @@
                 const status = apt.status || 'scheduled';
                 const paymentStatus = apt.payment_status || 'pending';
                 const unreadCount = apt.unread_count || 0;
+                const canCommunicate = apt.can_communicate !== false;
                 
                 appointmentItem.innerHTML = `
                     <div class="appointment-info">
@@ -2283,6 +2118,7 @@
                             <span class="payment-status ${paymentClass}">${paymentStatus}</span>
                             ${unreadCount > 0 ? `<span class="unread-badge">${unreadCount} unread</span>` : ''}
                         </div>
+                        ${!canCommunicate ? '<div class="feature-locked"><i class="fas fa-lock"></i> Payment Required</div>' : ''}
                     </div>
                 `;
                 
@@ -2295,7 +2131,6 @@
 
             // Select an appointment
             function selectAppointment(appointment, element) {
-                // Update active state
                 document.querySelectorAll('.appointment-item').forEach(item => {
                     item.classList.remove('active');
                 });
@@ -2303,7 +2138,6 @@
                 
                 currentAppointment = appointment;
                 
-                // Update contact info
                 const contactName = currentUser.role === 'patient' ? 
                     appointment.doctor_name : appointment.patient_name;
                 const contactRole = currentUser.role === 'patient' ? 'Doctor' : 'Patient';
@@ -2311,21 +2145,20 @@
                 
                 updateContactInfo(contactName, contactRole, specialization, appointment.status);
                 
-                // Enable communication features
-                enableCommunicationFeatures();
+                // Enable communication features based on payment status
+                if (appointment.can_communicate !== false) {
+                    enableCommunicationFeatures();
+                } else {
+                    disableCommunicationFeatures();
+                }
                 
-                // Load messages for this appointment
                 loadMessages(appointment.id);
-                
-                // Mark messages as read
                 markMessagesAsRead(appointment.id);
                 
-                // Join appointment room
                 if (isSocketConnected) {
                     socket.emit('join_appointment', { appointment_id: appointment.id });
                 }
                 
-                // On mobile, close sidebar after selection
                 if (window.innerWidth <= 768) {
                     sidebar.classList.remove('active');
                 }
@@ -2337,6 +2170,38 @@
                     '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>';
                 contactName.textContent = name || role;
                 contactStatus.textContent = `${specialization} • ${status || 'scheduled'}`;
+            }
+
+            // Enable communication features
+            function enableCommunicationFeatures() {
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+                voiceCallBtn.disabled = false;
+                videoCallBtn.disabled = false;
+                startRecordingBtn.disabled = false;
+                emojiBtn.disabled = false;
+                attachBtn.disabled = false;
+                messageInput.placeholder = "Type a message...";
+                
+                // Remove locked state from buttons
+                voiceCallBtn.classList.remove('locked');
+                videoCallBtn.classList.remove('locked');
+            }
+
+            // Disable communication features
+            function disableCommunicationFeatures() {
+                messageInput.disabled = true;
+                sendBtn.disabled = true;
+                voiceCallBtn.disabled = true;
+                videoCallBtn.disabled = true;
+                startRecordingBtn.disabled = true;
+                emojiBtn.disabled = true;
+                attachBtn.disabled = true;
+                messageInput.placeholder = "Complete payment to enable messaging";
+                
+                // Add locked state to buttons
+                voiceCallBtn.classList.add('locked');
+                videoCallBtn.classList.add('locked');
             }
 
             // Load messages for an appointment
@@ -2414,8 +2279,17 @@
                     `;
                 } else if (message.message_type === 'file') {
                     messageContent = `
-                        <div class="message-text">
-                            <i class="fas fa-paperclip"></i> ${message.file_name}
+                        <div class="file-message">
+                            <div class="file-icon">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <div class="file-info">
+                                <div class="file-name">${message.file_name}</div>
+                                <div class="file-size">${formatFileSize(message.file_size)}</div>
+                            </div>
+                            <button class="download-btn" onclick="downloadFile('${message.file_url}', '${message.file_name}')">
+                                <i class="fas fa-download"></i>
+                            </button>
                         </div>
                         <div class="message-time">${formatTime(message.created_at)}</div>
                         ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
@@ -2439,19 +2313,14 @@
             // Handle new message from WebSocket
             function handleNewMessage(messageData) {
                 if (!currentAppointment || messageData.appointment_id !== currentAppointment.id) {
-                    // Message for different appointment, show notification
                     showToast('New message received', 'info');
                     playNotificationSound();
                     return;
                 }
                 
-                // Add message to chat
                 addMessageToChat(messageData, true);
-                
-                // Update unread count in sidebar
                 updateUnreadCount(messageData.appointment_id, 1);
                 
-                // Play notification sound for messages from others
                 if (messageData.sender_id !== currentUser.id) {
                     playNotificationSound();
                 }
@@ -2481,7 +2350,6 @@
                         message_type: 'text'
                     };
                     
-                    // Send via WebSocket if connected, otherwise use HTTP
                     if (isSocketConnected) {
                         socket.emit('send_message', messageData);
                     } else {
@@ -2503,11 +2371,8 @@
                         addMessageToChat(sentMessage, true);
                     }
                     
-                    // Clear input
                     messageInput.value = '';
                     messageInput.style.height = 'auto';
-                    
-                    // Stop typing indicator
                     stopTypingIndicator();
                     
                 } catch (error) {
@@ -2562,133 +2427,13 @@
                 }
             }
 
-            // Handle user online
-            function handleUserOnline(data) {
-                console.log('User online:', data.user_id);
-                // Update UI to show user is online
-            }
-
-            // Handle user offline
-            function handleUserOffline(data) {
-                console.log('User offline:', data.user_id);
-                // Update UI to show user is offline
-            }
-
-            // Show loading state
-            function showLoadingState() {
-                if (loadingState) loadingState.style.display = 'block';
-                if (emptyState) emptyState.style.display = 'none';
-            }
-
-            // Hide loading state
-            function hideLoadingState() {
-                if (loadingState) loadingState.style.display = 'none';
-            }
-
-            // Show empty state
-            function showEmptyState() {
-                if (emptyState) emptyState.style.display = 'block';
-                if (loadingState) loadingState.style.display = 'none';
-            }
-
-            // Hide empty state
-            function hideEmptyState() {
-                if (emptyState) emptyState.style.display = 'none';
-            }
-
-            // Show error state
-            function showErrorState(message) {
-                if (!appointmentList) return;
-                
-                appointmentList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">⚠️</div>
-                        <h3>Error Loading Appointments</h3>
-                        <p>${message}</p>
-                        <button class="refresh-button" onclick="loadAppointments()">
-                            <i class="fas fa-sync-alt"></i> Try Again
-                        </button>
-                    </div>
-                `;
-            }
-
-            // Enable communication features
-            function enableCommunicationFeatures() {
-                messageInput.disabled = false;
-                sendBtn.disabled = false;
-                voiceCallBtn.disabled = false;
-                videoCallBtn.disabled = false;
-                startRecordingBtn.disabled = false;
-                emojiBtn.disabled = false;
-                attachBtn.disabled = false;
-                messageInput.placeholder = "Type a message...";
-            }
-
-            // Mark messages as read
-            async function markMessagesAsRead(appointmentId) {
-                try {
-                    const response = await fetch(`/api/messages/${appointmentId}/mark_all_read`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({})
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to mark messages as read: ${response.status}`);
-                    }
-                    
-                    // Clear unread badge
-                    const appointmentItem = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
-                    if (appointmentItem) {
-                        const unreadBadge = appointmentItem.querySelector('.unread-badge');
-                        if (unreadBadge) {
-                            unreadBadge.remove();
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error marking messages as read:', error);
-                }
-            }
-
-            // Update unread count
-            function updateUnreadCount(appointmentId, newMessageCount) {
-                const appointmentItem = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
-                if (appointmentItem) {
-                    let unreadBadge = appointmentItem.querySelector('.unread-badge');
-                    let currentCount = 0;
-                    
-                    if (unreadBadge) {
-                        currentCount = parseInt(unreadBadge.textContent) || 0;
-                        unreadBadge.textContent = `${currentCount + newMessageCount} unread`;
-                    } else {
-                        unreadBadge = document.createElement('span');
-                        unreadBadge.className = 'unread-badge';
-                        unreadBadge.textContent = `${newMessageCount} unread`;
-                        appointmentItem.querySelector('.appointment-info').appendChild(unreadBadge);
-                    }
-                }
-            }
-
-            // Set welcome message time
-            function setWelcomeTime() {
-                const timeElement = document.getElementById('welcomeTime');
-                if (timeElement) {
-                    timeElement.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                }
-            }
-
-            // ==================== VOICE CALL FUNCTIONS ====================
+            // ==================== ENHANCED VOICE CALL FUNCTIONS ====================
 
             // Start voice call
             async function startVoiceCall() {
-                if (!currentAppointment) return;
+                if (!currentAppointment || checkPaymentRequired()) return;
                 
                 try {
-                    // Request permission for microphone only
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         audio: true,
                         video: false 
@@ -2698,25 +2443,22 @@
                     showVoiceCallInterface();
                     startCallTimer();
                     
-                    // Update caller name
                     const callerName = currentUser.role === 'patient' ? 
                         currentAppointment.doctor_name : currentAppointment.patient_name;
                     document.getElementById('callerAvatar').innerHTML = '<i class="fas fa-user-md"></i>';
                     
-                    // Initialize voice call
                     initializeVoiceCall(stream);
                     
-                    // Send call request
                     const callData = {
                         appointment_id: currentAppointment.id,
                         call_type: 'voice',
                         caller_id: currentUser.id,
-                        caller_name: currentUser.name
+                        caller_name: currentUser.name,
+                        caller_role: currentUser.role
                     };
                     
                     socket.emit('call_initiate', callData);
                     
-                    // Play outgoing ringtone
                     playOutgoingRingtone();
                     
                 } catch (error) {
@@ -2725,12 +2467,148 @@
                 }
             }
 
+            // Handle incoming call
+            function handleIncomingCall(data) {
+                if (!currentAppointment || data.appointment_id !== currentAppointment.id) return;
+                
+                // Play incoming call sound with voice announcement
+                playIncomingCallSound(data.caller_name, data.caller_role);
+                
+                // Show incoming call interface
+                showIncomingCallInterface(data);
+            }
+
+            // Play incoming call sound with voice announcement
+            function playIncomingCallSound(callerName, callerRole) {
+                stopAllAudio();
+                
+                // Create speech synthesis for announcement
+                const announcement = `Incoming consultation voice call from ${callerName}, ${callerRole}`;
+                const speech = new SpeechSynthesisUtterance(announcement);
+                speech.volume = 1;
+                speech.rate = 0.8;
+                speech.pitch = 1;
+                
+                // Play ringtone after announcement
+                speech.onend = function() {
+                    incomingCallAudio = new Audio('/static/sounds/incoming_call.mp3');
+                    incomingCallAudio.loop = true;
+                    incomingCallAudio.play().catch(e => console.log('Audio play failed:', e));
+                };
+                
+                window.speechSynthesis.speak(speech);
+            }
+
+            // Play outgoing ringtone
+            function playOutgoingRingtone() {
+                stopAllAudio();
+                outgoingCallAudio = new Audio('/static/sounds/outgoing_call.mp3');
+                outgoingCallAudio.loop = true;
+                outgoingCallAudio.play().catch(e => console.log('Audio play failed:', e));
+            }
+
+            // Show incoming call interface
+            function showIncomingCallInterface(callData) {
+                // Create incoming call modal
+                const incomingCallModal = document.createElement('div');
+                incomingCallModal.className = 'incoming-call-modal';
+                incomingCallModal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                    z-index: 2000;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    color: white;
+                    animation: fadeIn 0.3s ease-out;
+                `;
+                
+                incomingCallModal.innerHTML = `
+                    <div class="caller-avatar" style="width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin-bottom: 2rem;">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="call-status" style="font-size: 1.5rem; margin-bottom: 1rem;">Incoming Voice Call</div>
+                    <div class="caller-info" style="font-size: 1.2rem; margin-bottom: 2rem;">${callData.caller_name} (${callData.caller_role})</div>
+                    <div class="call-controls" style="display: flex; gap: 1rem;">
+                        <button class="accept-call-btn" style="width: 60px; height: 60px; border: none; border-radius: 50%; background: var(--accent-color); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                            <i class="fas fa-phone"></i>
+                        </button>
+                        <button class="reject-call-btn" style="width: 60px; height: 60px; border: none; border-radius: 50%; background: var(--danger-color); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                            <i class="fas fa-phone"></i>
+                        </button>
+                    </div>
+                `;
+                
+                document.body.appendChild(incomingCallModal);
+                
+                // Add event listeners
+                incomingCallModal.querySelector('.accept-call-btn').addEventListener('click', () => {
+                    acceptIncomingCall(callData);
+                    document.body.removeChild(incomingCallModal);
+                    stopAllAudio();
+                });
+                
+                incomingCallModal.querySelector('.reject-call-btn').addEventListener('click', () => {
+                    rejectIncomingCall(callData);
+                    document.body.removeChild(incomingCallModal);
+                    stopAllAudio();
+                });
+            }
+
+            // Accept incoming call
+            function acceptIncomingCall(callData) {
+                socket.emit('call_accept', {
+                    call_id: callData.call_id,
+                    appointment_id: currentAppointment.id
+                });
+                
+                // Start voice call
+                startVoiceCall();
+            }
+
+            // Reject incoming call
+            function rejectIncomingCall(callData) {
+                socket.emit('call_reject', {
+                    call_id: callData.call_id,
+                    appointment_id: currentAppointment.id
+                });
+            }
+
+            // Handle call accepted
+            function handleCallAccepted(data) {
+                if (outgoingCallAudio) {
+                    outgoingCallAudio.pause();
+                    outgoingCallAudio.currentTime = 0;
+                }
+                callStatus.textContent = 'Connected';
+            }
+
+            // Handle call rejected
+            function handleCallRejected(data) {
+                if (outgoingCallAudio) {
+                    outgoingCallAudio.pause();
+                    outgoingCallAudio.currentTime = 0;
+                }
+                endCall();
+                showToast('Call was rejected', 'info');
+            }
+
+            // Handle call ended
+            function handleCallEnded(data) {
+                endCall();
+                showToast('Call ended', 'info');
+            }
+
             // Initialize voice call
             function initializeVoiceCall(stream) {
                 localStream = stream;
                 initializePeerConnection();
                 
-                // Add audio tracks to peer connection
                 localStream.getAudioTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
                 });
@@ -2759,20 +2637,18 @@
                 }
             }
 
-            // ==================== VIDEO CALL FUNCTIONS ====================
+            // ==================== ENHANCED VIDEO CALL FUNCTIONS ====================
 
             // Start video call
             async function startVideoCall() {
-                if (!currentAppointment) return;
+                if (!currentAppointment || checkPaymentRequired()) return;
                 
                 try {
-                    // Show device permission modal for first-time users
                     if (isFirstTimeUser || !devicePermissionsGranted) {
                         await showDevicePermissionModal();
                         return;
                     }
                     
-                    // Get user media with selected devices
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         video: selectedCameraId ? { deviceId: { exact: selectedCameraId } } : true,
                         audio: selectedMicrophoneId ? { deviceId: { exact: selectedMicrophoneId } } : true
@@ -2780,11 +2656,9 @@
                     
                     isVideoCall = true;
                     
-                    // If user is doctor, create meeting immediately
                     if (isDoctorAdmin) {
                         await createMeeting(stream);
                     } else {
-                        // If user is patient, join waiting room
                         await joinWaitingRoom(stream);
                     }
                     
@@ -2803,9 +2677,6 @@
             // Create meeting (Doctor only)
             async function createMeeting(stream) {
                 try {
-                    console.log('Creating meeting for appointment:', currentAppointment.id);
-                    
-                    // First, create the meeting via API
                     const response = await fetch('/api/meetings/create', {
                         method: 'POST',
                         headers: {
@@ -2828,34 +2699,28 @@
                     showVideoCallInterface();
                     startCallTimer();
                     
-                    // Update caller name
                     const callerName = currentUser.role === 'patient' ? 
                         currentAppointment.doctor_name : currentAppointment.patient_name;
                     videoCallerName.textContent = callerName;
                     
                     await initializeVideoCall(stream);
                     
-                    // Notify via WebSocket
                     socket.emit('create_meeting', {
                         appointment_id: currentAppointment.id,
                         creator_id: currentUser.id,
-                        creator_name: currentUser.name || currentUser.email,
+                        creator_name: currentUser.name,
                         creator_role: currentUser.role
                     });
                     
-                    // Add current user as first participant
                     addParticipant({
                         id: currentUser.id,
-                        name: currentUser.name || currentUser.email,
+                        name: currentUser.name,
                         role: currentUser.role,
                         isMuted: false,
                         hasVideo: true
                     });
                     
-                    // Load available users for invitation
                     await loadAvailableUsers();
-                    
-                    // Load waiting room users
                     await loadWaitingRoomUsers();
                     
                     showToast('Meeting created successfully. You are the meeting admin.', 'success');
@@ -2867,51 +2732,35 @@
                 }
             }
 
-            // Load waiting room users
-            async function loadWaitingRoomUsers() {
-                try {
-                    const response = await fetch(`/api/waiting-room/users?appointment_id=${currentAppointment.id}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin'
-                    });
-                    
-                    if (response.ok) {
-                        const waitingUsers = await response.json();
-                        waitingRoomUsers = waitingUsers;
-                        updateWaitingList();
-                        updateWaitingCount();
-                    }
-                } catch (error) {
-                    console.error('Error loading waiting room users:', error);
-                }
-            }
-
             // Join waiting room (Patient)
             async function joinWaitingRoom(stream) {
                 try {
                     localStream = stream;
                     
-                    // Display local video in waiting room
                     if (localVideo) {
                         localVideo.srcObject = stream;
                     }
                     
-                    // Show waiting room
                     showWaitingRoom();
                     
-                    // Join waiting room
-                    const waitingData = {
-                        appointment_id: currentAppointment.id,
-                        user_id: currentUser.id,
-                        user_name: currentUser.name,
-                        user_role: currentUser.role
-                    };
+                    // Join waiting room via API
+                    const response = await fetch('/api/waiting-room/join', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            appointment_id: currentAppointment.id
+                        })
+                    });
                     
-                    socket.emit('join_waiting_room', waitingData);
+                    if (!response.ok) {
+                        throw new Error('Failed to join waiting room');
+                    }
+                    
+                    const result = await response.json();
                     
                     showToast('You have joined the waiting room. The doctor will admit you shortly.', 'info');
                     
@@ -2925,17 +2774,14 @@
             async function initializeVideoCall(stream) {
                 localStream = stream;
                 
-                // Display local video
                 if (localVideo) {
                     localVideo.srcObject = stream;
                 }
                 
-                // Set local participant name
                 localParticipantName.textContent = currentUser.name;
                 
                 await initializePeerConnection();
                 
-                // Add local stream tracks to peer connection
                 localStream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
                 });
@@ -2948,12 +2794,10 @@
                 try {
                     peerConnection = new RTCPeerConnection(configuration);
                     
-                    // Handle incoming remote stream
                     peerConnection.ontrack = (event) => {
                         console.log('Received remote stream:', event.streams);
                         remoteStream = event.streams[0];
                         
-                        // Create remote video element if it doesn't exist
                         let remoteVideoElement = document.getElementById('remoteVideo');
                         if (!remoteVideoElement) {
                             const remoteParticipant = document.createElement('div');
@@ -2980,7 +2824,6 @@
                         remoteVideoElement.srcObject = remoteStream;
                     };
                     
-                    // Handle ICE candidates
                     peerConnection.onicecandidate = (event) => {
                         if (event.candidate && isSocketConnected) {
                             socket.emit('webrtc_ice_candidate', {
@@ -2990,7 +2833,6 @@
                         }
                     };
                     
-                    // Handle connection state changes
                     peerConnection.onconnectionstatechange = () => {
                         console.log('Connection state:', peerConnection.connectionState);
                         switch (peerConnection.connectionState) {
@@ -3007,7 +2849,6 @@
                         }
                     };
                     
-                    // Create and send offer
                     const offer = await peerConnection.createOffer();
                     await peerConnection.setLocalDescription(offer);
                     
@@ -3084,7 +2925,6 @@
                 
                 hideWaitingRoom();
                 
-                // Notify server
                 socket.emit('leave_waiting_room', {
                     appointment_id: currentAppointment.id,
                     user_id: currentUser.id
@@ -3095,52 +2935,42 @@
 
             // End call
             function endCall() {
-                // Stop local stream
                 if (localStream) {
                     localStream.getTracks().forEach(track => track.stop());
                     localStream = null;
                 }
                 
-                // Stop remote stream
                 if (remoteStream) {
                     remoteStream.getTracks().forEach(track => track.stop());
                     remoteStream = null;
                 }
                 
-                // Close peer connection
                 if (peerConnection) {
                     peerConnection.close();
                     peerConnection = null;
                 }
                 
-                // Stop screen sharing if active
                 if (isScreenSharing) {
                     stopScreenShare();
                 }
                 
-                // Stop recording if active
                 if (isRecording) {
                     stopRecording();
                 }
                 
-                // Hide call interfaces
                 voiceCallInterface.style.display = 'none';
                 videoCallInterface.style.display = 'none';
                 hideWaitingRoom();
-                hideDeviceSettings();
-                hideParticipantsPanel();
+                hideMeetingChat();
                 hideAdminControls();
                 
-                // Remove remote participant
                 const remoteParticipant = document.getElementById('remoteParticipant');
                 if (remoteParticipant) {
                     remoteParticipant.remove();
                 }
                 
-                // Stop timers
                 stopCallTimer();
                 
-                // Notify other participants
                 if (isSocketConnected && currentMeeting) {
                     socket.emit('leave_meeting', {
                         appointment_id: currentAppointment.id,
@@ -3148,21 +2978,14 @@
                     });
                 }
                 
-                // Reset call state
                 isVideoCall = false;
                 isInCall = false;
                 currentMeeting = null;
                 
-                // Clear participants
                 meetingParticipants = [];
                 waitingRoomUsers = [];
-                updateParticipantsList();
-                updateWaitingList();
-                updateWaitingCount();
                 
                 updateConnectionStatus('disconnected', 'Call ended');
-                
-                // Stop any playing audio
                 stopAllAudio();
                 
                 showToast('Call ended.', 'info');
@@ -3182,7 +3005,6 @@
                     videoMuteBtn.classList.toggle('muted', isMuted);
                     videoMuteBtn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
                     
-                    // Update participant status
                     updateParticipantMuteStatus(currentUser.id, isMuted);
                 }
             }
@@ -3201,12 +3023,10 @@
                     videoToggleBtn.classList.toggle('off', isVideoOff);
                     videoToggleBtn.innerHTML = isVideoOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
                     
-                    // Show/hide video element
                     if (localVideo) {
                         localVideo.style.display = isVideoOff ? 'none' : 'block';
                     }
                     
-                    // Update participant status
                     updateParticipantVideoStatus(currentUser.id, isVideoOff);
                 }
             }
@@ -3220,7 +3040,6 @@
                             audio: true 
                         });
                         
-                        // Replace video track with screen share
                         const videoTrack = screenStream.getVideoTracks()[0];
                         const sender = peerConnection.getSenders().find(s => 
                             s.track && s.track.kind === 'video'
@@ -3230,13 +3049,11 @@
                             await sender.replaceTrack(videoTrack);
                         }
                         
-                        // Update local video to show screen share
                         localVideo.srcObject = screenStream;
                         
                         isScreenSharing = true;
                         screenShareBtn.classList.add('active');
                         
-                        // Handle when user stops screen sharing
                         videoTrack.onended = () => {
                             stopScreenShare();
                         };
@@ -3252,7 +3069,6 @@
             // Stop screen share
             async function stopScreenShare() {
                 if (localStream && isScreenSharing) {
-                    // Get original video track
                     const originalVideoTrack = localStream.getVideoTracks()[0];
                     const sender = peerConnection.getSenders().find(s => 
                         s.track && s.track.kind === 'video'
@@ -3262,7 +3078,6 @@
                         await sender.replaceTrack(originalVideoTrack);
                     }
                     
-                    // Restore local video
                     localVideo.srcObject = localStream;
                     
                     isScreenSharing = false;
@@ -3297,7 +3112,6 @@
                     mediaRecorder.onstop = async () => {
                         const blob = new Blob(recordedChunks, { type: 'video/webm' });
                         
-                        // Upload recording to server
                         const formData = new FormData();
                         formData.append('recording', blob, `consultation-${new Date().toISOString()}.webm`);
                         formData.append('appointment_id', currentAppointment.id);
@@ -3396,82 +3210,23 @@
                 showToast('Meeting created successfully', 'success');
             }
 
-            // Handle meeting joined
-            function handleMeetingJoined(participantData) {
+            // Handle user joined meeting
+            function handleUserJoinedMeeting(participantData) {
                 addParticipant(participantData);
                 showToast(`${participantData.name} has joined the meeting`, 'info');
             }
 
-            // Handle meeting left
-            function handleMeetingLeft(participantData) {
+            // Handle user left meeting
+            function handleUserLeftMeeting(participantData) {
                 removeParticipant(participantData.id);
                 showToast(`${participantData.name} has left the meeting`, 'info');
             }
 
-            // Handle waiting room joined
-            function handleWaitingRoomJoined(waitingData) {
-                addWaitingUser(waitingData);
-                updateWaitingCount();
-                if (isDoctorAdmin) {
-                    updateWaitingList();
-                    showToast(`${waitingData.user_name} is waiting to join the meeting`, 'info');
-                }
-            }
-
-            // Handle waiting room left
-            function handleWaitingRoomLeft(userData) {
-                removeWaitingUser(userData.user_id);
-                updateWaitingCount();
-                if (isDoctorAdmin) {
-                    updateWaitingList();
-                    showToast(`${userData.user_name} has left the waiting room`, 'info');
-                }
-            }
-
-            // Handle user admitted
-            function handleUserAdmitted(userData) {
-                if (userData.user_id === currentUser.id) {
-                    // Current user was admitted, join the meeting
-                    hideWaitingRoom();
-                    showVideoCallInterface();
-                    startCallTimer();
-                    
-                    // Initialize video call with existing stream
-                    if (localStream) {
-                        initializeVideoCall(localStream);
-                    }
-                    
-                    showToast('You have been admitted to the meeting', 'success');
-                } else {
-                    // Another user was admitted
-                    showToast(`${userData.user_name} has been admitted to the meeting`, 'info');
-                }
-                
-                // Remove from waiting list
-                removeWaitingUser(userData.user_id);
-                updateWaitingCount();
-            }
-
-            // Handle user removed
-            function handleUserRemoved(userData) {
-                if (userData.user_id === currentUser.id) {
-                    // Current user was removed
-                    endCall();
-                    showToast('You have been removed from the meeting', 'warning');
-                } else {
-                    // Another user was removed
-                    showToast(`${userData.user_name} has been removed from the meeting`, 'info');
-                    removeParticipant(userData.user_id);
-                }
-            }
-
             // Handle meeting invitation
             function handleMeetingInvitation(invitationData) {
-                // Show invitation notification
                 const shouldAccept = confirm(`You have been invited to join a meeting by ${invitationData.inviter_name}. Would you like to join?`);
                 
                 if (shouldAccept) {
-                    // Join the meeting
                     socket.emit('join_meeting', {
                         meeting_id: invitationData.meeting_id,
                         appointment_id: invitationData.appointment_id
@@ -3481,7 +3236,6 @@
 
             // Add participant to meeting
             function addParticipant(participant) {
-                // Check if participant already exists
                 const existingIndex = meetingParticipants.findIndex(p => p.id === participant.id);
                 if (existingIndex === -1) {
                     meetingParticipants.push(participant);
@@ -3495,34 +3249,29 @@
                 updateParticipantsList();
             }
 
-            // Add user to waiting room
-            function addWaitingUser(userData) {
-                // Check if user already exists in waiting room
-                const existingIndex = waitingRoomUsers.findIndex(u => u.user_id === userData.user_id);
-                if (existingIndex === -1) {
-                    waitingRoomUsers.push(userData);
-                }
-            }
-
-            // Remove user from waiting room
-            function removeWaitingUser(userId) {
-                waitingRoomUsers = waitingRoomUsers.filter(u => u.user_id !== userId);
-                updateWaitingList();
-            }
-
-            // Update waiting count badge
-            function updateWaitingCount() {
-                const count = waitingRoomUsers.length;
+            // Update participants list in UI
+            function updateParticipantsList() {
+                if (!meetingParticipantsList) return;
                 
-                if (isDoctorAdmin && isInCall) {
-                    // Show count for admin in video call
-                    adminWaitingCount.textContent = count;
-                    adminWaitingCount.style.display = count > 0 ? 'flex' : 'none';
-                }
+                meetingParticipantsList.innerHTML = '';
                 
-                // Show count for doctor in main interface
-                waitingCount.textContent = count;
-                waitingCount.style.display = count > 0 ? 'flex' : 'none';
+                meetingParticipants.forEach(participant => {
+                    const participantItem = document.createElement('div');
+                    participantItem.className = 'participant-item';
+                    
+                    participantItem.innerHTML = `
+                        <div class="participant-avatar">
+                            ${participant.role === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>'}
+                        </div>
+                        <div class="participant-details">
+                            <div class="participant-name">${participant.name}</div>
+                            <div class="participant-role">${participant.role} ${isDoctorAdmin && participant.id === currentUser.id ? '(Admin)' : ''}</div>
+                        </div>
+                        <div class="participant-status-indicator ${participant.isMuted ? 'muted' : ''}"></div>
+                    `;
+                    
+                    meetingParticipantsList.appendChild(participantItem);
+                });
             }
 
             // Update participant mute status
@@ -3543,238 +3292,6 @@
                 }
             }
 
-            // Update participants list in UI
-            function updateParticipantsList() {
-                if (!participantsList) return;
-                
-                participantsList.innerHTML = '';
-                
-                meetingParticipants.forEach(participant => {
-                    const participantItem = document.createElement('div');
-                    participantItem.className = 'participant-item';
-                    
-                    participantItem.innerHTML = `
-                        <div class="participant-avatar">
-                            ${participant.role === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>'}
-                        </div>
-                        <div class="participant-details">
-                            <div class="participant-name">${participant.name}</div>
-                            <div class="participant-role">${participant.role} ${isDoctorAdmin && participant.id === currentUser.id ? '(Admin)' : ''}</div>
-                        </div>
-                        <div class="participant-status-indicator ${participant.isMuted ? 'muted' : ''}"></div>
-                    `;
-                    
-                    participantsList.appendChild(participantItem);
-                });
-            }
-
-            // Update waiting list in UI
-            function updateWaitingList() {
-                if (!waitingList) return;
-                
-                waitingList.innerHTML = '';
-                
-                if (waitingRoomUsers.length === 0) {
-                    waitingList.innerHTML = '<div class="empty-waiting">No users waiting</div>';
-                    return;
-                }
-                
-                waitingRoomUsers.forEach(user => {
-                    const waitingUser = document.createElement('div');
-                    waitingUser.className = 'waiting-user';
-                    waitingUser.dataset.userId = user.user_id;
-                    
-                    waitingUser.innerHTML = `
-                        <div class="user-info">
-                            <div class="user-avatar">
-                                ${user.user_role === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>'}
-                            </div>
-                            <div class="user-details">
-                                <div class="user-name">${user.user_name}</div>
-                                <div class="user-role">${user.user_role}</div>
-                            </div>
-                        </div>
-                        <div class="admin-actions">
-                            <button class="admin-btn admit-btn" data-user-id="${user.user_id}">
-                                Admit
-                            </button>
-                            <button class="admin-btn remove-btn" data-user-id="${user.user_id}">
-                                Remove
-                            </button>
-                        </div>
-                    `;
-                    
-                    waitingList.appendChild(waitingUser);
-                });
-                
-                // Add event listeners to admit/remove buttons
-                document.querySelectorAll('.admit-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const userId = e.target.dataset.userId;
-                        admitUser(userId);
-                    });
-                });
-                
-                document.querySelectorAll('.remove-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const userId = e.target.dataset.userId;
-                        removeUserFromWaiting(userId);
-                    });
-                });
-            }
-
-            // Admit user to meeting
-            function admitUser(userId) {
-                if (!isDoctorAdmin) {
-                    showToast('Only the meeting admin can admit users', 'error');
-                    return;
-                }
-                
-                const user = waitingRoomUsers.find(u => u.user_id == userId);
-                if (!user) {
-                    showToast('User not found in waiting room', 'error');
-                    return;
-                }
-                
-                socket.emit('admit_user', {
-                    appointment_id: currentAppointment.id,
-                    user_id: userId,
-                    user_name: user.user_name
-                });
-                
-                showToast(`Admitted ${user.user_name} to the meeting`, 'success');
-            }
-
-            // Remove user from waiting room
-            function removeUserFromWaiting(userId) {
-                if (!isDoctorAdmin) {
-                    showToast('Only the meeting admin can remove users', 'error');
-                    return;
-                }
-                
-                const user = waitingRoomUsers.find(u => u.user_id == userId);
-                if (!user) {
-                    showToast('User not found in waiting room', 'error');
-                    return;
-                }
-                
-                socket.emit('remove_user', {
-                    appointment_id: currentAppointment.id,
-                    user_id: userId,
-                    user_name: user.user_name
-                });
-                
-                showToast(`Removed ${user.user_name} from waiting room`, 'info');
-            }
-
-            // Load available users for invitation
-            async function loadAvailableUsers() {
-                try {
-                    console.log('Loading available users...');
-                    
-                    const response = await fetch('/api/users/available', {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin'
-                    });
-                    
-                    if (response.ok) {
-                        availableUsers = await response.json();
-                        updateUserSelect();
-                        console.log('Available users loaded:', availableUsers);
-                    } else {
-                        throw new Error(`Failed to load available users: ${response.status}`);
-                    }
-                } catch (error) {
-                    console.error('Error loading available users:', error);
-                    
-                    // Fallback: Get users from current appointment
-                    if (currentAppointment) {
-                        availableUsers = [
-                            {
-                                id: currentUser.role === 'doctor' ? 
-                                    currentAppointment.patient.user_id : 
-                                    currentAppointment.doctor.user_id,
-                                name: currentUser.role === 'doctor' ? 
-                                    `${currentAppointment.patient.first_name} ${currentAppointment.patient.last_name}` :
-                                    `Dr. ${currentAppointment.doctor.first_name} ${currentAppointment.doctor.last_name}`,
-                                role: currentUser.role === 'doctor' ? 'patient' : 'doctor'
-                            }
-                        ];
-                        updateUserSelect();
-                    }
-                    
-                    showToast('Using limited user list for invitations', 'info');
-                }
-            }
-
-            // Update user select dropdown
-            function updateUserSelect() {
-                if (!userSelect) return;
-                
-                userSelect.innerHTML = '<option value="">Select user to invite...</option>';
-                
-                availableUsers.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = `${user.name} (${user.role})`;
-                    userSelect.appendChild(option);
-                });
-            }
-
-            // Invite user to meeting
-            function inviteUserToMeeting() {
-                if (!isDoctorAdmin) {
-                    showToast('Only the meeting admin can invite users', 'error');
-                    return;
-                }
-                
-                const userId = userSelect.value;
-                if (!userId) {
-                    showToast('Please select a user to invite', 'warning');
-                    return;
-                }
-                
-                const user = availableUsers.find(u => u.id == userId);
-                if (!user) {
-                    showToast('Selected user not found', 'error');
-                    return;
-                }
-                
-                socket.emit('invite_user', {
-                    appointment_id: currentAppointment.id,
-                    user_id: userId,
-                    user_name: user.name
-                });
-                
-                showToast(`Invitation sent to ${user.name}`, 'success');
-                userSelect.value = '';
-            }
-
-            // Toggle participants panel
-            function toggleParticipantsPanel() {
-                if (participantsPanel.style.display === 'block') {
-                    hideParticipantsPanel();
-                } else {
-                    showParticipantsPanel();
-                }
-            }
-
-            // Show participants panel
-            function showParticipantsPanel() {
-                participantsPanel.style.display = 'block';
-                hideDeviceSettings();
-                hideAdminControls();
-            }
-
-            // Hide participants panel
-            function hideParticipantsPanel() {
-                participantsPanel.style.display = 'none';
-            }
-
             // Toggle admin controls
             function toggleAdminControls() {
                 if (!isDoctorAdmin) {
@@ -3792,9 +3309,7 @@
             // Show admin controls
             function showAdminControls() {
                 adminControlsPanel.style.display = 'block';
-                hideDeviceSettings();
-                hideParticipantsPanel();
-                updateWaitingList();
+                hideMeetingChat();
             }
 
             // Hide admin controls
@@ -3837,7 +3352,6 @@
                         voiceMediaRecorder.onstop = async () => {
                             const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
                             
-                            // Upload voice recording to server
                             const formData = new FormData();
                             formData.append('audio', audioBlob, `voice-message-${new Date().getTime()}.webm`);
                             formData.append('appointment_id', currentAppointment.id);
@@ -3865,10 +3379,7 @@
                                 showToast('Failed to send voice message', 'error');
                             }
                             
-                            // Hide recorder
                             voiceRecorder.style.display = 'none';
-                            
-                            // Reset recording state
                             isVoiceRecording = false;
                             voiceRecordingSeconds = 0;
                             recordingTimerDisplay.textContent = '00:00';
@@ -3923,7 +3434,6 @@
             // Send voice recording
             function sendVoiceRecording() {
                 stopVoiceRecording();
-                // The recording will be automatically sent when stopped
             }
 
             // Cancel voice recording
@@ -3965,23 +3475,19 @@
             // Enumerate available devices
             async function enumerateDevices() {
                 try {
-                    // Request permission first by trying to get user media
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         video: true, 
                         audio: true 
                     });
                     
-                    // Stop the stream immediately since we just needed permission
                     stream.getTracks().forEach(track => track.stop());
                     
-                    // Now enumerate devices
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     
                     availableCameras = devices.filter(device => device.kind === 'videoinput');
                     availableMicrophones = devices.filter(device => device.kind === 'audioinput');
                     availableSpeakers = devices.filter(device => device.kind === 'audiooutput');
                     
-                    // Set default selections
                     if (availableCameras.length > 0) {
                         selectedCameraId = availableCameras[0].deviceId;
                     }
@@ -4002,51 +3508,38 @@
 
             // Populate device selects
             function populateDeviceSelects() {
-                // Populate camera selects
                 cameraSelect.innerHTML = '';
-                cameraSettingsSelect.innerHTML = '';
                 availableCameras.forEach(camera => {
                     const option = document.createElement('option');
                     option.value = camera.deviceId;
                     option.textContent = camera.label || `Camera ${cameraSelect.length + 1}`;
-                    cameraSelect.appendChild(option.cloneNode(true));
-                    cameraSettingsSelect.appendChild(option);
+                    cameraSelect.appendChild(option);
                 });
                 
-                // Populate microphone selects
                 microphoneSelect.innerHTML = '';
-                microphoneSettingsSelect.innerHTML = '';
                 availableMicrophones.forEach(microphone => {
                     const option = document.createElement('option');
                     option.value = microphone.deviceId;
                     option.textContent = microphone.label || `Microphone ${microphoneSelect.length + 1}`;
-                    microphoneSelect.appendChild(option.cloneNode(true));
-                    microphoneSettingsSelect.appendChild(option);
+                    microphoneSelect.appendChild(option);
                 });
                 
-                // Populate speaker selects
                 speakerSelect.innerHTML = '';
-                speakerSettingsSelect.innerHTML = '';
                 availableSpeakers.forEach(speaker => {
                     const option = document.createElement('option');
                     option.value = speaker.deviceId;
                     option.textContent = speaker.label || `Speaker ${speakerSelect.length + 1}`;
-                    speakerSelect.appendChild(option.cloneNode(true));
-                    speakerSettingsSelect.appendChild(option);
+                    speakerSelect.appendChild(option);
                 });
                 
-                // Set selected values
                 if (selectedCameraId) {
                     cameraSelect.value = selectedCameraId;
-                    cameraSettingsSelect.value = selectedCameraId;
                 }
                 if (selectedMicrophoneId) {
                     microphoneSelect.value = selectedMicrophoneId;
-                    microphoneSettingsSelect.value = selectedMicrophoneId;
                 }
                 if (selectedSpeakerId) {
                     speakerSelect.value = selectedSpeakerId;
-                    speakerSettingsSelect.value = selectedSpeakerId;
                 }
             }
 
@@ -4056,16 +3549,11 @@
                 selectedMicrophoneId = microphoneSelect.value;
                 selectedSpeakerId = speakerSelect.value;
                 
-                // Mark as not first time user
                 localStorage.setItem('hasUsedVideoCall', 'true');
                 isFirstTimeUser = false;
                 
                 hideDevicePermissionModal();
-                
-                // Apply speaker selection
                 applySpeakerSelection();
-                
-                // Continue with the call
                 startVideoCall();
             }
 
@@ -4077,7 +3565,6 @@
             // Apply speaker selection
             function applySpeakerSelection() {
                 if (selectedSpeakerId) {
-                    // For modern browsers that support setSinkId
                     const remoteVideo = document.getElementById('remoteVideo');
                     if (remoteVideo && remoteVideo.setSinkId) {
                         remoteVideo.setSinkId(selectedSpeakerId)
@@ -4088,145 +3575,6 @@
                                 console.error('Error setting speaker:', error);
                             });
                     }
-                }
-            }
-
-            // Toggle device settings
-            function toggleDeviceSettings() {
-                if (deviceSettingsPanel.style.display === 'block') {
-                    hideDeviceSettings();
-                } else {
-                    showDeviceSettings();
-                }
-            }
-
-            // Show device settings
-            function showDeviceSettings() {
-                deviceSettingsPanel.style.display = 'block';
-                hideParticipantsPanel();
-                hideAdminControls();
-            }
-
-            // Hide device settings
-            function hideDeviceSettings() {
-                deviceSettingsPanel.style.display = 'none';
-            }
-
-            // Handle camera change
-            async function handleCameraChange() {
-                selectedCameraId = cameraSettingsSelect.value;
-                if (localStream && isInCall) {
-                    await restartVideoWithNewCamera();
-                }
-            }
-
-            // Handle microphone change
-            async function handleMicrophoneChange() {
-                selectedMicrophoneId = microphoneSettingsSelect.value;
-                if (localStream && isInCall) {
-                    await restartAudioWithNewMicrophone();
-                }
-            }
-
-            // Handle speaker change
-            function handleSpeakerChange() {
-                selectedSpeakerId = speakerSettingsSelect.value;
-                applySpeakerSelection();
-            }
-
-            // Restart video with new camera
-            async function restartVideoWithNewCamera() {
-                try {
-                    const videoTrack = localStream.getVideoTracks()[0];
-                    if (videoTrack) {
-                        videoTrack.stop();
-                    }
-                    
-                    const newStream = await navigator.mediaDevices.getUserMedia({
-                        video: { deviceId: selectedCameraId ? { exact: selectedCameraId } : undefined },
-                        audio: false
-                    });
-                    
-                    const newVideoTrack = newStream.getVideoTracks()[0];
-                    const sender = peerConnection.getSenders().find(s => 
-                        s.track && s.track.kind === 'video'
-                    );
-                    
-                    if (sender) {
-                        await sender.replaceTrack(newVideoTrack);
-                    }
-                    
-                    // Add new track to local stream
-                    localStream.addTrack(newVideoTrack);
-                    
-                    // Update local video
-                    if (localVideo) {
-                        localVideo.srcObject = localStream;
-                    }
-                    
-                } catch (error) {
-                    console.error('Error restarting video:', error);
-                }
-            }
-
-            // Restart audio with new microphone
-            async function restartAudioWithNewMicrophone() {
-                try {
-                    const audioTrack = localStream.getAudioTracks()[0];
-                    if (audioTrack) {
-                        audioTrack.stop();
-                    }
-                    
-                    const newStream = await navigator.mediaDevices.getUserMedia({
-                        video: false,
-                        audio: { deviceId: selectedMicrophoneId ? { exact: selectedMicrophoneId } : undefined }
-                    });
-                    
-                    const newAudioTrack = newStream.getAudioTracks()[0];
-                    const sender = peerConnection.getSenders().find(s => 
-                        s.track && s.track.kind === 'audio'
-                    );
-                    
-                    if (sender) {
-                        await sender.replaceTrack(newAudioTrack);
-                    }
-                    
-                    // Add new track to local stream
-                    localStream.addTrack(newAudioTrack);
-                    
-                } catch (error) {
-                    console.error('Error restarting audio:', error);
-                }
-            }
-
-            // Test audio output
-            function testAudioOutput() {
-                // Create a simple test tone
-                const context = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = context.createOscillator();
-                const gainNode = context.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(context.destination);
-                
-                oscillator.frequency.value = 440;
-                oscillator.type = 'sine';
-                gainNode.gain.value = 0.1;
-                
-                oscillator.start();
-                setTimeout(() => {
-                    oscillator.stop();
-                }, 500);
-            }
-
-            // Test video output
-            function testVideoOutput() {
-                if (localVideo && localVideo.srcObject) {
-                    // Flash the local video to indicate it's working
-                    localVideo.style.border = '3px solid var(--accent-color)';
-                    setTimeout(() => {
-                        localVideo.style.border = 'none';
-                    }, 1000);
                 }
             }
 
@@ -4263,7 +3611,6 @@
                         showToast('Failed to upload file. Please try again.', 'error');
                     }
                     
-                    // Reset file input
                     fileInput.value = '';
                 }
             }
@@ -4291,26 +3638,21 @@
 
             // Play notification sound
             function playNotificationSound() {
-                // In a real app, this would play a sound
+                // Implementation for notification sound
                 console.log('Playing notification sound');
-            }
-
-            // Play outgoing ringtone
-            function playOutgoingRingtone() {
-                const audio = new Audio('/static/ringtones/video_ringtone.mp3');
-                audio.loop = true;
-                audio.play().catch(e => console.log('Audio play failed:', e));
-                
-                // Store reference to stop later
-                window.outgoingRingtone = audio;
             }
 
             // Stop all audio
             function stopAllAudio() {
-                if (window.outgoingRingtone) {
-                    window.outgoingRingtone.pause();
-                    window.outgoingRingtone.currentTime = 0;
+                if (incomingCallAudio) {
+                    incomingCallAudio.pause();
+                    incomingCallAudio.currentTime = 0;
                 }
+                if (outgoingCallAudio) {
+                    outgoingCallAudio.pause();
+                    outgoingCallAudio.currentTime = 0;
+                }
+                window.speechSynthesis.cancel();
             }
 
             // Format time
@@ -4335,6 +3677,15 @@
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
             }
 
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
             // Scroll to bottom of messages
             function scrollToBottom() {
                 if (messagesContainer) {
@@ -4352,8 +3703,241 @@
                     .replace(/'/g, "&#039;");
             }
 
+            // Download file
+            function downloadFile(url, filename) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+            }
+
+            // Show loading state
+            function showLoadingState() {
+                if (loadingState) loadingState.style.display = 'block';
+                if (emptyState) emptyState.style.display = 'none';
+            }
+
+            // Hide loading state
+            function hideLoadingState() {
+                if (loadingState) loadingState.style.display = 'none';
+            }
+
+            // Show empty state
+            function showEmptyState() {
+                if (emptyState) emptyState.style.display = 'block';
+                if (loadingState) loadingState.style.display = 'none';
+            }
+
+            // Hide empty state
+            function hideEmptyState() {
+                if (emptyState) emptyState.style.display = 'none';
+            }
+
+            // Show error state
+            function showErrorState(message) {
+                if (!appointmentList) return;
+                
+                appointmentList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h3>Error Loading Appointments</h3>
+                        <p>${message}</p>
+                        <button class="refresh-button" onclick="loadAppointments()">
+                            <i class="fas fa-sync-alt"></i> Try Again
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Mark messages as read
+            async function markMessagesAsRead(appointmentId) {
+                try {
+                    const response = await fetch(`/api/messages/${appointmentId}/mark_all_read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({})
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to mark messages as read: ${response.status}`);
+                    }
+                    
+                    const appointmentItem = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
+                    if (appointmentItem) {
+                        const unreadBadge = appointmentItem.querySelector('.unread-badge');
+                        if (unreadBadge) {
+                            unreadBadge.remove();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error marking messages as read:', error);
+                }
+            }
+
+            // Update unread count
+            function updateUnreadCount(appointmentId, newMessageCount) {
+                const appointmentItem = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
+                if (appointmentItem) {
+                    let unreadBadge = appointmentItem.querySelector('.unread-badge');
+                    let currentCount = 0;
+                    
+                    if (unreadBadge) {
+                        currentCount = parseInt(unreadBadge.textContent) || 0;
+                        unreadBadge.textContent = `${currentCount + newMessageCount} unread`;
+                    } else {
+                        unreadBadge = document.createElement('span');
+                        unreadBadge.className = 'unread-badge';
+                        unreadBadge.textContent = `${newMessageCount} unread`;
+                        appointmentItem.querySelector('.appointment-info').appendChild(unreadBadge);
+                    }
+                }
+            }
+
+            // Set welcome message time
+            function setWelcomeTime() {
+                const timeElement = document.getElementById('welcomeTime');
+                if (timeElement) {
+                    timeElement.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                }
+            }
+
+            // Load available users for invitation
+            async function loadAvailableUsers() {
+                try {
+                    const response = await fetch('/api/users/available', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        availableUsers = await response.json();
+                    }
+                } catch (error) {
+                    console.error('Error loading available users:', error);
+                }
+            }
+
+            // Load waiting room users
+            async function leaveWaitingRoom() {
+                try {
+                    if (localStream) {
+                        localStream.getTracks().forEach(track => track.stop());
+                        localStream = null;
+                    }
+                    
+                    // Leave waiting room via API
+                    const response = await fetch('/api/waiting-room/leave', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            appointment_id: currentAppointment.id
+                        })
+                    });
+                    
+                    hideWaitingRoom();
+                    
+                    if (response.ok) {
+                        showToast('You have left the waiting room.', 'info');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error leaving waiting room:', error);
+                    showToast('Failed to leave waiting room.', 'error');
+                }
+            }
+
+            async function loadWaitingRoomUsers() {
+                try {
+                    const response = await fetch(`/api/waiting-room/users?appointment_id=${currentAppointment.id}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        const waitingUsers = await response.json();
+                        waitingRoomUsers = waitingUsers;
+                        updateWaitingList();
+                        updateWaitingCount();
+                    }
+                } catch (error) {
+                    console.error('Error loading waiting room users:', error);
+                }
+            }
+
+            async function admitUser(waitingRoomId) {
+                try {
+                    const response = await fetch('/api/waiting-room/admit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            waiting_room_id: waitingRoomId,
+                            meeting_id: currentMeeting.id
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to admit user');
+                    }
+                    
+                    const result = await response.json();
+                    showToast(result.message, 'success');
+                    
+                } catch (error) {
+                    console.error('Error admitting user:', error);
+                    showToast('Failed to admit user to meeting', 'error');
+                }
+            }
+
+            async function removeUserFromWaiting(waitingRoomId) {
+                try {
+                    const response = await fetch('/api/waiting-room/remove', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            waiting_room_id: waitingRoomId
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to remove user');
+                    }
+                    
+                    const result = await response.json();
+                    showToast(result.message, 'info');
+                    
+                } catch (error) {
+                    console.error('Error removing user:', error);
+                    showToast('Failed to remove user from waiting room', 'error');
+                }
+            }
+
             // Make functions globally available
             window.loadAppointments = loadAppointments;
+            window.downloadFile = downloadFile;
 
         })(); // End of IIFE
     </script>

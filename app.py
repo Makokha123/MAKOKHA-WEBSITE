@@ -1,12 +1,8 @@
-# app.py - ADD THIS AT THE VERY TOP
+
 import os
 from xml.dom.minidom import Document
 import eventlet
-
-# Monkey patch early to avoid issues
 eventlet.monkey_patch()
-
-# Now import other modules
 import string
 import bcrypt
 import re
@@ -16,7 +12,7 @@ from flask import Flask, g, render_template, request, redirect, send_file, send_
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_mail import Mail
-from flask_wtf.csrf import CSRFProtect, CSRFError
+from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -28,6 +24,7 @@ from tzlocal import get_localzone
 import requests
 from urllib.parse import urlencode
 import secrets
+
 
 # Load environment variables
 load_dotenv()
@@ -482,7 +479,34 @@ app.jinja_env.globals.update(generate_stars=generate_stars)
 # =============================================================================
 # MODELS (Updated with proper timezone handling)
 # =============================================================================
+class WaitingRoom(db.Model):
+    """Track users in waiting rooms for appointments"""
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    user_role = db.Column(db.String(20), nullable=False)  # 'patient' or 'doctor'
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='waiting')  # 'waiting', 'admitted', 'left'
+    admitted_at = db.Column(db.DateTime)
+    
+    # Relationships
+    user = db.relationship('User', backref='waiting_room_entries')
+    appointment = db.relationship('Appointment', backref='waiting_room_entries')
 
+class MeetingParticipant(db.Model):
+    """Track participants in active meetings"""
+    id = db.Column(db.Integer, primary_key=True)
+    meeting_id = db.Column(db.String(100), nullable=False)  # Unique meeting identifier
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    user_role = db.Column(db.String(20), nullable=False)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    left_at = db.Column(db.DateTime)
+    is_present = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    user = db.relationship('User', backref='meeting_participations')
+    appointment = db.relationship('Appointment', backref='meeting_participants')
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=True)
@@ -1103,136 +1127,92 @@ def mark_messages_read(appointment_id):
 @login_required
 @limiter.limit("10 per minute")
 def upload_voice_message():
-    """Upload voice message - COMPLETELY REWRITTEN"""
+    """Upload voice message with payment validation"""
     try:
-        print("🔍 DEBUG: Voice upload endpoint called")
-        print(f"🔍 DEBUG: Request files: {list(request.files.keys())}")
-        print(f"🔍 DEBUG: Request form: {dict(request.form)}")
-        
-        # Check for audio file
         if 'audio' not in request.files:
-            print("❌ DEBUG: No 'audio' file in request.files")
             return jsonify({'error': 'No audio file provided'}), 400
         
         audio_file = request.files['audio']
         appointment_id = request.form.get('appointment_id')
         duration = request.form.get('duration', 0)
         
-        print(f"🔍 DEBUG: Audio file: {audio_file.filename if audio_file else 'None'}")
-        print(f"🔍 DEBUG: Appointment ID: {appointment_id}")
-        print(f"🔍 DEBUG: Duration: {duration}")
-        
-        # Validate inputs
-        if not audio_file or audio_file.filename == '':
-            print("❌ DEBUG: Audio file is empty")
-            return jsonify({'error': 'No audio file selected'}), 400
-        
         if not appointment_id:
-            print("❌ DEBUG: No appointment ID provided")
             return jsonify({'error': 'Appointment ID is required'}), 400
         
-        try:
-            appointment_id = int(appointment_id)
-        except ValueError:
-            print("❌ DEBUG: Invalid appointment ID format")
-            return jsonify({'error': 'Invalid appointment ID'}), 400
+        appointment = Appointment.query.get_or_404(appointment_id)
         
-        # Get appointment
-        appointment = db.session.get(Appointment, appointment_id)
-        if not appointment:
-            print(f"❌ DEBUG: Appointment {appointment_id} not found")
-            return jsonify({'error': 'Appointment not found'}), 404
-        
-        print(f"🔍 DEBUG: Found appointment - ID: {appointment.id}")
+        # Check payment status for doctors
+        if current_user.role == 'doctor' and appointment.payment_status != 'completed':
+            return jsonify({'error': 'Payment required to send voice messages'}), 403
         
         # Check user access
         if current_user.role == 'patient':
             patient_profile = Patient.query.filter_by(user_id=current_user.id).first()
             if not patient_profile:
-                print(f"❌ DEBUG: Patient profile not found for user {current_user.id}")
                 return jsonify({'error': 'Patient profile not found'}), 404
-            
             if appointment.patient_id != patient_profile.id:
-                print(f"❌ DEBUG: Access denied - patient mismatch")
                 return jsonify({'error': 'Access denied'}), 403
-                
             receiver_id = appointment.doctor.user_id
-            print(f"🔍 DEBUG: Receiver (doctor) ID: {receiver_id}")
-                
-        elif current_user.role == 'doctor':
+        else:
             doctor_profile = Doctor.query.filter_by(user_id=current_user.id).first()
             if not doctor_profile:
-                print(f"❌ DEBUG: Doctor profile not found for user {current_user.id}")
                 return jsonify({'error': 'Doctor profile not found'}), 404
-            
             if appointment.doctor_id != doctor_profile.id:
-                print(f"❌ DEBUG: Access denied - doctor mismatch")
                 return jsonify({'error': 'Access denied'}), 403
-                
             receiver_id = appointment.patient.user_id
-            print(f"🔍 DEBUG: Receiver (patient) ID: {receiver_id}")
+        
+        if audio_file and audio_file.filename != '':
+            # Save the audio file
+            timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+            filename = f"voice_{current_user.id}_{timestamp}.webm"
+            voice_messages_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'voice_messages')
+            os.makedirs(voice_messages_dir, exist_ok=True)
+            
+            file_path = os.path.join(voice_messages_dir, filename)
+            audio_file.save(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            # Create message record
+            message = Message(
+                appointment_id=appointment_id,
+                sender_id=current_user.id,
+                receiver_id=receiver_id,
+                message_type='audio',
+                audio_url=f'/static/uploads/voice_messages/{filename}',
+                content='Voice message',
+                file_name=filename,
+                file_size=file_size,
+                created_at=datetime.now(timezone.utc)
+            )
+            
+            db.session.add(message)
+            db.session.commit()
+            
+            # Prepare response
+            message_data = {
+                'id': message.id,
+                'sender_id': message.sender_id,
+                'sender_name': get_user_display_name(current_user),
+                'sender_role': current_user.role,
+                'receiver_id': receiver_id,
+                'message_type': 'audio',
+                'content': 'Voice message',
+                'audio_url': message.audio_url,
+                'file_name': filename,
+                'file_size': file_size,
+                'is_read': False,
+                'created_at': message.created_at.isoformat(),
+                'is_own': True,
+                'duration': int(duration)
+            }
+            
+            log_audit('voice_message_uploaded', current_user.id, f'Appointment: {appointment_id}')
+            return jsonify(message_data)
         else:
-            print(f"❌ DEBUG: Invalid user role: {current_user.role}")
-            return jsonify({'error': 'Invalid user role'}), 403
-        
-        # Save the audio file
-        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
-        filename = f"voice_{current_user.id}_{timestamp}.webm"
-        voice_messages_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'voice_messages')
-        
-        # Ensure directory exists
-        os.makedirs(voice_messages_dir, exist_ok=True)
-        
-        file_path = os.path.join(voice_messages_dir, filename)
-        audio_file.save(file_path)
-        file_size = os.path.getsize(file_path)
-        
-        print(f"🔍 DEBUG: Saved voice file to {file_path}, size: {file_size} bytes")
-        
-        # Create message record
-        message = Message(
-            appointment_id=appointment_id,
-            sender_id=current_user.id,
-            receiver_id=receiver_id,
-            message_type='audio',
-            audio_url=f'/static/uploads/voice_messages/{filename}',
-            content='Voice message',
-            file_name=filename,
-            file_size=file_size,
-            created_at=datetime.now(timezone.utc)
-        )
-        
-        db.session.add(message)
-        db.session.commit()
-        
-        print(f"✅ DEBUG: Voice message saved to database with ID: {message.id}")
-        
-        # Prepare response
-        message_data = {
-            'id': message.id,
-            'sender_id': message.sender_id,
-            'sender_name': get_user_display_name(current_user),
-            'sender_role': current_user.role,
-            'receiver_id': receiver_id,
-            'message_type': 'audio',
-            'content': 'Voice message',
-            'audio_url': message.audio_url,
-            'file_name': filename,
-            'file_size': file_size,
-            'is_read': False,
-            'created_at': message.created_at.isoformat(),
-            'is_own': True,
-            'duration': int(duration)
-        }
-        
-        log_audit('voice_message_uploaded', current_user.id, f'Appointment: {appointment_id}')
-        return jsonify(message_data)
+            return jsonify({'error': 'Invalid audio file'}), 400
         
     except Exception as e:
-        print(f"❌ DEBUG: Error in voice upload: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        db.session.rollback()
+        app.logger.error(f"Error uploading voice message: {str(e)}")
         return jsonify({'error': f'Failed to upload voice message: {str(e)}'}), 500
 
 @app.route('/static/uploads/<path:filename>')
@@ -1311,7 +1291,7 @@ def debug_appointment(appointment_id):
 @login_required
 @limiter.limit("20 per minute")
 def upload_message_file():
-    """Upload file for messaging"""
+    """Upload file for messaging with payment validation"""
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
@@ -1330,6 +1310,10 @@ def upload_message_file():
         
         if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
             return jsonify({'error': 'Access denied'}), 403
+        
+        # Check payment status for doctors
+        if current_user.role == 'doctor' and appointment.payment_status != 'completed':
+            return jsonify({'error': 'Payment required to send files'}), 403
         
         if file and file.filename != '':
             # Generate unique filename
@@ -2505,10 +2489,61 @@ def get_available_users():
         app.logger.error(f"Error getting available users: {str(e)}")
         return jsonify({'error': 'Failed to load available users'}), 500
 
-@app.route('/api/meetings/create', methods=['POST'])
+@app.route('/api/waiting-room/users')
 @login_required
-def create_meeting():
-    """Create a new meeting for an appointment"""
+def get_waiting_room_users():
+    """Get real users in waiting room for current appointment from database"""
+    try:
+        appointment_id = request.args.get('appointment_id')
+        
+        if not appointment_id:
+            return jsonify({'error': 'Appointment ID is required'}), 400
+        
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Get actual waiting room users from database
+        waiting_users = WaitingRoom.query.filter_by(
+            appointment_id=appointment_id,
+            status='waiting'
+        ).order_by(WaitingRoom.joined_at.asc()).all()
+        
+        waiting_users_data = []
+        for waiting_user in waiting_users:
+            user = waiting_user.user
+            if user.role == 'patient' and user.patient_profile:
+                user_name = f"{user.patient_profile.first_name} {user.patient_profile.last_name}"
+            elif user.role == 'doctor' and user.doctor_profile:
+                user_name = f"Dr. {user.doctor_profile.first_name} {user.doctor_profile.last_name}"
+            else:
+                user_name = user.username or user.email
+            
+            waiting_users_data.append({
+                'waiting_room_id': waiting_user.id,
+                'user_id': user.id,
+                'user_name': user_name,
+                'user_role': user.role,
+                'appointment_id': appointment.id,
+                'joined_at': waiting_user.joined_at.isoformat(),
+                'waiting_duration': (datetime.utcnow() - waiting_user.joined_at).seconds // 60  # minutes
+            })
+        
+        return jsonify(waiting_users_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting waiting room users: {str(e)}")
+        return jsonify({'error': 'Failed to load waiting room users'}), 500
+
+@app.route('/api/waiting-room/join', methods=['POST'])
+@login_required
+def join_waiting_room():
+    """Join the waiting room for an appointment"""
     try:
         data = request.json
         appointment_id = data.get('appointment_id')
@@ -2525,81 +2560,316 @@ def create_meeting():
         if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
             return jsonify({'error': 'Access denied'}), 403
         
-        # Generate meeting URLs if they don't exist
-        if not appointment.video_call_url:
-            appointment.video_call_url = f"/video-call/{appointment_id}"
+        # Check if user is already in waiting room
+        existing_entry = WaitingRoom.query.filter_by(
+            appointment_id=appointment_id,
+            user_id=current_user.id,
+            status='waiting'
+        ).first()
         
-        if not appointment.voice_call_url:
-            appointment.voice_call_url = f"/voice-call/{appointment_id}"
+        if existing_entry:
+            return jsonify({
+                'success': True,
+                'message': 'Already in waiting room',
+                'waiting_room_id': existing_entry.id
+            })
         
+        # Create new waiting room entry
+        waiting_room_entry = WaitingRoom(
+            appointment_id=appointment_id,
+            user_id=current_user.id,
+            user_role=current_user.role,
+            status='waiting',
+            joined_at=datetime.utcnow()
+        )
+        
+        db.session.add(waiting_room_entry)
         db.session.commit()
         
-        # Return meeting information
-        meeting_data = {
-            'appointment_id': appointment.id,
-            'video_call_url': appointment.video_call_url,
-            'voice_call_url': appointment.voice_call_url,
-            'patient_name': f"{appointment.patient.first_name} {appointment.patient.last_name}",
-            'doctor_name': f"Dr. {appointment.doctor.first_name} {appointment.doctor.last_name}",
-            'is_doctor': current_user.role == 'doctor'
-        }
+        # Get user display name
+        if current_user.role == 'patient' and current_user.patient_profile:
+            user_name = f"{current_user.patient_profile.first_name} {current_user.patient_profile.last_name}"
+        elif current_user.role == 'doctor' and current_user.doctor_profile:
+            user_name = f"Dr. {current_user.doctor_profile.first_name} {current_user.doctor_profile.last_name}"
+        else:
+            user_name = current_user.username or current_user.email
         
-        log_audit('meeting_created', current_user.id, f'Appointment: {appointment_id}')
-        return jsonify(meeting_data)
+        # Notify doctor via WebSocket (if patient is joining)
+        if current_user.role == 'patient':
+            doctor_user_id = appointment.doctor.user_id
+            socketio.emit('waiting_room_joined', {
+                'appointment_id': appointment_id,
+                'user_id': current_user.id,
+                'user_name': user_name,
+                'user_role': current_user.role,
+                'waiting_room_id': waiting_room_entry.id,
+                'joined_at': waiting_room_entry.joined_at.isoformat()
+            }, room=f'user_{doctor_user_id}')
+        
+        log_audit('waiting_room_joined', current_user.id, f'Appointment: {appointment_id}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Joined waiting room successfully',
+            'waiting_room_id': waiting_room_entry.id,
+            'user_name': user_name
+        })
     
     except Exception as e:
-        app.logger.error(f"Error creating meeting: {str(e)}")
-        return jsonify({'error': 'Failed to create meeting'}), 500
+        db.session.rollback()
+        app.logger.error(f"Error joining waiting room: {str(e)}")
+        return jsonify({'error': 'Failed to join waiting room'}), 500
 
-@app.route('/api/waiting-room/users')
+
+@app.route('/api/waiting-room/leave', methods=['POST'])
 @login_required
-def get_waiting_room_users():
-    """Get users in waiting room for current appointment"""
+def leave_waiting_room():
+    """Leave the waiting room"""
     try:
-        appointment_id = request.args.get('appointment_id')
+        data = request.json
+        appointment_id = data.get('appointment_id')
         
         if not appointment_id:
             return jsonify({'error': 'Appointment ID is required'}), 400
         
-        appointment = Appointment.query.get_or_404(appointment_id)
+        # Find waiting room entry
+        waiting_room_entry = WaitingRoom.query.filter_by(
+            appointment_id=appointment_id,
+            user_id=current_user.id,
+            status='waiting'
+        ).first()
         
-        # Check if user has access
-        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
+        if waiting_room_entry:
+            waiting_room_entry.status = 'left'
+            db.session.commit()
+            
+            # Notify doctor via WebSocket (if patient is leaving)
+            if current_user.role == 'patient':
+                appointment = Appointment.query.get(appointment_id)
+                if appointment:
+                    doctor_user_id = appointment.doctor.user_id
+                    socketio.emit('waiting_room_left', {
+                        'appointment_id': appointment_id,
+                        'user_id': current_user.id,
+                        'user_name': get_user_display_name(current_user)
+                    }, room=f'user_{doctor_user_id}')
+            
+            log_audit('waiting_room_left', current_user.id, f'Appointment: {appointment_id}')
         
-        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
-            return jsonify({'error': 'Access denied'}), 403
-        
-        # In a real implementation, you'd track waiting room users in database
-        # For now, return basic info about the other participant
-        waiting_users = []
-        
-        if current_user.role == 'doctor':
-            # Patient is waiting
-            waiting_users.append({
-                'user_id': appointment.patient.user_id,
-                'user_name': f"{appointment.patient.first_name} {appointment.patient.last_name}",
-                'user_role': 'patient',
-                'appointment_id': appointment.id
-            })
-        else:
-            # Doctor is available (not exactly waiting, but available for call)
-            waiting_users.append({
-                'user_id': appointment.doctor.user_id,
-                'user_name': f"Dr. {appointment.doctor.first_name} {appointment.doctor.last_name}",
-                'user_role': 'doctor',
-                'appointment_id': appointment.id
-            })
-        
-        return jsonify(waiting_users)
+        return jsonify({
+            'success': True,
+            'message': 'Left waiting room successfully'
+        })
     
     except Exception as e:
-        app.logger.error(f"Error getting waiting room users: {str(e)}")
-        return jsonify({'error': 'Failed to load waiting room users'}), 500
+        db.session.rollback()
+        app.logger.error(f"Error leaving waiting room: {str(e)}")
+        return jsonify({'error': 'Failed to leave waiting room'}), 500
+
+
+@app.route('/api/waiting-room/admit', methods=['POST'])
+@login_required
+def admit_to_meeting():
+    """Admit a user from waiting room to meeting (Doctor only)"""
+    try:
+        data = request.json
+        waiting_room_id = data.get('waiting_room_id')
+        meeting_id = data.get('meeting_id')
+        
+        if not waiting_room_id or not meeting_id:
+            return jsonify({'error': 'Waiting room ID and meeting ID are required'}), 400
+        
+        # Get waiting room entry
+        waiting_room_entry = WaitingRoom.query.get_or_404(waiting_room_id)
+        appointment = waiting_room_entry.appointment
+        
+        # Check if current user is the doctor for this appointment
+        if current_user.role != 'doctor' or appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Only the appointment doctor can admit users'}), 403
+        
+        # Update waiting room entry
+        waiting_room_entry.status = 'admitted'
+        waiting_room_entry.admitted_at = datetime.utcnow()
+        
+        # Add to meeting participants
+        meeting_participant = MeetingParticipant(
+            meeting_id=meeting_id,
+            appointment_id=appointment.id,
+            user_id=waiting_room_entry.user_id,
+            user_role=waiting_room_entry.user_role,
+            joined_at=datetime.utcnow(),
+            is_present=True
+        )
+        
+        db.session.add(meeting_participant)
+        db.session.commit()
+        
+        # Get user info for notification
+        user = waiting_room_entry.user
+        if user.role == 'patient' and user.patient_profile:
+            user_name = f"{user.patient_profile.first_name} {user.patient_profile.last_name}"
+        else:
+            user_name = user.username or user.email
+        
+        # Notify the admitted user via WebSocket
+        socketio.emit('user_admitted_to_meeting', {
+            'appointment_id': appointment.id,
+            'meeting_id': meeting_id,
+            'admitted_by': current_user.id,
+            'admitted_by_name': get_user_display_name(current_user)
+        }, room=f'user_{user.id}')
+        
+        # Notify all meeting participants
+        socketio.emit('user_joined_meeting', {
+            'user_id': user.id,
+            'user_name': user_name,
+            'user_role': user.role,
+            'meeting_id': meeting_id,
+            'appointment_id': appointment.id
+        }, room=f'meeting_{meeting_id}')
+        
+        log_audit('user_admitted_to_meeting', current_user.id, 
+                 f'User: {user.id}, Meeting: {meeting_id}, Appointment: {appointment.id}')
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_name} admitted to meeting successfully',
+            'user_id': user.id,
+            'user_name': user_name
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error admitting user to meeting: {str(e)}")
+        return jsonify({'error': 'Failed to admit user to meeting'}), 500
+    
+@app.route('/api/waiting-room/remove', methods=['POST'])
+@login_required
+def remove_from_waiting_room():
+    """Remove a user from waiting room (Doctor only)"""
+    try:
+        data = request.json
+        waiting_room_id = data.get('waiting_room_id')
+        
+        if not waiting_room_id:
+            return jsonify({'error': 'Waiting room ID is required'}), 400
+        
+        # Get waiting room entry
+        waiting_room_entry = WaitingRoom.query.get_or_404(waiting_room_id)
+        appointment = waiting_room_entry.appointment
+        
+        # Check if current user is the doctor for this appointment
+        if current_user.role != 'doctor' or appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Only the appointment doctor can remove users'}), 403
+        
+        # Get user info before removal
+        user = waiting_room_entry.user
+        if user.role == 'patient' and user.patient_profile:
+            user_name = f"{user.patient_profile.first_name} {user.patient_profile.last_name}"
+        else:
+            user_name = user.username or user.email
+        
+        # Update waiting room entry
+        waiting_room_entry.status = 'removed'
+        db.session.commit()
+        
+        # Notify the removed user via WebSocket
+        socketio.emit('user_removed_from_waiting_room', {
+            'appointment_id': appointment.id,
+            'removed_by': current_user.id,
+            'removed_by_name': get_user_display_name(current_user),
+            'reason': data.get('reason', 'Removed by doctor')
+        }, room=f'user_{user.id}')
+        
+        log_audit('user_removed_from_waiting_room', current_user.id, 
+                 f'User: {user.id}, Appointment: {appointment.id}')
+        
+        return jsonify({
+            'success': True,
+            'message': f'{user_name} removed from waiting room',
+            'user_id': user.id,
+            'user_name': user_name
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error removing user from waiting room: {str(e)}")
+        return jsonify({'error': 'Failed to remove user from waiting room'}), 500
+
+@app.route('/api/meetings/<meeting_id>/participants')
+@login_required
+def get_meeting_participants(meeting_id):
+    """Get all participants in a meeting"""
+    try:
+        # Get meeting participants from database
+        participants = MeetingParticipant.query.filter_by(
+            meeting_id=meeting_id,
+            is_present=True
+        ).order_by(MeetingParticipant.joined_at.asc()).all()
+        
+        participants_data = []
+        for participant in participants:
+            user = participant.user
+            if user.role == 'patient' and user.patient_profile:
+                user_name = f"{user.patient_profile.first_name} {user.patient_profile.last_name}"
+            elif user.role == 'doctor' and user.doctor_profile:
+                user_name = f"Dr. {user.doctor_profile.first_name} {user.doctor_profile.last_name}"
+            else:
+                user_name = user.username or user.email
+            
+            participants_data.append({
+                'user_id': user.id,
+                'user_name': user_name,
+                'user_role': user.role,
+                'joined_at': participant.joined_at.isoformat(),
+                'duration_minutes': (datetime.utcnow() - participant.joined_at).seconds // 60
+            })
+        
+        return jsonify(participants_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error getting meeting participants: {str(e)}")
+        return jsonify({'error': 'Failed to load meeting participants'}), 500
+    
+@app.route('/api/meetings/<meeting_id>/leave', methods=['POST'])
+@login_required
+def leave_meeting(meeting_id):
+    """Leave a meeting"""
+    try:
+        # Find meeting participant
+        participant = MeetingParticipant.query.filter_by(
+            meeting_id=meeting_id,
+            user_id=current_user.id,
+            is_present=True
+        ).first()
+        
+        if participant:
+            participant.is_present = False
+            participant.left_at = datetime.utcnow()
+            db.session.commit()
+            
+            # Notify other participants
+            socketio.emit('user_left_meeting', {
+                'user_id': current_user.id,
+                'user_name': get_user_display_name(current_user),
+                'meeting_id': meeting_id
+            }, room=f'meeting_{meeting_id}')
+            
+            log_audit('meeting_left', current_user.id, f'Meeting: {meeting_id}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Left meeting successfully'
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error leaving meeting: {str(e)}")
+        return jsonify({'error': 'Failed to leave meeting'}), 500
 
 @socketio.on('create_meeting')
 def handle_create_meeting(data):
-    """Handle meeting creation"""
+    """Handle meeting creation via WebSocket"""
     if not current_user.is_authenticated:
         return
     
@@ -2621,8 +2891,11 @@ def handle_create_meeting(data):
             return
         
         # Generate meeting data
+        meeting_id = f"meeting_{appointment_id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
         meeting_data = {
             'appointment_id': appointment_id,
+            'meeting_id': meeting_id,
             'creator_id': current_user.id,
             'creator_name': current_user.username or current_user.email,
             'creator_role': current_user.role,
@@ -2634,24 +2907,116 @@ def handle_create_meeting(data):
         }
         
         # Join the meeting room
-        join_room(f'meeting_{appointment_id}')
+        join_room(f'meeting_{meeting_id}')
         
         emit('meeting_created', meeting_data)
-        emit('user_joined', {
+        emit('user_joined_meeting', {
             'user_id': current_user.id,
             'user_name': current_user.username or current_user.email,
             'user_role': current_user.role
-        }, room=f'meeting_{appointment_id}')
+        }, room=f'meeting_{meeting_id}')
         
-        log_audit('meeting_created_websocket', current_user.id, f'Appointment: {appointment_id}')
+        log_audit('meeting_created_websocket', current_user.id, f'Appointment: {appointment_id}, Meeting: {meeting_id}')
         
     except Exception as e:
         app.logger.error(f"Error creating meeting: {str(e)}")
         emit('meeting_error', {'error': 'Failed to create meeting'})
+@socketio.on('join_meeting')
+def handle_join_meeting(data):
+    """Handle joining a meeting"""
+    if not current_user.is_authenticated:
+        return
+    
+    try:
+        meeting_id = data.get('meeting_id')
+        appointment_id = data.get('appointment_id')
+        
+        appointment = Appointment.query.get(appointment_id)
+        if not appointment:
+            emit('meeting_error', {'error': 'Appointment not found'})
+            return
+        
+        # Verify access
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            emit('meeting_error', {'error': 'Access denied'})
+            return
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            emit('meeting_error', {'error': 'Access denied'})
+            return
+        
+        # Join meeting room
+        join_room(f'meeting_{meeting_id}')
+        
+        participant_data = {
+            'user_id': current_user.id,
+            'user_name': current_user.username or current_user.email,
+            'user_role': current_user.role,
+            'meeting_id': meeting_id
+        }
+        
+        # Notify other participants
+        emit('user_joined_meeting', participant_data, room=f'meeting_{meeting_id}')
+        
+        log_audit('meeting_joined', current_user.id, f'Meeting: {meeting_id}')
+        
+    except Exception as e:
+        app.logger.error(f"Error joining meeting: {str(e)}")
+        emit('meeting_error', {'error': 'Failed to join meeting'})
+
+@socketio.on('leave_meeting')
+def handle_leave_meeting(data):
+    """Handle leaving a meeting"""
+    if not current_user.is_authenticated:
+        return
+    
+    try:
+        meeting_id = data.get('meeting_id')
+        
+        # Leave meeting room
+        leave_room(f'meeting_{meeting_id}')
+        
+        participant_data = {
+            'user_id': current_user.id,
+            'user_name': current_user.username or current_user.email,
+            'meeting_id': meeting_id
+        }
+        
+        # Notify other participants
+        emit('user_left_meeting', participant_data, room=f'meeting_{meeting_id}')
+        
+        log_audit('meeting_left', current_user.id, f'Meeting: {meeting_id}')
+        
+    except Exception as e:
+        app.logger.error(f"Error leaving meeting: {str(e)}")
+
+@socketio.on('meeting_chat_message')
+def handle_meeting_chat_message(data):
+    """Handle meeting chat messages"""
+    if not current_user.is_authenticated:
+        return
+    
+    try:
+        meeting_id = data.get('meeting_id')
+        message = data.get('message')
+        
+        chat_data = {
+            'user_id': current_user.id,
+            'user_name': current_user.username or current_user.email,
+            'user_role': current_user.role,
+            'message': message,
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Broadcast to meeting room
+        emit('meeting_chat_message', chat_data, room=f'meeting_{meeting_id}')
+        
+    except Exception as e:
+        app.logger.error(f"Error handling meeting chat message: {str(e)}")
 
 @socketio.on('join_waiting_room')
 def handle_join_waiting_room(data):
-    """Handle joining waiting room"""
+    """Handle joining waiting room via WebSocket"""
     if not current_user.is_authenticated:
         return
     
@@ -2672,14 +3037,28 @@ def handle_join_waiting_room(data):
             emit('waiting_room_error', {'error': 'Access denied'})
             return
         
-        # Join waiting room
+        # Create waiting room entry
+        waiting_room_entry = WaitingRoom(
+            appointment_id=appointment_id,
+            user_id=current_user.id,
+            user_role=current_user.role,
+            status='waiting',
+            joined_at=datetime.utcnow()
+        )
+        
+        db.session.add(waiting_room_entry)
+        db.session.commit()
+        
+        # Join waiting room WebSocket room
         join_room(f'waiting_room_{appointment_id}')
         
         waiting_data = {
             'appointment_id': appointment_id,
             'user_id': current_user.id,
-            'user_name': current_user.username or current_user.email,
-            'user_role': current_user.role
+            'user_name': get_user_display_name(current_user),
+            'user_role': current_user.role,
+            'waiting_room_id': waiting_room_entry.id,
+            'joined_at': waiting_room_entry.joined_at.isoformat()
         }
         
         # Notify doctor that someone is waiting
@@ -2687,13 +3066,189 @@ def handle_join_waiting_room(data):
             doctor_user_id = appointment.doctor.user_id
             emit('waiting_room_joined', waiting_data, room=f'user_{doctor_user_id}')
         
+        # Notify all in waiting room
         emit('waiting_room_joined', waiting_data, room=f'waiting_room_{appointment_id}')
         
-        log_audit('waiting_room_joined', current_user.id, f'Appointment: {appointment_id}')
+        log_audit('waiting_room_joined_websocket', current_user.id, f'Appointment: {appointment_id}')
         
     except Exception as e:
-        app.logger.error(f"Error joining waiting room: {str(e)}")
+        app.logger.error(f"Error joining waiting room via WebSocket: {str(e)}")
         emit('waiting_room_error', {'error': 'Failed to join waiting room'})
+
+@socketio.on('leave_waiting_room')
+def handle_leave_waiting_room(data):
+    """Handle leaving waiting room via WebSocket"""
+    if not current_user.is_authenticated:
+        return
+    
+    try:
+        appointment_id = data.get('appointment_id')
+        
+        # Find and update waiting room entry
+        waiting_room_entry = WaitingRoom.query.filter_by(
+            appointment_id=appointment_id,
+            user_id=current_user.id,
+            status='waiting'
+        ).first()
+        
+        if waiting_room_entry:
+            waiting_room_entry.status = 'left'
+            db.session.commit()
+        
+        # Leave waiting room WebSocket room
+        leave_room(f'waiting_room_{appointment_id}')
+        
+        user_data = {
+            'appointment_id': appointment_id,
+            'user_id': current_user.id,
+            'user_name': get_user_display_name(current_user)
+        }
+        
+        # Notify doctor
+        appointment = Appointment.query.get(appointment_id)
+        if appointment and current_user.role == 'patient':
+            doctor_user_id = appointment.doctor.user_id
+            emit('waiting_room_left', user_data, room=f'user_{doctor_user_id}')
+        
+        # Notify waiting room
+        emit('waiting_room_left', user_data, room=f'waiting_room_{appointment_id}')
+        
+        log_audit('waiting_room_left_websocket', current_user.id, f'Appointment: {appointment_id}')
+        
+    except Exception as e:
+        app.logger.error(f"Error leaving waiting room via WebSocket: {str(e)}")
+
+# Enhanced call handling
+@socketio.on('call_initiate')
+def handle_call_initiate(data):
+    """Handle call initiation with enhanced features"""
+    if not current_user.is_authenticated:
+        return
+    
+    try:
+        appointment_id = data.get('appointment_id')
+        call_type = data.get('call_type', 'voice')
+        
+        appointment = Appointment.query.get(appointment_id)
+        if not appointment:
+            return
+        
+        # Check payment status for doctors
+        if current_user.role == 'doctor' and appointment.payment_status != 'completed':
+            emit('call_error', {'error': 'Payment required to initiate calls'})
+            return
+        
+        # Determine receiver
+        if current_user.role == 'patient':
+            receiver_id = appointment.doctor.user_id
+        else:
+            receiver_id = appointment.patient.user_id
+        
+        call_id = f"call_{appointment_id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        # Send call notification to receiver
+        emit('incoming_call', {
+            'appointment_id': appointment_id,
+            'call_id': call_id,
+            'caller_id': current_user.id,
+            'caller_name': current_user.username or current_user.email,
+            'caller_role': current_user.role,
+            'call_type': call_type
+        }, room=f'user_{receiver_id}')
+        
+        log_audit('call_initiated', current_user.id, f'Appointment: {appointment_id}, Type: {call_type}')
+        
+    except Exception as e:
+        app.logger.error(f"Error initiating call: {str(e)}")
+        emit('call_error', {'error': 'Failed to initiate call'})
+
+@socketio.on('call_accept')
+def handle_call_accept(data):
+    """Handle call acceptance"""
+    if not current_user.is_authenticated:
+        return
+    
+    try:
+        call_id = data.get('call_id')
+        appointment_id = data.get('appointment_id')
+        
+        # Notify caller that call was accepted
+        emit('call_accepted', {
+            'call_id': call_id,
+            'acceptor_id': current_user.id,
+            'acceptor_name': current_user.username or current_user.email
+        }, room=f'appointment_{appointment_id}')
+        
+        log_audit('call_accepted', current_user.id, f'Call: {call_id}')
+        
+    except Exception as e:
+        app.logger.error(f"Error accepting call: {str(e)}")
+
+@socketio.on('call_reject')
+def handle_call_reject(data):
+    """Handle call rejection"""
+    if not current_user.is_authenticated:
+        return
+    
+    try:
+        call_id = data.get('call_id')
+        appointment_id = data.get('appointment_id')
+        
+        # Notify caller that call was rejected
+        emit('call_rejected', {
+            'call_id': call_id,
+            'rejector_id': current_user.id,
+            'rejector_name': current_user.username or current_user.email
+        }, room=f'appointment_{appointment_id}')
+        
+        log_audit('call_rejected', current_user.id, f'Call: {call_id}')
+        
+    except Exception as e:
+        app.logger.error(f"Error rejecting call: {str(e)}")
+
+@socketio.on('call_end')
+def handle_call_end(data):
+    """Handle call end"""
+    try:
+        appointment_id = data.get('appointment_id')
+        call_id = data.get('call_id')
+        
+        # Notify all participants that call ended
+        emit('call_ended', {
+            'call_id': call_id,
+            'ended_by': current_user.id if current_user.is_authenticated else None
+        }, room=f'appointment_{appointment_id}')
+        
+        if current_user.is_authenticated:
+            log_audit('call_ended', current_user.id, f'Call: {call_id}')
+        
+    except Exception as e:
+        app.logger.error(f"Error ending call: {str(e)}")
+
+# Payment verification endpoint
+@app.route('/api/payment/verify/<int:appointment_id>')
+@login_required
+def verify_payment(appointment_id):
+    """Verify payment status for an appointment"""
+    try:
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        return jsonify({
+            'payment_status': appointment.payment_status,
+            'can_communicate': appointment.payment_status == 'completed' or current_user.role == 'patient'
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error verifying payment: {str(e)}")
+        return jsonify({'error': 'Failed to verify payment'}), 500
+
 
 @socketio.on('admit_user')
 def handle_admit_user(data):
@@ -3126,7 +3681,7 @@ def payment_success():
 @app.route('/api/communication/appointments')
 @login_required
 def get_communication_appointments():
-    """Get appointments for communication hub with real data"""
+    """Get appointments for communication hub with payment validation"""
     try:
         if current_user.role == 'patient':
             appointments = Appointment.query.filter_by(
@@ -3158,10 +3713,18 @@ def get_communication_appointments():
             if current_user.role == 'doctor':
                 can_communicate = apt.payment_status == 'completed'
             
+            # Get display names
+            if current_user.role == 'patient':
+                doctor_name = f"Dr. {apt.doctor.first_name} {apt.doctor.last_name}"
+                patient_name = f"{apt.patient.first_name} {apt.patient.last_name}"
+            else:
+                doctor_name = f"Dr. {apt.doctor.first_name} {apt.doctor.last_name}"
+                patient_name = f"{apt.patient.first_name} {apt.patient.last_name}"
+            
             appointment_info = {
                 'id': apt.id,
-                'patient_name': f"{apt.patient.first_name} {apt.patient.last_name}",
-                'doctor_name': f"Dr. {apt.doctor.first_name} {apt.doctor.last_name}",
+                'patient_name': patient_name,
+                'doctor_name': doctor_name,
                 'specialization': apt.doctor.specialization,
                 'appointment_date': apt.appointment_date.isoformat(),
                 'local_appointment_date': local_time.isoformat() if local_time else None,
@@ -3183,6 +3746,56 @@ def get_communication_appointments():
     except Exception as e:
         app.logger.error(f"Error getting communication appointments: {str(e)}")
         return jsonify({'error': 'Failed to load appointments'}), 500
+
+@app.route('/api/meetings/create', methods=['POST'])
+@login_required
+def create_meeting():
+    """Create a new meeting for video consultation"""
+    try:
+        data = request.json
+        appointment_id = data.get('appointment_id')
+        
+        if not appointment_id:
+            return jsonify({'error': 'Appointment ID is required'}), 400
+        
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Check if user has access to this appointment
+        if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        # Generate unique meeting ID
+        meeting_id = f"meeting_{appointment_id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        
+        # Generate meeting URLs
+        video_call_url = f"/video-call/{appointment_id}?meeting={meeting_id}"
+        
+        # Update appointment with meeting information
+        appointment.video_call_url = video_call_url
+        appointment.meeting_id = meeting_id
+        
+        db.session.commit()
+        
+        # Return meeting information
+        meeting_data = {
+            'id': meeting_id,
+            'appointment_id': appointment.id,
+            'video_call_url': video_call_url,
+            'patient_name': f"{appointment.patient.first_name} {appointment.patient.last_name}",
+            'doctor_name': f"Dr. {appointment.doctor.first_name} {appointment.doctor.last_name}",
+            'is_doctor': current_user.role == 'doctor',
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        log_audit('meeting_created', current_user.id, f'Appointment: {appointment_id}, Meeting: {meeting_id}')
+        return jsonify(meeting_data)
+    
+    except Exception as e:
+        app.logger.error(f"Error creating meeting: {str(e)}")
+        return jsonify({'error': 'Failed to create meeting'}), 500
 
 @app.route('/api/check_new_messages/<int:appointment_id>', methods=['GET'])
 @login_required
