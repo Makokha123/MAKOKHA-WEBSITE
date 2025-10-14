@@ -1135,70 +1135,6 @@
             display: none;
         }
 
-        /* Enhanced Waiting Room */
-        .waiting-room {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .waiting-room-content {
-            text-align: center;
-            max-width: 500px;
-            padding: 2rem;
-        }
-
-        .waiting-room-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            color: rgba(255,255,255,0.8);
-        }
-
-        .waiting-room h2 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .waiting-room p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-        }
-
-        .waiting-room-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-
-        .leave-waiting-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .leave-waiting-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
         /* Admin Controls Panel */
         .admin-controls {
             position: absolute;
@@ -1206,7 +1142,6 @@
             right: 20px;
             background: rgba(0, 0, 0, 0.95);
             width: 350px;
-            height: 500px;
             border-radius: 12px;
             z-index: 100;
             display: none;
@@ -1219,14 +1154,15 @@
         .admin-header {
             padding: 1rem;
             border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            font-weight: bold;
         }
 
         .admin-section {
-            margin-bottom: 1.5rem;
+            margin: 1rem 0;
         }
 
         .admin-section h4 {
@@ -1241,13 +1177,10 @@
             padding: 0.75rem 1rem;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
-            transition: background 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
             width: 100%;
+            text-align: left;
             margin-bottom: 0.5rem;
+            transition: background 0.3s;
         }
 
         .admin-btn:hover {
@@ -1262,7 +1195,7 @@
         .participant-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
             padding: 0.5rem;
             border-radius: 6px;
             margin-bottom: 0.25rem;
@@ -1270,8 +1203,8 @@
         }
 
         .participant-avatar {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background: var(--primary-color);
             display: flex;
@@ -1285,8 +1218,8 @@
         }
 
         .participant-name {
-            font-weight: 600;
             font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .participant-role {
@@ -1303,15 +1236,6 @@
 
         .participant-status-indicator.muted {
             background: var(--danger-color);
-        }
-
-        .close-settings-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 0.25rem;
         }
 
         /* Responsive Design */
@@ -1355,10 +1279,9 @@
                 width: 300px;
                 height: 400px;
             }
-            
+
             .admin-controls {
                 width: 300px;
-                height: 400px;
             }
         }
 
@@ -1488,22 +1411,6 @@
                     <div class="payment-required-actions">
                         <button class="payment-btn cancel-payment-btn" id="cancelPaymentBtn">Cancel</button>
                         <button class="payment-btn go-to-payment-btn" id="goToPaymentBtn">Go to Payment</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Enhanced Waiting Room -->
-            <div class="waiting-room" id="waitingRoom">
-                <div class="waiting-room-content">
-                    <div class="waiting-room-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <h2>Waiting for Doctor</h2>
-                    <p>You are in the waiting room. The doctor will admit you to the meeting shortly.</p>
-                    <div class="waiting-room-actions">
-                        <button class="leave-waiting-btn" id="leaveWaitingBtn">
-                            <i class="fas fa-sign-out-alt"></i> Leave Waiting Room
-                        </button>
                     </div>
                 </div>
             </div>
@@ -1759,7 +1666,6 @@
 
             // Meeting participants management
             let meetingParticipants = [];
-            let waitingRoomUsers = [];
             let isDoctorAdmin = false;
             let availableUsers = [];
 
@@ -1831,8 +1737,6 @@
             const deviceSettingsBtn = document.getElementById('deviceSettingsBtn');
             const refreshBtn = document.getElementById('refreshBtn');
             const participantsBtn = document.getElementById('participantsBtn');
-            const waitingRoom = document.getElementById('waitingRoom');
-            const leaveWaitingBtn = document.getElementById('leaveWaitingBtn');
             const adminControlsBtn = document.getElementById('adminControlsBtn');
             const adminControlsPanel = document.getElementById('adminControlsPanel');
             const paymentRequiredModal = document.getElementById('paymentRequiredModal');
@@ -2026,11 +1930,6 @@
                     socket.on('webrtc_answer', handleWebRTCAnswer);
                     socket.on('webrtc_ice_candidate', handleWebRTCIceCandidate);
 
-                    // Waiting room events
-                    socket.on('waiting_room_joined', handleWaitingRoomJoined);
-                    socket.on('waiting_room_left', handleWaitingRoomLeft);
-                    socket.on('user_admitted_to_meeting', handleUserAdmittedToMeeting);
-
                 } catch (error) {
                     console.error('Error initializing WebSocket:', error);
                     updateWebSocketStatus('disconnected', 'WebSocket Error');
@@ -2107,7 +2006,6 @@
                 screenShareBtn.addEventListener('click', toggleScreenShare);
                 videoRecordBtn.addEventListener('click', toggleRecording);
                 videoEndCallBtn.addEventListener('click', endCall);
-                videoSettingsBtn.addEventListener('click', showDevicePermissionModal);
 
                 // Device permission modal
                 confirmDevicesBtn.addEventListener('click', confirmDeviceSelection);
@@ -2145,14 +2043,6 @@
                 // Admin controls
                 adminControlsBtn.addEventListener('click', toggleAdminControls);
                 closeAdminBtn.addEventListener('click', hideAdminControls);
-                recordMeetingBtn.addEventListener('click', toggleRecording);
-                inviteParticipantsBtn.addEventListener('click', showInviteParticipants);
-
-                // Participants button
-                participantsBtn.addEventListener('click', toggleParticipantsList);
-
-                // Waiting room
-                leaveWaitingBtn.addEventListener('click', leaveWaitingRoom);
             }
 
             // Check if payment is required
@@ -2261,46 +2151,6 @@
             // Hide admin controls
             function hideAdminControls() {
                 adminControlsPanel.style.display = 'none';
-            }
-
-            // Show invite participants
-            function showInviteParticipants() {
-                if (!isDoctorAdmin) return;
-                showToast('Invite participants feature coming soon', 'info');
-            }
-
-            // Toggle participants list
-            function toggleParticipantsList() {
-                if (adminControlsPanel.style.display === 'block') {
-                    hideAdminControls();
-                } else {
-                    showAdminControls();
-                }
-            }
-
-            // Update participants list
-            function updateParticipantsList() {
-                if (!meetingParticipantsList) return;
-                
-                meetingParticipantsList.innerHTML = '';
-                
-                meetingParticipants.forEach(participant => {
-                    const participantItem = document.createElement('div');
-                    participantItem.className = 'participant-item';
-                    
-                    participantItem.innerHTML = `
-                        <div class="participant-avatar">
-                            ${participant.role === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>'}
-                        </div>
-                        <div class="participant-details">
-                            <div class="participant-name">${participant.name}</div>
-                            <div class="participant-role">${participant.role} ${isDoctorAdmin && participant.id === currentUser.id ? '(Admin)' : ''}</div>
-                        </div>
-                        <div class="participant-status-indicator ${participant.isMuted ? 'muted' : ''}"></div>
-                    `;
-                    
-                    meetingParticipantsList.appendChild(participantItem);
-                });
             }
 
             // Check if this is first time user
@@ -2829,10 +2679,10 @@
                 });
             }
 
-            // Accept incoming call - FIXED: Auto-enable microphone and speaker
+            // Accept incoming call
             async function acceptIncomingCall(callData) {
                 try {
-                    // Auto-enable microphone and speaker
+                    // Automatically enable microphone and speaker when call is accepted
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         audio: true,
                         video: false 
@@ -2843,18 +2693,17 @@
                         appointment_id: currentAppointment.id
                     });
                     
-                    // Start voice call with auto-enabled devices
+                    // Start voice call with the stream
                     isVideoCall = false;
                     showVoiceCallInterface();
                     startCallTimer();
                     initializeVoiceCall(stream);
                     
                     callStatus.textContent = 'Connected';
-                    showToast('Call connected successfully. Microphone and speaker are enabled.', 'success');
                     
                 } catch (error) {
                     console.error('Error accepting call:', error);
-                    showToast('Failed to enable microphone/speaker for call', 'error');
+                    showToast('Cannot access microphone. Please check permissions.', 'error');
                 }
             }
 
@@ -2943,11 +2792,8 @@
                     
                     isVideoCall = true;
                     
-                    if (isDoctorAdmin) {
-                        await createMeeting(stream);
-                    } else {
-                        await joinWaitingRoom(stream);
-                    }
+                    // Direct video call - no waiting room
+                    await createMeeting(stream);
                     
                 } catch (error) {
                     console.error('Error starting video call:', error);
@@ -2961,7 +2807,7 @@
                 }
             }
 
-            // Create meeting (Doctor only)
+            // Create meeting (Direct video call for both doctor and patient)
             async function createMeeting(stream) {
                 try {
                     const response = await fetch('/api/meetings/create', {
@@ -3008,220 +2854,14 @@
                     });
                     
                     await loadAvailableUsers();
-                    await loadWaitingRoomUsers();
                     
-                    showToast('Meeting created successfully. You are the meeting admin.', 'success');
+                    showToast('Video call started successfully. Waiting for other participant...', 'success');
                     
                 } catch (error) {
                     console.error('Error creating meeting:', error);
-                    showToast('Failed to create meeting. Please try again.', 'error');
+                    showToast('Failed to start video call. Please try again.', 'error');
                     throw error;
                 }
-            }
-
-            // ==================== ENHANCED WAITING ROOM FUNCTIONS ====================
-
-            // Join waiting room (Patient)
-            async function joinWaitingRoom(stream) {
-                try {
-                    localStream = stream;
-                    
-                    if (localVideo) {
-                        localVideo.srcObject = stream;
-                    }
-                    
-                    showWaitingRoom();
-                    
-                    // Join waiting room via API
-                    const response = await fetch('/api/waiting-room/join', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            appointment_id: currentAppointment.id
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to join waiting room');
-                    }
-                    
-                    const result = await response.json();
-                    
-                    showToast('You have joined the waiting room. The doctor will admit you shortly.', 'info');
-                    
-                } catch (error) {
-                    console.error('Error joining waiting room:', error);
-                    showToast('Failed to join waiting room. Please try again.', 'error');
-                }
-            }
-
-            // Leave waiting room
-            async function leaveWaitingRoom() {
-                try {
-                    if (localStream) {
-                        localStream.getTracks().forEach(track => track.stop());
-                        localStream = null;
-                    }
-                    
-                    // Leave waiting room via API
-                    const response = await fetch('/api/waiting-room/leave', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            appointment_id: currentAppointment.id
-                        })
-                    });
-                    
-                    hideWaitingRoom();
-                    
-                    if (response.ok) {
-                        showToast('You have left the waiting room.', 'info');
-                    }
-                    
-                } catch (error) {
-                    console.error('Error leaving waiting room:', error);
-                    showToast('Failed to leave waiting room.', 'error');
-                }
-            }
-
-            // Load waiting room users
-            async function loadWaitingRoomUsers() {
-                try {
-                    const response = await fetch(`/api/waiting-room/users?appointment_id=${currentAppointment.id}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin'
-                    });
-                    
-                    if (response.ok) {
-                        const waitingUsers = await response.json();
-                        waitingRoomUsers = waitingUsers;
-                        updateWaitingList();
-                        updateWaitingCount();
-                    }
-                } catch (error) {
-                    console.error('Error loading waiting room users:', error);
-                }
-            }
-
-            // Handle waiting room joined
-            function handleWaitingRoomJoined(data) {
-                if (currentUser.role === 'doctor' && data.appointment_id === currentAppointment.id) {
-                    waitingRoomUsers.push(data);
-                    updateWaitingList();
-                    updateWaitingCount();
-                    showToast(`${data.user_name} joined the waiting room`, 'info');
-                }
-            }
-
-            // Handle waiting room left
-            function handleWaitingRoomLeft(data) {
-                if (currentUser.role === 'doctor') {
-                    waitingRoomUsers = waitingRoomUsers.filter(user => user.user_id !== data.user_id);
-                    updateWaitingList();
-                    updateWaitingCount();
-                }
-            }
-
-            // Handle user admitted to meeting
-            function handleUserAdmittedToMeeting(data) {
-                if (data.appointment_id === currentAppointment.id) {
-                    hideWaitingRoom();
-                    showVideoCallInterface();
-                    showToast('You have been admitted to the meeting', 'success');
-                }
-            }
-
-            // Admit user to meeting
-            async function admitUser(waitingRoomId) {
-                try {
-                    const response = await fetch('/api/waiting-room/admit', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            waiting_room_id: waitingRoomId,
-                            meeting_id: currentMeeting.id
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to admit user');
-                    }
-                    
-                    const result = await response.json();
-                    showToast(result.message, 'success');
-                    
-                } catch (error) {
-                    console.error('Error admitting user:', error);
-                    showToast('Failed to admit user to meeting', 'error');
-                }
-            }
-
-            // Remove user from waiting room
-            async function removeUserFromWaiting(waitingRoomId) {
-                try {
-                    const response = await fetch('/api/waiting-room/remove', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            waiting_room_id: waitingRoomId
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to remove user');
-                    }
-                    
-                    const result = await response.json();
-                    showToast(result.message, 'info');
-                    
-                } catch (error) {
-                    console.error('Error removing user:', error);
-                    showToast('Failed to remove user from waiting room', 'error');
-                }
-            }
-
-            // Update waiting list in UI
-            function updateWaitingList() {
-                if (isDoctorAdmin && adminControlsPanel.style.display === 'block') {
-                    // Implementation for updating the waiting list UI in admin controls
-                    console.log('Updating waiting list with users:', waitingRoomUsers);
-                }
-            }
-
-            // Update waiting count
-            function updateWaitingCount() {
-                // Implementation for updating the waiting count
-                console.log('Waiting room count:', waitingRoomUsers.length);
-            }
-
-            // Show waiting room
-            function showWaitingRoom() {
-                waitingRoom.style.display = 'flex';
-            }
-
-            // Hide waiting room
-            function hideWaitingRoom() {
-                waitingRoom.style.display = 'none';
             }
 
             // Initialize video call
@@ -3387,7 +3027,6 @@
                 
                 voiceCallInterface.style.display = 'none';
                 videoCallInterface.style.display = 'none';
-                hideWaitingRoom();
                 hideMeetingChat();
                 hideAdminControls();
                 
@@ -3410,7 +3049,6 @@
                 currentMeeting = null;
                 
                 meetingParticipants = [];
-                waitingRoomUsers = [];
                 
                 updateConnectionStatus('disconnected', 'Call ended');
                 stopAllAudio();
@@ -3458,20 +3096,13 @@
                 }
             }
 
-            // Toggle screen share - FIXED: Enhanced error handling
+            // Toggle screen share
             async function toggleScreenShare() {
                 if (!isScreenSharing) {
                     try {
                         const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
                             video: true,
                             audio: true 
-                        }).catch(error => {
-                            if (error.name === 'NotAllowedError') {
-                                showToast('Screen sharing permission was denied. Please allow screen sharing and try again.', 'error');
-                            } else {
-                                showToast('Failed to start screen sharing: ' + error.message, 'error');
-                            }
-                            throw error;
                         });
                         
                         const videoTrack = screenStream.getVideoTracks()[0];
@@ -3492,12 +3123,13 @@
                             stopScreenShare();
                         };
                         
-                        showToast('Screen sharing started successfully', 'success');
-                        
                     } catch (error) {
                         console.error('Error starting screen share:', error);
-                        isScreenSharing = false;
-                        screenShareBtn.classList.remove('active');
+                        if (error.name === 'NotAllowedError') {
+                            showToast('Screen sharing was denied. Please allow permissions to share your screen.', 'error');
+                        } else {
+                            showToast('Failed to start screen sharing. Please try again.', 'error');
+                        }
                     }
                 } else {
                     stopScreenShare();
@@ -3520,7 +3152,6 @@
                     
                     isScreenSharing = false;
                     screenShareBtn.classList.remove('active');
-                    showToast('Screen sharing stopped', 'info');
                 }
             }
 
@@ -3686,6 +3317,31 @@
             function removeParticipant(participantId) {
                 meetingParticipants = meetingParticipants.filter(p => p.id !== participantId);
                 updateParticipantsList();
+            }
+
+            // Update participants list in UI
+            function updateParticipantsList() {
+                if (!meetingParticipantsList) return;
+                
+                meetingParticipantsList.innerHTML = '';
+                
+                meetingParticipants.forEach(participant => {
+                    const participantItem = document.createElement('div');
+                    participantItem.className = 'participant-item';
+                    
+                    participantItem.innerHTML = `
+                        <div class="participant-avatar">
+                            ${participant.role === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>'}
+                        </div>
+                        <div class="participant-details">
+                            <div class="participant-name">${participant.name}</div>
+                            <div class="participant-role">${participant.role} ${isDoctorAdmin && participant.id === currentUser.id ? '(Admin)' : ''}</div>
+                        </div>
+                        <div class="participant-status-indicator ${participant.isMuted ? 'muted' : ''}"></div>
+                    `;
+                    
+                    meetingParticipantsList.appendChild(participantItem);
+                });
             }
 
             // Update participant mute status
@@ -4006,14 +3662,14 @@
 
             // ==================== UTILITY FUNCTIONS ====================
 
-            // Show toast notification - FIXED: Updated to use style.background
+            // Show toast notification
             function showToast(message, type = 'info') {
-                const backgroundStyle = {
+                const backgroundColors = {
                     success: '#28a745',
                     error: '#dc3545',
                     warning: '#ffc107',
                     info: '#17a2b8'
-                }[type] || '#17a2b8';
+                };
                 
                 Toastify({
                     text: message,
@@ -4021,7 +3677,7 @@
                     gravity: "top",
                     position: "right",
                     style: {
-                        background: backgroundStyle
+                        background: backgroundColors[type] || '#17a2b8'
                     },
                     stopOnFocus: true
                 }).showToast();
