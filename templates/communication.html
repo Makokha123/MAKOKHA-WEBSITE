@@ -1951,6 +1951,9 @@
 
                 // Admin controls
                 adminControlsBtn.addEventListener('click', toggleAdminControls);
+
+                // Waiting room
+                leaveWaitingBtn.addEventListener('click', leaveWaitingRoom);
             }
 
             // Check if payment is required
@@ -2732,6 +2735,8 @@
                 }
             }
 
+            // ==================== ENHANCED WAITING ROOM FUNCTIONS ====================
+
             // Join waiting room (Patient)
             async function joinWaitingRoom(stream) {
                 try {
@@ -2768,6 +2773,131 @@
                     console.error('Error joining waiting room:', error);
                     showToast('Failed to join waiting room. Please try again.', 'error');
                 }
+            }
+
+            // Leave waiting room
+            async function leaveWaitingRoom() {
+                try {
+                    if (localStream) {
+                        localStream.getTracks().forEach(track => track.stop());
+                        localStream = null;
+                    }
+                    
+                    // Leave waiting room via API
+                    const response = await fetch('/api/waiting-room/leave', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            appointment_id: currentAppointment.id
+                        })
+                    });
+                    
+                    hideWaitingRoom();
+                    
+                    if (response.ok) {
+                        showToast('You have left the waiting room.', 'info');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error leaving waiting room:', error);
+                    showToast('Failed to leave waiting room.', 'error');
+                }
+            }
+
+            // Load waiting room users
+            async function loadWaitingRoomUsers() {
+                try {
+                    const response = await fetch(`/api/waiting-room/users?appointment_id=${currentAppointment.id}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        const waitingUsers = await response.json();
+                        waitingRoomUsers = waitingUsers;
+                        updateWaitingList();
+                        updateWaitingCount();
+                    }
+                } catch (error) {
+                    console.error('Error loading waiting room users:', error);
+                }
+            }
+
+            // Admit user to meeting
+            async function admitUser(waitingRoomId) {
+                try {
+                    const response = await fetch('/api/waiting-room/admit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            waiting_room_id: waitingRoomId,
+                            meeting_id: currentMeeting.id
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to admit user');
+                    }
+                    
+                    const result = await response.json();
+                    showToast(result.message, 'success');
+                    
+                } catch (error) {
+                    console.error('Error admitting user:', error);
+                    showToast('Failed to admit user to meeting', 'error');
+                }
+            }
+
+            // Remove user from waiting room
+            async function removeUserFromWaiting(waitingRoomId) {
+                try {
+                    const response = await fetch('/api/waiting-room/remove', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            waiting_room_id: waitingRoomId
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to remove user');
+                    }
+                    
+                    const result = await response.json();
+                    showToast(result.message, 'info');
+                    
+                } catch (error) {
+                    console.error('Error removing user:', error);
+                    showToast('Failed to remove user from waiting room', 'error');
+                }
+            }
+
+            // Update waiting list in UI
+            function updateWaitingList() {
+                // Implementation for updating the waiting list UI
+                console.log('Updating waiting list with users:', waitingRoomUsers);
+            }
+
+            // Update waiting count
+            function updateWaitingCount() {
+                // Implementation for updating the waiting count
+                console.log('Waiting room count:', waitingRoomUsers.length);
             }
 
             // Initialize video call
@@ -2914,23 +3044,6 @@
             // Hide waiting room
             function hideWaitingRoom() {
                 waitingRoom.style.display = 'none';
-            }
-
-            // Leave waiting room
-            function leaveWaitingRoom() {
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                    localStream = null;
-                }
-                
-                hideWaitingRoom();
-                
-                socket.emit('leave_waiting_room', {
-                    appointment_id: currentAppointment.id,
-                    user_id: currentUser.id
-                });
-                
-                showToast('You have left the waiting room.', 'info');
             }
 
             // End call
@@ -3822,116 +3935,6 @@
                     }
                 } catch (error) {
                     console.error('Error loading available users:', error);
-                }
-            }
-
-            // Load waiting room users
-            async function leaveWaitingRoom() {
-                try {
-                    if (localStream) {
-                        localStream.getTracks().forEach(track => track.stop());
-                        localStream = null;
-                    }
-                    
-                    // Leave waiting room via API
-                    const response = await fetch('/api/waiting-room/leave', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            appointment_id: currentAppointment.id
-                        })
-                    });
-                    
-                    hideWaitingRoom();
-                    
-                    if (response.ok) {
-                        showToast('You have left the waiting room.', 'info');
-                    }
-                    
-                } catch (error) {
-                    console.error('Error leaving waiting room:', error);
-                    showToast('Failed to leave waiting room.', 'error');
-                }
-            }
-
-            async function loadWaitingRoomUsers() {
-                try {
-                    const response = await fetch(`/api/waiting-room/users?appointment_id=${currentAppointment.id}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin'
-                    });
-                    
-                    if (response.ok) {
-                        const waitingUsers = await response.json();
-                        waitingRoomUsers = waitingUsers;
-                        updateWaitingList();
-                        updateWaitingCount();
-                    }
-                } catch (error) {
-                    console.error('Error loading waiting room users:', error);
-                }
-            }
-
-            async function admitUser(waitingRoomId) {
-                try {
-                    const response = await fetch('/api/waiting-room/admit', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            waiting_room_id: waitingRoomId,
-                            meeting_id: currentMeeting.id
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to admit user');
-                    }
-                    
-                    const result = await response.json();
-                    showToast(result.message, 'success');
-                    
-                } catch (error) {
-                    console.error('Error admitting user:', error);
-                    showToast('Failed to admit user to meeting', 'error');
-                }
-            }
-
-            async function removeUserFromWaiting(waitingRoomId) {
-                try {
-                    const response = await fetch('/api/waiting-room/remove', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            waiting_room_id: waitingRoomId
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to remove user');
-                    }
-                    
-                    const result = await response.json();
-                    showToast(result.message, 'info');
-                    
-                } catch (error) {
-                    console.error('Error removing user:', error);
-                    showToast('Failed to remove user from waiting room', 'error');
                 }
             }
 
