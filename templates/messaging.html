@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messaging - Makokha Medical Centre</title>
+    
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #075e54;
+            --secondary-color: #128c7e;
+            --accent-color: #25d366;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --gray-color: #6c757d;
+        }
+
+        body {
+            background: #f0f2f5;
+            color: #333;
+            height: 100vh;
+        }
+
+        .messaging-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* Header */
+        .chat-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .contact-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .contact-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .contact-details h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .contact-details p {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .back-button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Messages Container */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            max-width: 70%;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            position: relative;
+            animation: messageAppear 0.3s ease-out;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.sent {
+            background: #dcf8c6;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received {
+            background: white;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-text {
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: #999;
+            text-align: right;
+        }
+
+        .message-status {
+            font-size: 0.7rem;
+            color: #999;
+            position: absolute;
+            bottom: 0.5rem;
+            right: 1rem;
+        }
+
+        /* Audio Message Styles */
+        .audio-message {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .audio-player {
+            flex: 1;
+            height: 40px;
+            border-radius: 20px;
+        }
+
+        .audio-duration {
+            font-size: 0.8rem;
+            color: var(--gray-color);
+        }
+
+        /* File Message Styles */
+        .file-message {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: var(--gray-color);
+        }
+
+        .download-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            padding: 0.5rem 1.5rem;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .typing-indicator.visible {
+            display: flex;
+            align-items: center;
+        }
+
+        .typing-dots {
+            display: inline-flex;
+            gap: 0.25rem;
+            margin-right: 0.5rem;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--gray-color);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Input Area */
+        .input-area {
+            background: white;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+        }
+
+        .input-tools {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .tool-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background 0.3s;
+            color: var(--gray-color);
+        }
+
+        .tool-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .message-input {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            padding: 0.75rem 1rem;
+            resize: none;
+            font-family: inherit;
+            font-size: 1rem;
+            max-height: 120px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .message-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .send-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .send-btn:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Welcome Message */
+        .welcome-message {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-color);
+        }
+
+        .welcome-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .messaging-container {
+                height: 100vh;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .chat-header {
+                padding: 1rem;
+            }
+            
+            .contact-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="messaging-container">
+        <div class="chat-header">
+            <div class="contact-info">
+                <div class="contact-avatar" id="contactAvatar">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="contact-details">
+                    <h2 id="contactName">Medical Consultation</h2>
+                    <p id="contactStatus">Online</p>
+                </div>
+            </div>
+            <button class="back-button" id="backButton">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <div class="messages-container" id="messagesContainer">
+            <div class="welcome-message" id="welcomeMessage">
+                <div class="welcome-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h3>Start a Conversation</h3>
+                <p>Your messages will appear here</p>
+            </div>
+            <!-- Messages will be loaded here dynamically -->
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <span class="typing-dots">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+            </span>
+            <span id="typingUserName">Someone</span> is typing...
+        </div>
+
+        <div class="input-area">
+            <div class="input-tools">
+                <button class="tool-btn" title="Emoji" id="emojiBtn">
+                    <i class="far fa-smile"></i>
+                </button>
+                <button class="tool-btn" title="Attach File" id="attachBtn">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+            </div>
+            <textarea class="message-input" id="messageInput" placeholder="Type a message..."></textarea>
+            <button class="send-btn" id="sendBtn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" style="display: none;" accept="*/*">
+
+    <script>
+        (function() {
+            'use strict';
+
+            let currentAppointment = null;
+            let currentUser = null;
+            let socket = null;
+            let csrfToken = '';
+
+            // DOM Elements
+            const contactAvatar = document.getElementById('contactAvatar');
+            const contactName = document.getElementById('contactName');
+            const contactStatus = document.getElementById('contactStatus');
+            const backButton = document.getElementById('backButton');
+            const messagesContainer = document.getElementById('messagesContainer');
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const messageInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const emojiBtn = document.getElementById('emojiBtn');
+            const attachBtn = document.getElementById('attachBtn');
+            const fileInput = document.getElementById('fileInput');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const typingUserName = document.getElementById('typingUserName');
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeMessaging();
+            });
+
+            // Initialize messaging
+            async function initializeMessaging() {
+                try {
+                    // Get URL parameters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const appointmentId = urlParams.get('appointment_id');
+                    const contactName = urlParams.get('contact_name') || 'Medical Consultation';
+                    
+                    if (!appointmentId) {
+                        throw new Error('No appointment specified');
+                    }
+
+                    // Get CSRF token
+                    csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                    // Get current user
+                    await getCurrentUser();
+                    
+                    // Setup contact info
+                    contactName.textContent = contactName;
+                    
+                    // Load messages
+                    await loadMessages(appointmentId);
+                    
+                    // Setup WebSocket
+                    initializeWebSocket(appointmentId);
+                    
+                    // Setup event listeners
+                    setupEventListeners();
+                    
+                } catch (error) {
+                    console.error('Error initializing messaging:', error);
+                    showError('Failed to load messages');
+                }
+            }
+
+            // Get current user
+            async function getCurrentUser() {
+                try {
+                    const response = await fetch('/api/user/current', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        currentUser = await response.json();
+                    }
+                } catch (error) {
+                    console.error('Error getting current user:', error);
+                }
+            }
+
+            // Initialize WebSocket
+            function initializeWebSocket(appointmentId) {
+                try {
+                    socket = io({
+                        transports: ['websocket', 'polling']
+                    });
+
+                    socket.on('connect', () => {
+                        console.log('WebSocket connected for messaging');
+                        socket.emit('join_appointment', { appointment_id: appointmentId });
+                    });
+
+                    socket.on('new_message', handleNewMessage);
+                    socket.on('user_typing', handleTypingIndicator);
+                    socket.on('message_delivered', handleMessageDelivered);
+
+                } catch (error) {
+                    console.error('Error initializing WebSocket:', error);
+                }
+            }
+
+            // Setup event listeners
+            function setupEventListeners() {
+                backButton.addEventListener('click', goBack);
+                sendBtn.addEventListener('click', sendMessage);
+                messageInput.addEventListener('keypress', handleKeyPress);
+                messageInput.addEventListener('input', handleInput);
+                attachBtn.addEventListener('click', triggerFileInput);
+                fileInput.addEventListener('change', handleFileUpload);
+            }
+
+            // Load messages
+            async function loadMessages(appointmentId) {
+                try {
+                    const response = await fetch(`/api/messages/${appointmentId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (response.ok) {
+                        const messages = await response.json();
+                        displayMessages(messages);
+                    } else {
+                        throw new Error('Failed to load messages');
+                    }
+
+                } catch (error) {
+                    console.error('Error loading messages:', error);
+                    throw error;
+                }
+            }
+
+            // Display messages
+            function displayMessages(messages) {
+                messagesContainer.innerHTML = '';
+                
+                if (messages.length === 0) {
+                    welcomeMessage.style.display = 'block';
+                    return;
+                }
+                
+                welcomeMessage.style.display = 'none';
+                
+                messages.forEach(message => {
+                    addMessageToChat(message, false);
+                });
+                
+                scrollToBottom();
+            }
+
+            // Add message to chat
+            function addMessageToChat(message, shouldScroll = true) {
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${message.sender_id === currentUser.id ? 'sent' : 'received'}`;
+                
+                let messageContent = '';
+                
+                if (message.message_type === 'audio') {
+                    messageContent = `
+                        <div class="audio-message">
+                            <audio controls class="audio-player">
+                                <source src="${message.audio_url}" type="audio/webm">
+                                Your browser does not support the audio element.
+                            </audio>
+                            <div class="audio-duration">${formatDuration(message.duration || 0)}</div>
+                        </div>
+                        <div class="message-time">${formatTime(message.created_at)}</div>
+                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
+                    `;
+                } else if (message.message_type === 'file') {
+                    messageContent = `
+                        <div class="file-message">
+                            <div class="file-icon">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <div class="file-info">
+                                <div class="file-name">${message.file_name}</div>
+                                <div class="file-size">${formatFileSize(message.file_size)}</div>
+                            </div>
+                            <button class="download-btn" onclick="downloadFile('${message.file_url}', '${message.file_name}')">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                        <div class="message-time">${formatTime(message.created_at)}</div>
+                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
+                    `;
+                } else {
+                    messageContent = `
+                        <div class="message-text">${escapeHtml(message.content)}</div>
+                        <div class="message-time">${formatTime(message.created_at)}</div>
+                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
+                    `;
+                }
+                
+                messageElement.innerHTML = messageContent;
+                messagesContainer.appendChild(messageElement);
+                
+                if (shouldScroll) {
+                    scrollToBottom();
+                }
+            }
+
+            // Handle new message from WebSocket
+            function handleNewMessage(messageData) {
+                addMessageToChat(messageData, true);
+                welcomeMessage.style.display = 'none';
+            }
+
+            // Handle typing indicator
+            function handleTypingIndicator(data) {
+                if (data.is_typing) {
+                    typingUserName.textContent = data.user_name;
+                    typingIndicator.classList.add('visible');
+                } else {
+                    typingIndicator.classList.remove('visible');
+                }
+            }
+
+            // Handle message delivered
+            function handleMessageDelivered(data) {
+                // Update message status in UI
+                const messageElement = document.querySelector(`[data-message-id="${data.message_id}"]`);
+                if (messageElement) {
+                    const statusElement = messageElement.querySelector('.message-status');
+                    if (statusElement) {
+                        statusElement.textContent = '✓✓';
+                    }
+                }
+            }
+
+            // Send message
+            async function sendMessage() {
+                const content = messageInput.value.trim();
+                if (!content) return;
+
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const appointmentId = urlParams.get('appointment_id');
+
+                    const messageData = {
+                        appointment_id: appointmentId,
+                        content: content,
+                        message_type: 'text'
+                    };
+
+                    if (socket && socket.connected) {
+                        socket.emit('send_message', messageData);
+                    } else {
+                        // Fallback to HTTP request
+                        const response = await fetch(`/api/messages/${appointmentId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfToken
+                            },
+                            body: JSON.stringify(messageData)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to send message');
+                        }
+
+                        const sentMessage = await response.json();
+                        addMessageToChat(sentMessage, true);
+                    }
+
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                    welcomeMessage.style.display = 'none';
+
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    alert('Failed to send message. Please try again.');
+                }
+            }
+
+            // Handle key press
+            function handleKeyPress(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            }
+
+            // Handle input for auto-resize and typing indicator
+            function handleInput() {
+                // Auto-resize
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+
+                // Typing indicator
+                if (socket && socket.connected) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const appointmentId = urlParams.get('appointment_id');
+                    
+                    socket.emit('typing_start', {
+                        appointment_id: appointmentId,
+                        user_id: currentUser.id,
+                        user_name: currentUser.name
+                    });
+
+                    // Clear previous timeout
+                    if (window.typingTimeout) {
+                        clearTimeout(window.typingTimeout);
+                    }
+
+                    window.typingTimeout = setTimeout(() => {
+                        socket.emit('typing_stop', {
+                            appointment_id: appointmentId,
+                            user_id: currentUser.id
+                        });
+                    }, 1000);
+                }
+            }
+
+            // Trigger file input
+            function triggerFileInput() {
+                fileInput.click();
+            }
+
+            // Handle file upload
+            async function handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const appointmentId = urlParams.get('appointment_id');
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('appointment_id', appointmentId);
+
+                    const response = await fetch('/api/messages/file', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-Token': csrfToken
+                        },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const message = await response.json();
+                        addMessageToChat(message, true);
+                        welcomeMessage.style.display = 'none';
+                    } else {
+                        throw new Error('Failed to upload file');
+                    }
+
+                } catch (error) {
+                    console.error('Error uploading file:', error);
+                    alert('Failed to upload file. Please try again.');
+                }
+
+                fileInput.value = '';
+            }
+
+            // Go back to main communication page
+            function goBack() {
+                window.close();
+            }
+
+            // Utility functions
+            function formatTime(isoString) {
+                return new Date(isoString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+
+            function formatDuration(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function scrollToBottom() {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            function escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            function showError(message) {
+                alert(message);
+                window.close();
+            }
+
+            // Make download function available globally
+            window.downloadFile = function(url, filename) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+            };
+
+        })();
+    </script>
+</body>
+</html>

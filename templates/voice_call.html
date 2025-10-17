@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Call - Makokha Medical Centre</title>
+    
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #075e54;
+            --secondary-color: #128c7e;
+            --accent-color: #25d366;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Enhanced Voice Call Interface */
+        .voice-call-interface {
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .caller-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 2rem;
+        }
+
+        .call-status {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .caller-name {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .call-duration {
+            font-size: 1.2rem;
+            margin-bottom: 3rem;
+            opacity: 0.8;
+        }
+
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .call-control-btn {
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .call-control-btn.mute-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .call-control-btn.mute-btn.muted {
+            background: var(--danger-color);
+        }
+
+        .call-control-btn.speaker-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .call-control-btn.speaker-btn.active {
+            background: var(--accent-color);
+        }
+
+        .call-control-btn.end-call-btn {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .call-control-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Call ended screen */
+        .call-ended {
+            text-align: center;
+        }
+
+        .call-ended-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            opacity: 0.7;
+        }
+
+        .call-ended h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .call-ended p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .back-button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .voice-call-interface {
+                padding: 1rem;
+            }
+            
+            .caller-avatar {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+            }
+            
+            .call-control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="voice-call-interface" id="voiceCallInterface">
+        <div class="caller-avatar" id="callerAvatar">
+            <i class="fas fa-user-md"></i>
+        </div>
+        <div class="call-status" id="callStatus">Connected</div>
+        <div class="caller-name" id="callerName">Medical Consultation</div>
+        <div class="call-duration" id="callDuration">00:00</div>
+        <div class="call-controls">
+            <button class="call-control-btn mute-btn" id="callMuteBtn">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <button class="call-control-btn speaker-btn" id="speakerBtn">
+                <i class="fas fa-volume-up"></i>
+            </button>
+            <button class="call-control-btn end-call-btn" id="endCallBtn">
+                <i class="fas fa-phone"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="call-ended" id="callEnded" style="display: none;">
+        <div class="call-ended-icon">
+            <i class="fas fa-phone-slash"></i>
+        </div>
+        <h2>Call Ended</h2>
+        <p>The voice call has been completed</p>
+        <button class="back-button" id="backButton">Back to Chat</button>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            let localStream = null;
+            let callTimer = null;
+            let callSeconds = 0;
+            let isMuted = false;
+            let isSpeakerOn = true;
+
+            // DOM Elements
+            const voiceCallInterface = document.getElementById('voiceCallInterface');
+            const callerAvatar = document.getElementById('callerAvatar');
+            const callStatus = document.getElementById('callStatus');
+            const callerName = document.getElementById('callerName');
+            const callDuration = document.getElementById('callDuration');
+            const callMuteBtn = document.getElementById('callMuteBtn');
+            const speakerBtn = document.getElementById('speakerBtn');
+            const endCallBtn = document.getElementById('endCallBtn');
+            const callEnded = document.getElementById('callEnded');
+            const backButton = document.getElementById('backButton');
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeVoiceCall();
+            });
+
+            // Initialize voice call
+            async function initializeVoiceCall() {
+                try {
+                    // Get URL parameters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const contactName = urlParams.get('contact_name') || 'Medical Consultation';
+                    const userRole = urlParams.get('user_role') || 'patient';
+                    
+                    callerName.textContent = contactName;
+                    
+                    // Set avatar based on role
+                    if (userRole === 'doctor') {
+                        callerAvatar.innerHTML = '<i class="fas fa-user-md"></i>';
+                    } else {
+                        callerAvatar.innerHTML = '<i class="fas fa-user"></i>';
+                    }
+
+                    // Start voice call
+                    await startVoiceCall();
+                    startCallTimer();
+                    
+                } catch (error) {
+                    console.error('Error initializing voice call:', error);
+                    showError('Failed to start voice call');
+                }
+            }
+
+            // Start voice call
+            async function startVoiceCall() {
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true,
+                        video: false 
+                    });
+                    
+                    // Here you would typically connect to your signaling server
+                    // and set up the WebRTC connection for audio
+                    
+                    console.log('Voice call started successfully');
+                    
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    throw new Error('Cannot access microphone. Please check permissions.');
+                }
+            }
+
+            // Toggle mute
+            function toggleMute() {
+                if (localStream) {
+                    const audioTracks = localStream.getAudioTracks();
+                    isMuted = !isMuted;
+                    
+                    audioTracks.forEach(track => {
+                        track.enabled = !isMuted;
+                    });
+                    
+                    callMuteBtn.classList.toggle('muted', isMuted);
+                    callMuteBtn.innerHTML = isMuted ? 
+                        '<i class="fas fa-microphone-slash"></i>' : 
+                        '<i class="fas fa-microphone"></i>';
+                }
+            }
+
+            // Toggle speaker
+            function toggleSpeaker() {
+                isSpeakerOn = !isSpeakerOn;
+                speakerBtn.classList.toggle('active', isSpeakerOn);
+                speakerBtn.innerHTML = isSpeakerOn ? 
+                    '<i class="fas fa-volume-up"></i>' : 
+                    '<i class="fas fa-volume-mute"></i>';
+                
+                // Note: Speaker selection requires setSinkId which has limited browser support
+                console.log('Speaker ' + (isSpeakerOn ? 'on' : 'off'));
+            }
+
+            // End call
+            function endCall() {
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
+                
+                stopCallTimer();
+                
+                // Show call ended screen
+                voiceCallInterface.style.display = 'none';
+                callEnded.style.display = 'block';
+            }
+
+            // Back to chat
+            function backToChat() {
+                window.close();
+            }
+
+            // Call timer functions
+            function startCallTimer() {
+                callSeconds = 0;
+                updateCallTimer();
+                
+                callTimer = setInterval(() => {
+                    callSeconds++;
+                    updateCallTimer();
+                }, 1000);
+            }
+
+            function stopCallTimer() {
+                if (callTimer) {
+                    clearInterval(callTimer);
+                    callTimer = null;
+                }
+            }
+
+            function updateCallTimer() {
+                const minutes = Math.floor(callSeconds / 60);
+                const seconds = callSeconds % 60;
+                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                callDuration.textContent = timeString;
+            }
+
+            // Show error
+            function showError(message) {
+                alert(message);
+                window.close();
+            }
+
+            // Setup event listeners
+            callMuteBtn.addEventListener('click', toggleMute);
+            speakerBtn.addEventListener('click', toggleSpeaker);
+            endCallBtn.addEventListener('click', endCall);
+            backButton.addEventListener('click', backToChat);
+
+        })();
+    </script>
+</body>
+</html>

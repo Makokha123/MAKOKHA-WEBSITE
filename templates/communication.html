@@ -12,12 +12,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     
-    <!-- Emoji Picker -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.12.0/index.css">
-    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.12.0/index.js"></script>
-    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -44,6 +41,28 @@
             overflow: hidden;
         }
 
+        /* WebSocket Status Indicator */
+        .websocket-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            display: none;
+        }
+
+        .websocket-status.connected {
+            background: var(--accent-color);
+        }
+
+        .websocket-status.disconnected {
+            background: var(--danger-color);
+        }
+
         .communication-container {
             display: flex;
             width: 100%;
@@ -60,6 +79,7 @@
             height: 100%;
             transition: all 0.3s ease;
             z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
 
         .sidebar-header {
@@ -67,16 +87,21 @@
             border-bottom: 1px solid #e0e0e0;
             background: var(--primary-color);
             color: white;
+            position: sticky;
+            top: 0;
+            z-index: 5;
         }
 
         .sidebar-header h1 {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
+            font-weight: 600;
         }
 
         .sidebar-header p {
-            opacity: 0.8;
+            opacity: 0.9;
             margin-bottom: 1rem;
+            font-size: 0.9rem;
         }
 
         .refresh-button {
@@ -88,35 +113,58 @@
             cursor: pointer;
             font-weight: 600;
             transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
         }
 
         .refresh-button:hover {
             background: rgba(255,255,255,0.3);
         }
 
+        .refresh-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .refresh-button.loading {
+            pointer-events: none;
+        }
+
+        .refresh-button.loading i {
+            animation: spin 1s linear infinite;
+        }
+
         .appointment-list {
             flex: 1;
             overflow-y: auto;
             padding: 1rem;
+            background: #fafafa;
         }
 
         .appointment-item {
             padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
             cursor: pointer;
             transition: all 0.3s;
-            border: 1px solid #e0e0e0;
+            border: 2px solid transparent;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             position: relative;
         }
 
         .appointment-item:hover {
-            background: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
         }
 
         .appointment-item.active {
             background: #e3f2fd;
             border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(7, 94, 84, 0.15);
         }
 
         .appointment-item.payment-pending {
@@ -129,23 +177,51 @@
             border-left: 4px solid var(--accent-color);
         }
 
+        .appointment-item.status-pending {
+            background: #fff3cd;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .appointment-item.status-confirmed {
+            background: #d1ecf1;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .appointment-item.status-completed {
+            background: #d4edda;
+            border-left: 4px solid var(--accent-color);
+        }
+
         .appointment-info h3 {
             font-size: 1rem;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+            font-weight: 600;
         }
 
         .appointment-info p {
             color: var(--gray-color);
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
         }
 
-        .appointment-status, .payment-status {
+        .appointment-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.75rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .status-badge, .payment-badge {
             display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
             font-weight: 600;
+            text-transform: capitalize;
         }
 
         .status-scheduled {
@@ -176,23 +252,29 @@
         .unread-badge {
             background: var(--danger-color);
             color: white;
-            padding: 0.25rem 0.5rem;
+            padding: 0.3rem 0.6rem;
             border-radius: 12px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
         }
 
         .feature-locked {
             position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
+            bottom: 0.75rem;
+            right: 0.75rem;
             color: var(--danger-color);
             font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
 
         .loading-state, .empty-state {
             text-align: center;
-            padding: 2rem;
+            padding: 3rem 2rem;
             color: var(--gray-color);
         }
 
@@ -214,6 +296,17 @@
         .empty-state-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: var(--gray-color);
+        }
+
+        .empty-state p {
+            color: var(--gray-color);
+            line-height: 1.5;
         }
 
         /* Enhanced Chat Area */
@@ -223,15 +316,20 @@
             flex-direction: column;
             height: 100%;
             position: relative;
+            background: white;
         }
 
         .chat-header {
             background: white;
-            padding: 1rem 1.5rem;
+            padding: 1.25rem 1.5rem;
             border-bottom: 1px solid #e0e0e0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 5;
         }
 
         .contact-info {
@@ -244,17 +342,20 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.5rem;
+            font-size: 1.25rem;
+            box-shadow: 0 2px 8px rgba(7, 94, 84, 0.3);
         }
 
         .contact-details h2 {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             margin-bottom: 0.25rem;
+            color: var(--dark-color);
+            font-weight: 600;
         }
 
         .contact-details p {
@@ -264,30 +365,36 @@
 
         .call-controls {
             display: flex;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
 
         .call-btn {
             background: var(--primary-color);
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            transition: background 0.3s;
+            transition: all 0.3s;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(7, 94, 84, 0.2);
+        }
+
+        .call-btn:hover:not(:disabled) {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(7, 94, 84, 0.3);
         }
 
         .call-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
-        }
-
-        .call-btn:hover:not(:disabled) {
-            background: var(--secondary-color);
+            transform: none;
+            box-shadow: none;
         }
 
         .call-btn.locked {
@@ -298,6 +405,7 @@
         .call-btn.locked::after {
             content: '🔒';
             margin-left: 0.5rem;
+            font-size: 0.8rem;
         }
 
         /* Enhanced Messages Container */
@@ -308,43 +416,46 @@
             background: #f5f5f5;
             display: flex;
             flex-direction: column;
+            gap: 1rem;
         }
 
         .message {
             max-width: 70%;
-            margin-bottom: 1rem;
-            padding: 0.75rem 1rem;
-            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            padding: 0.875rem 1rem;
+            border-radius: 18px;
             position: relative;
             animation: messageAppear 0.3s ease-out;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         @keyframes messageAppear {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(10px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
 
         .message.sent {
             background: #dcf8c6;
             margin-left: auto;
-            border-bottom-right-radius: 4px;
+            border-bottom-right-radius: 6px;
         }
 
         .message.received {
             background: white;
-            border-bottom-left-radius: 4px;
+            border-bottom-left-radius: 6px;
         }
 
         .message-text {
             margin-bottom: 0.5rem;
             line-height: 1.4;
             word-wrap: break-word;
+            font-size: 0.95rem;
         }
 
         .message-time {
@@ -373,11 +484,13 @@
             flex: 1;
             height: 40px;
             border-radius: 20px;
+            background: #f0f0f0;
         }
 
         .audio-duration {
             font-size: 0.8rem;
             color: var(--gray-color);
+            font-weight: 600;
         }
 
         /* File Message Styles */
@@ -385,10 +498,11 @@
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 0.5rem;
+            padding: 0.75rem;
             background: rgba(0,0,0,0.05);
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 0.5rem;
+            border: 1px solid #e0e0e0;
         }
 
         .file-icon {
@@ -403,6 +517,7 @@
         .file-name {
             font-weight: 600;
             margin-bottom: 0.25rem;
+            font-size: 0.9rem;
         }
 
         .file-size {
@@ -414,196 +529,39 @@
             background: var(--primary-color);
             color: white;
             border: none;
-            padding: 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        /* Enhanced Voice Recorder */
-        .voice-recorder {
-            background: white;
-            padding: 1rem 1.5rem;
-            border-top: 1px solid #e0e0e0;
-            display: none;
-            align-items: center;
-            gap: 1rem;
-            animation: slideUp 0.3s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(100%);
-            }
-            to {
-                transform: translateY(0);
-            }
-        }
-
-        .record-btn {
-            background: var(--danger-color);
-            color: white;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-        }
-
-        .record-btn.recording {
-            background: var(--accent-color);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        .recording-timer {
-            font-weight: 600;
-            color: var(--danger-color);
-            font-size: 1.1rem;
-        }
-
-        .recording-controls {
-            display: flex;
-            gap: 0.5rem;
-            margin-left: auto;
-        }
-
-        .control-btn {
-            padding: 0.5rem 1rem;
-            border: none;
+            padding: 0.5rem 0.75rem;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: 600;
+            font-size: 0.8rem;
             transition: background 0.3s;
         }
 
-        .send-recording {
-            background: var(--accent-color);
-            color: white;
-        }
-
-        .send-recording:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .cancel-recording {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        /* Enhanced Input Area */
-        .input-area {
-            background: white;
-            padding: 1rem 1.5rem;
-            border-top: 1px solid #e0e0e0;
-            display: flex;
-            align-items: flex-end;
-            gap: 0.5rem;
-        }
-
-        .input-tools {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .tool-btn {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: background 0.3s;
-            color: var(--gray-color);
-        }
-
-        .tool-btn:hover {
-            background: #f0f0f0;
-        }
-
-        .tool-btn:disabled {
-            color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .tool-btn:disabled:hover {
-            background: none;
-        }
-
-        .message-input {
-            flex: 1;
-            border: 1px solid #e0e0e0;
-            border-radius: 24px;
-            padding: 0.75rem 1rem;
-            resize: none;
-            font-family: inherit;
-            font-size: 1rem;
-            max-height: 120px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .message-input:focus {
-            border-color: var(--primary-color);
-        }
-
-        .message-input:disabled {
-            background: #f5f5f5;
-            cursor: not-allowed;
-        }
-
-        .send-btn {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s;
-        }
-
-        .send-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .send-btn:hover:not(:disabled) {
+        .download-btn:hover {
             background: var(--secondary-color);
         }
 
         /* Enhanced Typing Indicator */
         .typing-indicator {
-            padding: 0.5rem 1.5rem;
+            padding: 0.75rem 1.5rem;
             color: var(--gray-color);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             display: none;
+            align-items: center;
+            background: white;
+            margin: 0.5rem 1.5rem;
+            border-radius: 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             animation: fadeIn 0.3s ease-out;
         }
 
         .typing-indicator.visible {
             display: flex;
-            align-items: center;
         }
 
         .typing-dots {
             display: inline-flex;
             gap: 0.25rem;
-            margin-right: 0.5rem;
+            margin-right: 0.75rem;
         }
 
         .typing-dot {
@@ -618,447 +576,115 @@
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 
         @keyframes typing {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Enhanced Voice Call Interface */
-        .voice-call-interface {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .voice-call-interface .caller-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+        /* Enhanced Input Area */
+        .input-area {
+            background: white;
+            padding: 1.25rem 1.5rem;
+            border-top: 1px solid #e0e0e0;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            margin-bottom: 2rem;
+            align-items: flex-end;
+            gap: 0.75rem;
+            position: sticky;
+            bottom: 0;
+            z-index: 5;
         }
 
-        .voice-call-interface .call-status {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+        .input-tools {
+            display: flex;
+            gap: 0.5rem;
         }
 
-        .voice-call-interface .call-duration {
+        .tool-btn {
+            background: none;
+            border: none;
             font-size: 1.2rem;
-            margin-bottom: 2rem;
-        }
-
-        .voice-call-interface .call-controls {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .voice-call-interface .call-control-btn {
-            width: 60px;
-            height: 60px;
-            border: none;
-            border-radius: 50%;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
+            padding: 0.5rem;
+            border-radius: 50%;
             transition: all 0.3s;
-        }
-
-        .voice-call-interface .mute-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-
-        .voice-call-interface .mute-btn.muted {
-            background: var(--danger-color);
-        }
-
-        .voice-call-interface .end-call-btn {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        /* Enhanced Video Call Interface - Google Meet Style */
-        .video-call-interface {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #1a1a1a;
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .video-call-header {
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
-        }
-
-        .caller-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .caller-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .caller-details h3 {
-            font-size: 1.1rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .call-status {
-            font-size: 0.9rem;
-            color: #ccc;
-        }
-
-        .call-duration {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .header-controls {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .header-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s;
-        }
-
-        .header-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        /* Enhanced Video Container */
-        .video-container {
-            flex: 1;
-            display: flex;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .video-grid {
-            flex: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 10px;
-            padding: 10px;
-            align-items: center;
-            justify-items: center;
-        }
-
-        .video-participant {
-            position: relative;
-            background: #000;
-            border-radius: 10px;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            max-height: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            transition: transform 0.3s;
-        }
-
-        .video-participant:hover {
-            transform: scale(1.02);
-        }
-
-        .video-participant video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .participant-info {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .participant-status {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--accent-color);
-        }
-
-        .participant-status.muted {
-            background: var(--danger-color);
-        }
-
-        /* Enhanced Video Controls */
-        .video-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 1rem;
-            z-index: 3;
-        }
-
-        .control-btn {
-            width: 60px;
-            height: 60px;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            transition: all 0.3s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-
-        .control-btn.mute-btn {
-            background: #666;
-            color: white;
-        }
-
-        .control-btn.mute-btn.muted {
-            background: var(--danger-color);
-        }
-
-        .control-btn.video-btn {
-            background: #666;
-            color: white;
-        }
-
-        .control-btn.video-btn.off {
-            background: var(--danger-color);
-        }
-
-        .control-btn.screen-share-btn {
-            background: #666;
-            color: white;
-        }
-
-        .control-btn.screen-share-btn.active {
-            background: var(--accent-color);
-        }
-
-        .control-btn.record-btn {
-            background: #666;
-            color: white;
-        }
-
-        .control-btn.record-btn.recording {
-            background: var(--danger-color);
-            animation: pulse 1.5s infinite;
-        }
-
-        .control-btn.settings-btn {
-            background: #666;
-            color: white;
-        }
-
-        .control-btn.end-call-btn {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .control-btn:hover {
-            transform: scale(1.1);
-        }
-
-        /* Meeting Chat Panel */
-        .meeting-chat-panel {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            width: 350px;
-            height: 500px;
-            border-radius: 12px;
-            z-index: 100;
-            display: none;
-            flex-direction: column;
-            backdrop-filter: blur(10px);
-        }
-
-        .chat-panel-header {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chat-panel-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
-            color: white;
-        }
-
-        .chat-panel-input {
-            padding: 1rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .chat-panel-input input {
-            width: 100%;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            outline: none;
-        }
-
-        /* Enhanced Device Permission Modal */
-        .device-permission-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 3000;
-            display: none;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .device-permission-content {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s ease-out;
-        }
-
-        .device-permission-header {
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .device-permission-header h2 {
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .device-permission-header p {
             color: var(--gray-color);
-        }
-
-        .device-selection {
-            margin-bottom: 1.5rem;
-        }
-
-        .device-group {
-            margin-bottom: 1rem;
-        }
-
-        .device-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .device-select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            background: white;
-            font-size: 0.9rem;
-        }
-
-        .device-actions {
             display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
         }
 
-        .device-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
+        .tool-btn:hover:not(:disabled) {
+            background: #f0f0f0;
+            color: var(--primary-color);
         }
 
-        .confirm-devices-btn {
+        .tool-btn:disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .tool-btn:disabled:hover {
+            background: none;
+        }
+
+        .message-input {
+            flex: 1;
+            border: 2px solid #e0e0e0;
+            border-radius: 24px;
+            padding: 0.875rem 1.25rem;
+            resize: none;
+            font-family: inherit;
+            font-size: 1rem;
+            max-height: 120px;
+            outline: none;
+            transition: border-color 0.3s;
+            background: #fafafa;
+        }
+
+        .message-input:focus {
+            border-color: var(--primary-color);
+            background: white;
+        }
+
+        .message-input:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+            border-color: #e0e0e0;
+        }
+
+        .send-btn {
             background: var(--primary-color);
             color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(7, 94, 84, 0.2);
         }
 
-        .confirm-devices-btn:hover {
+        .send-btn:hover:not(:disabled) {
             background: var(--secondary-color);
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(7, 94, 84, 0.3);
         }
 
-        .cancel-devices-btn {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        .cancel-devices-btn:hover {
-            background: #e0e0e0;
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         /* Payment Required Modal */
@@ -1074,31 +700,47 @@
             align-items: center;
             z-index: 3000;
             display: none;
+            backdrop-filter: blur(5px);
         }
 
         .payment-required-content {
             background: white;
-            border-radius: 12px;
-            padding: 2rem;
+            border-radius: 16px;
+            padding: 2.5rem;
             width: 90%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalAppear 0.3s ease-out;
+        }
+
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         .payment-required-icon {
-            font-size: 3rem;
+            font-size: 4rem;
             color: var(--warning-color);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .payment-required-content h2 {
             color: var(--dark-color);
             margin-bottom: 1rem;
+            font-size: 1.5rem;
         }
 
         .payment-required-content p {
             color: var(--gray-color);
             margin-bottom: 2rem;
+            line-height: 1.5;
         }
 
         .payment-required-actions {
@@ -1108,12 +750,14 @@
         }
 
         .payment-btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.875rem 2rem;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
+            font-size: 1rem;
+            min-width: 120px;
         }
 
         .go-to-payment-btn {
@@ -1121,121 +765,69 @@
             color: white;
         }
 
+        .go-to-payment-btn:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
         .cancel-payment-btn {
             background: #f5f5f5;
             color: #333;
+            border: 1px solid #e0e0e0;
         }
 
-        /* Emoji Picker */
-        .emoji-picker-container {
-            position: absolute;
-            bottom: 70px;
-            left: 50px;
-            z-index: 1000;
-            display: none;
+        .cancel-payment-btn:hover {
+            background: #e0e0e0;
         }
 
-        /* Admin Controls Panel */
-        .admin-controls {
-            position: absolute;
-            top: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.95);
-            width: 350px;
-            border-radius: 12px;
-            z-index: 100;
-            display: none;
-            flex-direction: column;
-            backdrop-filter: blur(10px);
-            color: white;
-            padding: 1rem;
-        }
-
-        .admin-header {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: bold;
-        }
-
-        .admin-section {
-            margin: 1rem 0;
-        }
-
-        .admin-section h4 {
-            margin-bottom: 0.5rem;
-            color: #ccc;
-        }
-
-        .admin-btn {
-            background: rgba(255,255,255,0.1);
+        /* Toggle Sidebar Button */
+        .toggle-sidebar {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: var(--primary-color);
             color: white;
             border: none;
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            text-align: left;
-            margin-bottom: 0.5rem;
-            transition: background 0.3s;
-        }
-
-        .admin-btn:hover {
-            background: rgba(255,255,255,0.2);
-        }
-
-        .participants-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .participant-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 6px;
-            margin-bottom: 0.25rem;
-            background: rgba(255,255,255,0.05);
-        }
-
-        .participant-avatar {
-            width: 30px;
-            height: 30px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
+            cursor: pointer;
+            display: none;
+            z-index: 20;
             align-items: center;
             justify-content: center;
-            font-size: 0.8rem;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.3s;
         }
 
-        .participant-details {
-            flex: 1;
+        .toggle-sidebar:hover {
+            background: var(--secondary-color);
+            transform: scale(1.1);
         }
 
-        .participant-name {
-            font-size: 0.9rem;
-            font-weight: 500;
+        /* Welcome Message */
+        .welcome-message {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--gray-color);
         }
 
-        .participant-role {
-            font-size: 0.8rem;
-            color: #ccc;
+        .welcome-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
         }
 
-        .participant-status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--accent-color);
+        .welcome-message h2 {
+            margin-bottom: 1rem;
+            color: var(--dark-color);
         }
 
-        .participant-status-indicator.muted {
-            background: var(--danger-color);
+        .welcome-message p {
+            line-height: 1.6;
+            max-width: 400px;
+            margin: 0 auto;
         }
 
         /* Responsive Design */
@@ -1246,86 +838,139 @@
             
             .sidebar {
                 width: 100%;
-                height: 40%;
+                height: 45%;
+                position: fixed;
+                left: -100%;
+                transition: left 0.3s ease;
+                z-index: 15;
+            }
+            
+            .sidebar.active {
+                left: 0;
             }
             
             .chat-area {
-                height: 60%;
+                height: 100%;
             }
             
             .message {
                 max-width: 85%;
             }
             
-            .video-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .video-participant {
-                max-height: 300px;
-            }
-            
-            .video-controls {
-                bottom: 10px;
-            }
-            
-            .control-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 1.2rem;
-            }
-            
-            .meeting-chat-panel {
-                width: 300px;
-                height: 400px;
-            }
-
-            .admin-controls {
-                width: 300px;
-            }
-        }
-
-        /* Toggle Sidebar Button */
-        .toggle-sidebar {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: none;
-            z-index: 20;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        @media (max-width: 768px) {
             .toggle-sidebar {
                 display: flex;
             }
             
-            .sidebar {
-                position: fixed;
-                left: -100%;
-                width: 85%;
-                height: 100%;
-                transition: left 0.3s ease;
+            .call-controls {
+                flex-wrap: wrap;
+                justify-content: center;
             }
             
-            .sidebar.active {
-                left: 0;
+            .call-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
             }
+            
+            .contact-avatar {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .contact-details h2 {
+                font-size: 1.1rem;
+            }
+            
+            .input-area {
+                padding: 1rem;
+            }
+            
+            .payment-required-content {
+                margin: 1rem;
+                padding: 2rem;
+            }
+            
+            .payment-required-actions {
+                flex-direction: column;
+            }
+            
+            .payment-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar-header {
+                padding: 1rem;
+            }
+            
+            .sidebar-header h1 {
+                font-size: 1.25rem;
+            }
+            
+            .appointment-list {
+                padding: 0.75rem;
+            }
+            
+            .appointment-item {
+                padding: 0.875rem;
+            }
+            
+            .messages-container {
+                padding: 1rem;
+            }
+            
+            .input-area {
+                padding: 0.875rem;
+            }
+            
+            .message-input {
+                padding: 0.75rem 1rem;
+            }
+        }
+
+        /* Scrollbar Styling */
+        .appointment-list::-webkit-scrollbar,
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .appointment-list::-webkit-scrollbar-track,
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .appointment-list::-webkit-scrollbar-thumb,
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .appointment-list::-webkit-scrollbar-thumb:hover,
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
         }
     </style>
 </head>
 <body>
     <!-- WebSocket Status Indicator -->
     <div class="websocket-status" id="websocketStatus">Connecting...</div>
+
+    <!-- Payment Required Modal -->
+    <div class="payment-required-modal" id="paymentRequiredModal">
+        <div class="payment-required-content">
+            <div class="payment-required-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h2>Payment Required</h2>
+            <p id="paymentModalMessage">Please complete your payment to access all communication features.</p>
+            <div class="payment-required-actions">
+                <button class="payment-btn cancel-payment-btn" id="cancelPaymentBtn">Cancel</button>
+                <button class="payment-btn go-to-payment-btn" id="goToPaymentBtn">Go to Payment</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toggle Sidebar Button (Mobile) -->
     <button class="toggle-sidebar" id="toggleSidebar">
@@ -1362,59 +1007,6 @@
 
         <!-- Main Chat Area -->
         <div class="chat-area">
-            <!-- Device Permission Modal -->
-            <div class="device-permission-modal" id="devicePermissionModal">
-                <div class="device-permission-content">
-                    <div class="device-permission-header">
-                        <h2>Device Permissions Required</h2>
-                        <p>Please allow access to your camera, microphone, and speakers for video calls</p>
-                    </div>
-                    
-                    <div class="device-selection">
-                        <div class="device-group">
-                            <label for="cameraSelect">Camera:</label>
-                            <select id="cameraSelect" class="device-select">
-                                <option value="">Loading cameras...</option>
-                            </select>
-                        </div>
-                        
-                        <div class="device-group">
-                            <label for="microphoneSelect">Microphone:</label>
-                            <select id="microphoneSelect" class="device-select">
-                                <option value="">Loading microphones...</option>
-                            </select>
-                        </div>
-                        
-                        <div class="device-group">
-                            <label for="speakerSelect">Speaker:</label>
-                            <select id="speakerSelect" class="device-select">
-                                <option value="">Loading speakers...</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="device-actions">
-                        <button class="device-btn cancel-devices-btn" id="cancelDevicesBtn">Cancel</button>
-                        <button class="device-btn confirm-devices-btn" id="confirmDevicesBtn">Confirm Devices</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Payment Required Modal -->
-            <div class="payment-required-modal" id="paymentRequiredModal">
-                <div class="payment-required-content">
-                    <div class="payment-required-icon">
-                        <i class="fas fa-lock"></i>
-                    </div>
-                    <h2>Payment Required</h2>
-                    <p>Please complete your payment to access all communication features including voice calls, video calls, and messaging.</p>
-                    <div class="payment-required-actions">
-                        <button class="payment-btn cancel-payment-btn" id="cancelPaymentBtn">Cancel</button>
-                        <button class="payment-btn go-to-payment-btn" id="goToPaymentBtn">Go to Payment</button>
-                    </div>
-                </div>
-            </div>
-
             <div class="chat-header">
                 <div class="contact-info">
                     <div class="contact-avatar" id="contactAvatar">
@@ -1433,157 +1025,19 @@
                         <i class="fas fa-video"></i> Video Call
                     </button>
                     <button class="call-btn" id="startRecordingBtn" disabled>
-                        <i class="fas fa-microphone"></i> Record
-                    </button>
-                </div>
-            </div>
-
-            <!-- Enhanced Voice Recorder -->
-            <div class="voice-recorder" id="voiceRecorder">
-                <button class="record-btn" id="recordBtn">
-                    <i class="fas fa-circle"></i>
-                </button>
-                <div class="recording-timer" id="recordingTimerDisplay">00:00</div>
-                <div class="recording-controls">
-                    <button class="control-btn send-recording" id="sendRecordingBtn" disabled>
-                        <i class="fas fa-paper-plane"></i> Send
-                    </button>
-                    <button class="control-btn cancel-recording" id="cancelRecordingBtn">
-                        <i class="fas fa-times"></i> Cancel
-                    </button>
-                </div>
-            </div>
-
-            <!-- Enhanced Voice Call Interface -->
-            <div class="voice-call-interface" id="voiceCallInterface">
-                <div class="caller-avatar" id="callerAvatar">
-                    <i class="fas fa-user-md"></i>
-                </div>
-                <div class="call-status" id="callStatus">Calling...</div>
-                <div class="call-duration" id="callDuration">00:00</div>
-                <div class="call-controls">
-                    <button class="call-control-btn mute-btn" id="callMuteBtn">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                    <button class="call-control-btn end-call-btn" id="endCallBtn">
-                        <i class="fas fa-phone"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Enhanced Video Call Interface -->
-            <div class="video-call-interface" id="videoCallInterface">
-                <div class="video-call-header">
-                    <div class="caller-info">
-                        <div class="caller-avatar" id="videoCallerAvatar">
-                            <i class="fas fa-user-md"></i>
-                        </div>
-                        <div class="caller-details">
-                            <h3 id="videoCallerName">Dr. Jane Smith</h3>
-                            <div class="call-status" id="videoCallStatus">Connecting...</div>
-                        </div>
-                    </div>
-                    <div class="call-duration" id="videoCallDuration">00:00</div>
-                    <div class="header-controls">
-                        <button class="header-btn" id="adminControlsBtn" title="Admin Controls">
-                            <i class="fas fa-user-shield"></i>
-                        </button>
-                        <button class="header-btn" id="participantsBtn" title="Participants">
-                            <i class="fas fa-users"></i>
-                        </button>
-                        <button class="header-btn" id="meetingChatBtn" title="Chat">
-                            <i class="fas fa-comment"></i>
-                        </button>
-                        <button class="header-btn" id="deviceSettingsBtn" title="Settings">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Connection Status -->
-                <div class="connection-status" id="connectionStatus">Connecting...</div>
-                
-                <!-- Meeting Chat Panel -->
-                <div class="meeting-chat-panel" id="meetingChatPanel">
-                    <div class="chat-panel-header">
-                        <span>Meeting Chat</span>
-                        <button class="close-settings-btn" id="closeChatBtn">×</button>
-                    </div>
-                    <div class="chat-panel-messages" id="meetingChatMessages">
-                        <!-- Meeting chat messages will appear here -->
-                    </div>
-                    <div class="chat-panel-input">
-                        <input type="text" id="meetingChatInput" placeholder="Type a message...">
-                    </div>
-                </div>
-
-                <!-- Admin Controls Panel -->
-                <div class="admin-controls" id="adminControlsPanel">
-                    <div class="admin-header">
-                        <span>Meeting Controls</span>
-                        <button class="close-settings-btn" id="closeAdminBtn">×</button>
-                    </div>
-                    
-                    <div class="admin-section">
-                        <h4>Meeting Actions</h4>
-                        <button class="admin-btn" id="recordMeetingBtn">
-                            <i class="fas fa-circle"></i> Start Recording
-                        </button>
-                        <button class="admin-btn" id="inviteParticipantsBtn">
-                            <i class="fas fa-user-plus"></i> Invite Participants
-                        </button>
-                    </div>
-                    
-                    <div class="admin-section">
-                        <h4>Participants</h4>
-                        <div class="participants-list" id="meetingParticipantsList">
-                            <!-- Participants will be listed here -->
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="video-container">
-                    <div class="video-grid" id="videoGrid">
-                        <!-- Video participants will be added here dynamically -->
-                        <div class="video-participant" id="localParticipant">
-                            <video id="localVideo" autoplay muted playsinline></video>
-                            <div class="participant-info">
-                                <div class="participant-status"></div>
-                                <span id="localParticipantName">You</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="video-controls">
-                    <button class="control-btn mute-btn" id="videoMuteBtn" title="Mute">
-                        <i class="fas fa-microphone"></i>
-                    </button>
-                    <button class="control-btn video-btn" id="videoToggleBtn" title="Turn off video">
-                        <i class="fas fa-video"></i>
-                    </button>
-                    <button class="control-btn screen-share-btn" id="screenShareBtn" title="Share screen">
-                        <i class="fas fa-desktop"></i>
-                    </button>
-                    <button class="control-btn record-btn" id="videoRecordBtn" title="Record">
-                        <i class="fas fa-circle"></i>
-                    </button>
-                    <button class="control-btn settings-btn" id="videoSettingsBtn" title="Settings">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                    <button class="control-btn end-call-btn" id="videoEndCallBtn" title="End call">
-                        <i class="fas fa-phone"></i>
+                        <i class="fas fa-microphone"></i> Voice Note
                     </button>
                 </div>
             </div>
 
             <!-- Enhanced Messages Container -->
             <div class="messages-container" id="messagesContainer">
-                <div class="message received">
-                    <div class="message-text">
-                        Welcome to your medical consultation chat! Select an appointment to start communicating with your healthcare provider.
+                <div class="welcome-message">
+                    <div class="welcome-icon">
+                        <i class="fas fa-comments"></i>
                     </div>
-                    <div class="message-time" id="welcomeTime"></div>
+                    <h2>Welcome to Medical Communication</h2>
+                    <p>Select an appointment from the sidebar to start communicating with your healthcare provider. You can send messages, share files, record voice notes, or start video calls.</p>
                 </div>
             </div>
 
@@ -1600,9 +1054,6 @@
             <!-- Enhanced Input Area -->
             <div class="input-area">
                 <div class="input-tools">
-                    <button class="tool-btn" title="Emoji" id="emojiBtn" disabled>
-                        <i class="far fa-smile"></i>
-                    </button>
                     <button class="tool-btn" title="Attach File" id="attachBtn" disabled>
                         <i class="fas fa-paperclip"></i>
                     </button>
@@ -1612,11 +1063,6 @@
                     <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
-
-            <!-- Emoji Picker -->
-            <div class="emoji-picker-container" id="emojiPickerContainer">
-                <emoji-picker></emoji-picker>
-            </div>
         </div>
     </div>
 
@@ -1624,64 +1070,15 @@
     <input type="file" id="fileInput" style="display: none;" accept="*/*">
 
     <script>
-        // ==================== PRODUCTION-READY MEDICAL COMMUNICATION SYSTEM ====================
+        // ==================== MEDICAL COMMUNICATION SYSTEM ====================
         (function() {
             'use strict';
 
             // Global variables
             let currentAppointment = null;
             let currentUser = null;
-            let isInCall = false;
-            let localStream = null;
-            let remoteStream = null;
-            let peerConnection = null;
-            let isVideoCall = false;
-            let callTimer = null;
-            let callSeconds = 0;
-            let isScreenSharing = false;
-            let isRecording = false;
-            let mediaRecorder = null;
-            let recordedChunks = [];
-            let socket = null;
-            let isSocketConnected = false;
-            let typingTimeout = null;
-            let voiceMediaRecorder = null;
-            let voiceAudioChunks = [];
-            let voiceRecordingTimer = null;
-            let voiceRecordingSeconds = 0;
-            let isVoiceRecording = false;
-            let currentMeeting = null;
-            let incomingCallAudio = null;
-            let outgoingCallAudio = null;
-
-            // Device management variables
-            let availableCameras = [];
-            let availableMicrophones = [];
-            let availableSpeakers = [];
-            let selectedCameraId = '';
-            let selectedMicrophoneId = '';
-            let selectedSpeakerId = '';
-            let isFirstTimeUser = true;
-            let devicePermissionsGranted = false;
-
-            // Meeting participants management
-            let meetingParticipants = [];
-            let isDoctorAdmin = false;
-            let availableUsers = [];
-
-            // CSRF Token Management
             let csrfToken = '';
-
-            // WebRTC configuration
-            const configuration = {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' }
-                ],
-                iceCandidatePoolSize: 10
-            };
+            let isRefreshing = false;
 
             // DOM Elements
             const websocketStatus = document.getElementById('websocketStatus');
@@ -1699,58 +1096,144 @@
             const voiceCallBtn = document.getElementById('voiceCallBtn');
             const videoCallBtn = document.getElementById('videoCallBtn');
             const startRecordingBtn = document.getElementById('startRecordingBtn');
-            const voiceRecorder = document.getElementById('voiceRecorder');
-            const recordBtn = document.getElementById('recordBtn');
-            const recordingTimerDisplay = document.getElementById('recordingTimerDisplay');
-            const sendRecordingBtn = document.getElementById('sendRecordingBtn');
-            const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
-            const voiceCallInterface = document.getElementById('voiceCallInterface');
-            const callStatus = document.getElementById('callStatus');
-            const callDuration = document.getElementById('callDuration');
-            const callMuteBtn = document.getElementById('callMuteBtn');
-            const endCallBtn = document.getElementById('endCallBtn');
-            const videoCallInterface = document.getElementById('videoCallInterface');
-            const videoCallerName = document.getElementById('videoCallerName');
-            const videoCallStatus = document.getElementById('videoCallStatus');
-            const videoCallDuration = document.getElementById('videoCallDuration');
-            const videoGrid = document.getElementById('videoGrid');
-            const localVideo = document.getElementById('localVideo');
-            const localParticipantName = document.getElementById('localParticipantName');
-            const videoMuteBtn = document.getElementById('videoMuteBtn');
-            const videoToggleBtn = document.getElementById('videoToggleBtn');
-            const screenShareBtn = document.getElementById('screenShareBtn');
-            const videoRecordBtn = document.getElementById('videoRecordBtn');
-            const videoSettingsBtn = document.getElementById('videoSettingsBtn');
-            const videoEndCallBtn = document.getElementById('videoEndCallBtn');
-            const connectionStatus = document.getElementById('connectionStatus');
-            const typingIndicator = document.getElementById('typingIndicator');
-            const typingUserName = document.getElementById('typingUserName');
-            const emojiBtn = document.getElementById('emojiBtn');
             const attachBtn = document.getElementById('attachBtn');
             const fileInput = document.getElementById('fileInput');
-            const devicePermissionModal = document.getElementById('devicePermissionModal');
-            const cameraSelect = document.getElementById('cameraSelect');
-            const microphoneSelect = document.getElementById('microphoneSelect');
-            const speakerSelect = document.getElementById('speakerSelect');
-            const confirmDevicesBtn = document.getElementById('confirmDevicesBtn');
-            const cancelDevicesBtn = document.getElementById('cancelDevicesBtn');
-            const deviceSettingsBtn = document.getElementById('deviceSettingsBtn');
             const refreshBtn = document.getElementById('refreshBtn');
-            const participantsBtn = document.getElementById('participantsBtn');
-            const adminControlsBtn = document.getElementById('adminControlsBtn');
-            const adminControlsPanel = document.getElementById('adminControlsPanel');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const typingUserName = document.getElementById('typingUserName');
             const paymentRequiredModal = document.getElementById('paymentRequiredModal');
+            const paymentModalMessage = document.getElementById('paymentModalMessage');
             const goToPaymentBtn = document.getElementById('goToPaymentBtn');
             const cancelPaymentBtn = document.getElementById('cancelPaymentBtn');
-            const emojiPickerContainer = document.getElementById('emojiPickerContainer');
-            const meetingChatBtn = document.getElementById('meetingChatBtn');
-            const meetingChatPanel = document.getElementById('meetingChatPanel');
-            const meetingChatMessages = document.getElementById('meetingChatMessages');
-            const meetingChatInput = document.getElementById('meetingChatInput');
-            const closeChatBtn = document.getElementById('closeChatBtn');
-            const closeAdminBtn = document.getElementById('closeAdminBtn');
-            const recordMeetingBtn = document.getElementById('recordMeetingBtn');
-            const inviteParticipantsBtn = document.getElementById('inviteParticipantsBtn');
+
+            // ==================== GLOBAL FUNCTIONS ====================
+
+            // Start voice call - redirect to voicecall.html
+            window.startVoiceCall = function() {
+                if (!currentAppointment) {
+                    showToast('Please select an appointment first', 'error');
+                    return;
+                }
+                
+                if (checkPaymentAndStatusRequired()) return;
+                
+                // Redirect to voice call page with appointment data
+                const params = new URLSearchParams({
+                    appointment_id: currentAppointment.id,
+                    contact_name: currentUser.role === 'patient' ? currentAppointment.doctor_name : currentAppointment.patient_name,
+                    user_role: currentUser.role
+                });
+                
+                window.open(`/voicecall?${params.toString()}`, '_blank', 'width=400,height=600');
+            };
+
+            // Start video call - redirect to videocall.html
+            window.startVideoCall = function() {
+                if (!currentAppointment) {
+                    showToast('Please select an appointment first', 'error');
+                    return;
+                }
+                
+                if (checkPaymentAndStatusRequired()) return;
+                
+                // Redirect to video call page with appointment data
+                const params = new URLSearchParams({
+                    appointment_id: currentAppointment.id,
+                    contact_name: currentUser.role === 'patient' ? currentAppointment.doctor_name : currentAppointment.patient_name,
+                    user_role: currentUser.role
+                });
+                
+                window.open(`/videocall?${params.toString()}`, '_blank', 'width=800,height=600');
+            };
+
+            // Start voice note - redirect to voicenote.html
+            window.startVoiceNote = function() {
+                if (!currentAppointment) {
+                    showToast('Please select an appointment first', 'error');
+                    return;
+                }
+                
+                if (checkPaymentAndStatusRequired()) return;
+                
+                // Redirect to voice note page with appointment data
+                const params = new URLSearchParams({
+                    appointment_id: currentAppointment.id
+                });
+                
+                window.open(`/voicenote?${params.toString()}`, '_blank', 'width=400,height=600');
+            };
+
+            // Attach file - redirect to fileupload.html
+            window.attachFile = function() {
+                if (!currentAppointment) {
+                    showToast('Please select an appointment first', 'error');
+                    return;
+                }
+                
+                if (checkPaymentAndStatusRequired()) return;
+                
+                // Redirect to file upload page with appointment data
+                const params = new URLSearchParams({
+                    appointment_id: currentAppointment.id
+                });
+                
+                window.open(`/fileupload?${params.toString()}`, '_blank', 'width=600,height=700');
+            };
+
+            // Send message
+            window.sendMessage = async function() {
+                if (!currentAppointment || !messageInput.value.trim()) return;
+                
+                const content = messageInput.value.trim();
+                
+                try {
+                    const messageData = {
+                        appointment_id: currentAppointment.id,
+                        content: content,
+                        message_type: 'text'
+                    };
+                    
+                    const response = await fetch(`/api/messages/${currentAppointment.id}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(messageData)
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to send message');
+                    }
+                    
+                    const sentMessage = await response.json();
+                    addMessageToChat(sentMessage, true);
+                    
+                    messageInput.value = '';
+                    messageInput.style.height = 'auto';
+                    adjustTextareaHeight();
+                    
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    showToast(error.message || 'Failed to send message. Please try again.', 'error');
+                }
+            };
+
+            // Download file
+            window.downloadFile = function(url, filename) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            // Load appointments
+            window.loadAppointments = loadAppointments;
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function() {
@@ -1766,20 +1249,11 @@
                     // Get current user from session
                     await getCurrentUser();
                     
-                    // Initialize WebSocket connection
-                    initializeWebSocket();
-                    
                     // Load appointments
                     await loadAppointments();
                     
                     // Setup event listeners
                     setupEventListeners();
-                    
-                    // Set welcome time
-                    setWelcomeTime();
-                    
-                    // Check if first time user
-                    checkFirstTimeUser();
                     
                     console.log('Medical Communication System initialized successfully');
                     
@@ -1805,10 +1279,6 @@
                             csrfToken = data.csrf_token;
                         }
                     }
-                    
-                    if (!csrfToken) {
-                        console.warn('CSRF token not available. Some features may not work properly.');
-                    }
                 } catch (error) {
                     console.error('Error initializing CSRF token:', error);
                 }
@@ -1821,23 +1291,9 @@
                     return metaToken.getAttribute('content');
                 }
                 
-                const inputToken = document.querySelector('input[name="csrf_token"]');
-                if (inputToken && inputToken.value) {
-                    return inputToken.value;
-                }
-                
-                const bodyToken = document.body.getAttribute('data-csrf-token');
-                if (bodyToken) {
-                    return bodyToken;
-                }
-                
                 const cookieValue = getCookie('csrftoken') || getCookie('csrf_token') || getCookie('X-CSRFToken');
                 if (cookieValue) {
                     return cookieValue;
-                }
-                
-                if (window.csrfToken) {
-                    return window.csrfToken;
                 }
                 
                 return '';
@@ -1865,7 +1321,6 @@
                     
                     if (response.ok) {
                         currentUser = await response.json();
-                        isDoctorAdmin = currentUser.role === 'doctor';
                     } else if (response.status === 401) {
                         window.location.href = '/login';
                         return;
@@ -1875,79 +1330,6 @@
                 } catch (error) {
                     console.error('Error getting current user:', error);
                     showToast('Failed to get user information', 'error');
-                }
-            }
-
-            // Initialize WebSocket connection
-            function initializeWebSocket() {
-                try {
-                    socket = io({
-                        transports: ['websocket', 'polling'],
-                        timeout: 10000
-                    });
-
-                    socket.on('connect', () => {
-                        console.log('WebSocket connected successfully');
-                        isSocketConnected = true;
-                        updateWebSocketStatus('connected', 'Connected');
-                        
-                        if (currentUser && currentUser.id) {
-                            socket.emit('join_appointment', { user_id: currentUser.id });
-                        }
-                    });
-
-                    socket.on('disconnect', (reason) => {
-                        console.log('WebSocket disconnected:', reason);
-                        isSocketConnected = false;
-                        updateWebSocketStatus('disconnected', 'Disconnected');
-                    });
-
-                    socket.on('connect_error', (error) => {
-                        console.error('WebSocket connection error:', error);
-                        isSocketConnected = false;
-                        updateWebSocketStatus('disconnected', 'Connection Failed');
-                    });
-
-                    // Message events
-                    socket.on('new_message', handleNewMessage);
-                    socket.on('message_delivered', handleMessageDelivered);
-                    socket.on('user_typing', handleTypingIndicator);
-
-                    // Call events
-                    socket.on('incoming_call', handleIncomingCall);
-                    socket.on('call_accepted', handleCallAccepted);
-                    socket.on('call_rejected', handleCallRejected);
-                    socket.on('call_ended', handleCallEnded);
-
-                    // Meeting events
-                    socket.on('meeting_created', handleMeetingCreated);
-                    socket.on('user_joined_meeting', handleUserJoinedMeeting);
-                    socket.on('user_left_meeting', handleUserLeftMeeting);
-                    socket.on('meeting_invitation', handleMeetingInvitation);
-
-                    // WebRTC events
-                    socket.on('webrtc_offer', handleWebRTCOffer);
-                    socket.on('webrtc_answer', handleWebRTCAnswer);
-                    socket.on('webrtc_ice_candidate', handleWebRTCIceCandidate);
-
-                } catch (error) {
-                    console.error('Error initializing WebSocket:', error);
-                    updateWebSocketStatus('disconnected', 'WebSocket Error');
-                }
-            }
-
-            // Update WebSocket status
-            function updateWebSocketStatus(status, message) {
-                if (!websocketStatus) return;
-                
-                websocketStatus.textContent = `WebSocket: ${message}`;
-                websocketStatus.className = `websocket-status websocket-${status}`;
-                websocketStatus.style.display = 'block';
-                
-                if (status === 'connected') {
-                    setTimeout(() => {
-                        websocketStatus.style.display = 'none';
-                    }, 3000);
                 }
             }
 
@@ -1962,206 +1344,73 @@
                 refreshBtn.addEventListener('click', loadAppointments);
 
                 // Message sending
-                sendBtn.addEventListener('click', sendMessage);
-                messageInput.addEventListener('keypress', (e) => {
+                messageInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         sendMessage();
                     }
                 });
 
-                // Typing indicator
-                messageInput.addEventListener('input', startTypingIndicator);
-
                 // Auto-resize textarea
-                messageInput.addEventListener('input', function() {
-                    this.style.height = 'auto';
-                    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-                });
+                messageInput.addEventListener('input', adjustTextareaHeight);
 
-                // Call buttons with payment check
-                voiceCallBtn.addEventListener('click', () => {
-                    if (checkPaymentRequired()) return;
-                    startVoiceCall();
-                });
-                
-                videoCallBtn.addEventListener('click', () => {
-                    if (checkPaymentRequired()) return;
-                    startVideoCall();
-                });
+                // Add event listeners for navigation buttons
+                voiceCallBtn.addEventListener('click', startVoiceCall);
+                videoCallBtn.addEventListener('click', startVideoCall);
+                startRecordingBtn.addEventListener('click', startVoiceNote);
+                attachBtn.addEventListener('click', attachFile);
+                sendBtn.addEventListener('click', sendMessage);
 
-                // Voice recording
-                startRecordingBtn.addEventListener('click', showVoiceRecorder);
-                recordBtn.addEventListener('click', toggleVoiceRecording);
-                sendRecordingBtn.addEventListener('click', sendVoiceRecording);
-                cancelRecordingBtn.addEventListener('click', cancelVoiceRecording);
+                // File input change
+                fileInput.addEventListener('change', handleFileSelect);
 
-                // Voice call controls
-                callMuteBtn.addEventListener('click', toggleVoiceMute);
-                endCallBtn.addEventListener('click', endCall);
-
-                // Video call controls
-                videoMuteBtn.addEventListener('click', toggleMute);
-                videoToggleBtn.addEventListener('click', toggleVideo);
-                screenShareBtn.addEventListener('click', toggleScreenShare);
-                videoRecordBtn.addEventListener('click', toggleRecording);
-                videoEndCallBtn.addEventListener('click', endCall);
-
-                // Device permission modal
-                confirmDevicesBtn.addEventListener('click', confirmDeviceSelection);
-                cancelDevicesBtn.addEventListener('click', cancelDeviceSelection);
-
-                // Payment modal
+                // Payment modal buttons
                 goToPaymentBtn.addEventListener('click', goToPayment);
                 cancelPaymentBtn.addEventListener('click', hidePaymentRequiredModal);
 
-                // Emoji picker
-                emojiBtn.addEventListener('click', toggleEmojiPicker);
-                document.addEventListener('click', (e) => {
-                    if (!emojiPickerContainer.contains(e.target) && e.target !== emojiBtn) {
-                        emojiPickerContainer.style.display = 'none';
+                // Close modal when clicking outside
+                paymentRequiredModal.addEventListener('click', (e) => {
+                    if (e.target === paymentRequiredModal) {
+                        hidePaymentRequiredModal();
                     }
                 });
 
-                // File attachment
-                attachBtn.addEventListener('click', () => {
-                    if (checkPaymentRequired()) return;
-                    fileInput.click();
-                });
-
-                fileInput.addEventListener('change', handleFileUpload);
-
-                // Meeting chat
-                meetingChatBtn.addEventListener('click', toggleMeetingChat);
-                closeChatBtn.addEventListener('click', hideMeetingChat);
-                meetingChatInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        sendMeetingChatMessage();
-                    }
-                });
-
-                // Admin controls
-                adminControlsBtn.addEventListener('click', toggleAdminControls);
-                closeAdminBtn.addEventListener('click', hideAdminControls);
+                // Handle window resize
+                window.addEventListener('resize', handleResize);
             }
 
-            // Check if payment is required
-            function checkPaymentRequired() {
-                if (!currentAppointment) return true;
-                
-                if (currentUser.role === 'doctor' && currentAppointment.payment_status !== 'completed') {
-                    showPaymentRequiredModal();
-                    return true;
-                }
-                
-                return false;
+            // Adjust textarea height
+            function adjustTextareaHeight() {
+                messageInput.style.height = 'auto';
+                messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
             }
 
-            // Show payment required modal
-            function showPaymentRequiredModal() {
-                paymentRequiredModal.style.display = 'flex';
-            }
-
-            // Hide payment required modal
-            function hidePaymentRequiredModal() {
-                paymentRequiredModal.style.display = 'none';
-            }
-
-            // Go to payment page
-            function goToPayment() {
-                if (currentAppointment) {
-                    window.location.href = `/payment/${currentAppointment.id}`;
+            // Handle file selection
+            function handleFileSelect(event) {
+                const files = event.target.files;
+                if (files.length > 0) {
+                    showToast(`Selected ${files.length} file(s). Redirecting to upload...`, 'info');
+                    setTimeout(() => {
+                        attachFile();
+                    }, 1000);
                 }
             }
 
-            // Toggle emoji picker
-            function toggleEmojiPicker() {
-                if (emojiPickerContainer.style.display === 'block') {
-                    emojiPickerContainer.style.display = 'none';
-                } else {
-                    emojiPickerContainer.style.display = 'block';
-                    const emojiPicker = document.querySelector('emoji-picker');
-                    if (emojiPicker) {
-                        emojiPicker.addEventListener('emoji-click', event => {
-                            const emoji = event.detail.unicode;
-                            messageInput.value += emoji;
-                            messageInput.focus();
-                        });
-                    }
+            // Handle window resize
+            function handleResize() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('active');
                 }
-            }
-
-            // Toggle meeting chat
-            function toggleMeetingChat() {
-                if (meetingChatPanel.style.display === 'flex') {
-                    hideMeetingChat();
-                } else {
-                    showMeetingChat();
-                }
-            }
-
-            // Show meeting chat
-            function showMeetingChat() {
-                meetingChatPanel.style.display = 'flex';
-                hideAdminControls();
-            }
-
-            // Hide meeting chat
-            function hideMeetingChat() {
-                meetingChatPanel.style.display = 'none';
-            }
-
-            // Send meeting chat message
-            function sendMeetingChatMessage() {
-                const message = meetingChatInput.value.trim();
-                if (message && currentMeeting) {
-                    // Send meeting chat message via WebSocket
-                    socket.emit('meeting_chat_message', {
-                        meeting_id: currentMeeting.id,
-                        message: message,
-                        user_id: currentUser.id,
-                        user_name: currentUser.name
-                    });
-                    
-                    meetingChatInput.value = '';
-                }
-            }
-
-            // Toggle admin controls
-            function toggleAdminControls() {
-                if (!isDoctorAdmin) {
-                    showToast('Only the meeting admin can access these controls', 'error');
-                    return;
-                }
-                
-                if (adminControlsPanel.style.display === 'block') {
-                    hideAdminControls();
-                } else {
-                    showAdminControls();
-                }
-            }
-
-            // Show admin controls
-            function showAdminControls() {
-                adminControlsPanel.style.display = 'block';
-                hideMeetingChat();
-                updateParticipantsList();
-            }
-
-            // Hide admin controls
-            function hideAdminControls() {
-                adminControlsPanel.style.display = 'none';
-            }
-
-            // Check if this is first time user
-            function checkFirstTimeUser() {
-                const hasUsedVideoCall = localStorage.getItem('hasUsedVideoCall');
-                isFirstTimeUser = !hasUsedVideoCall;
             }
 
             // Load appointments for the current user
             async function loadAppointments() {
+                if (isRefreshing) return;
+                
                 try {
+                    isRefreshing = true;
+                    refreshBtn.classList.add('loading');
+                    refreshBtn.disabled = true;
                     showLoadingState();
                     
                     const response = await fetch('/api/communication/appointments', {
@@ -2174,158 +1423,227 @@
                     });
                     
                     if (!response.ok) {
-                        throw new Error('Failed to fetch appointments');
+                        throw new Error(`Failed to fetch appointments: ${response.status}`);
                     }
                     
                     const appointments = await response.json();
-                    displayAppointments(appointments);
+                    
+                    if (appointments && appointments.length > 0) {
+                        renderAppointments(appointments);
+                        hideLoadingState();
+                        showToast(`Loaded ${appointments.length} appointment(s)`, 'success');
+                    } else {
+                        showEmptyState();
+                    }
                     
                 } catch (error) {
                     console.error('Error loading appointments:', error);
-                    showErrorState('Failed to load appointments. Please try again.');
-                }
-            }
-
-            // Display appointments in the sidebar
-            function displayAppointments(appointments) {
-                if (!appointmentList) return;
-                
-                appointmentList.innerHTML = '';
-                
-                if (!appointments || appointments.length === 0) {
                     showEmptyState();
-                    return;
+                    showToast('Failed to load appointments', 'error');
+                } finally {
+                    isRefreshing = false;
+                    refreshBtn.classList.remove('loading');
+                    refreshBtn.disabled = false;
                 }
-                
-                hideEmptyState();
-                hideLoadingState();
-                
-                appointments.forEach(apt => {
-                    const appointmentItem = createAppointmentElement(apt);
-                    appointmentList.appendChild(appointmentItem);
-                });
             }
 
-            // Create appointment element
-            function createAppointmentElement(apt) {
-                const appointmentItem = document.createElement('div');
-                appointmentItem.className = `appointment-item ${apt.payment_status === 'completed' ? 'payment-completed' : 'payment-pending'}`;
-                appointmentItem.dataset.appointmentId = apt.id;
-                
-                const statusClass = `status-${apt.status ? apt.status.toLowerCase() : 'scheduled'}`;
-                const paymentClass = `payment-${apt.payment_status ? apt.payment_status.toLowerCase() : 'pending'}`;
-                
-                const displayName = currentUser.role === 'patient' ? 
-                    (apt.doctor_name || 'Doctor') : 
-                    (apt.patient_name || 'Patient');
-                    
-                const displayRole = currentUser.role === 'patient' ? 'Doctor' : 'Patient';
-                const specialization = apt.specialization || 'Medical Consultation';
-                const formattedDate = apt.formatted_date || formatDate(apt.appointment_date);
-                const status = apt.status || 'scheduled';
-                const paymentStatus = apt.payment_status || 'pending';
-                const unreadCount = apt.unread_count || 0;
-                const canCommunicate = apt.can_communicate !== false;
-                
-                appointmentItem.innerHTML = `
-                    <div class="appointment-info">
-                        <h3>${displayName}</h3>
-                        <p>${specialization}</p>
-                        <p>${formattedDate}</p>
-                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                            <span class="appointment-status ${statusClass}">${status}</span>
-                            <span class="payment-status ${paymentClass}">${paymentStatus}</span>
-                            ${unreadCount > 0 ? `<span class="unread-badge">${unreadCount} unread</span>` : ''}
+            // Render appointments list
+            function renderAppointments(appointments) {
+                const appointmentListHTML = appointments.map(appointment => `
+                    <div class="appointment-item ${appointment.id === (currentAppointment?.id) ? 'active' : ''} 
+                                ${appointment.payment_status} ${appointment.status}" 
+                         onclick="selectAppointment(${appointment.id}, this)" 
+                         data-appointment='${JSON.stringify(appointment).replace(/'/g, "&#39;")}'>
+                        
+                        <div class="appointment-info">
+                            <h3>${currentUser.role === 'patient' ? appointment.doctor_name : appointment.patient_name}</h3>
+                            <p>${formatDate(appointment.date)} at ${appointment.time}</p>
+                            <p>Reason: ${appointment.reason || 'General Consultation'}</p>
+                            
+                            <div class="appointment-meta">
+                                <span class="status-badge status-${appointment.status}">
+                                    ${appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                                </span>
+                                <span class="payment-badge payment-${appointment.payment_status}">
+                                    ${appointment.payment_status === 'completed' ? 'Paid' : 'Payment Pending'}
+                                </span>
+                            </div>
+                            
+                            ${appointment.unread_count > 0 ? `
+                                <span class="unread-badge">
+                                    ${appointment.unread_count} unread
+                                </span>
+                            ` : ''}
+                            
+                            ${!isCommunicationAllowed(appointment) ? `
+                                <div class="feature-locked">
+                                    <i class="fas fa-lock"></i> Features Locked
+                                </div>
+                            ` : ''}
                         </div>
-                        ${!canCommunicate ? '<div class="feature-locked"><i class="fas fa-lock"></i> Payment Required</div>' : ''}
                     </div>
-                `;
-                
-                appointmentItem.addEventListener('click', () => {
-                    selectAppointment(apt, appointmentItem);
-                });
-                
-                return appointmentItem;
+                `).join('');
+
+                appointmentList.innerHTML = appointmentListHTML;
+                hideLoadingState();
             }
 
-            // Select an appointment
-            function selectAppointment(appointment, element) {
-                document.querySelectorAll('.appointment-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                element.classList.add('active');
-                
-                currentAppointment = appointment;
-                
-                const contactName = currentUser.role === 'patient' ? 
-                    appointment.doctor_name : appointment.patient_name;
-                const contactRole = currentUser.role === 'patient' ? 'Doctor' : 'Patient';
-                const specialization = appointment.specialization || 'Medical Consultation';
-                
-                updateContactInfo(contactName, contactRole, specialization, appointment.status);
-                
-                // Enable communication features based on payment status
-                if (appointment.can_communicate !== false) {
-                    enableCommunicationFeatures();
+            // Select appointment
+            async function selectAppointment(appointmentId, element) {
+                try {
+                    // Remove active class from all appointments
+                    document.querySelectorAll('.appointment-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    
+                    // Add active class to selected appointment
+                    element.classList.add('active');
+                    
+                    // Get appointment data
+                    const appointmentData = JSON.parse(element.getAttribute('data-appointment').replace(/&#39;/g, "'"));
+                    currentAppointment = appointmentData;
+                    
+                    // Update contact info
+                    updateContactInfo(appointmentData);
+                    
+                    // Enable/disable communication features based on payment and status
+                    updateCommunicationFeatures(appointmentData);
+                    
+                    // Load messages for this appointment
+                    await loadMessages(appointmentId);
+                    
+                    // Mark messages as read
+                    await markMessagesAsRead(appointmentId);
+                    
+                    // Update unread count in UI
+                    updateUnreadCount(appointmentId);
+                    
+                    // Close sidebar on mobile
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('active');
+                    }
+                    
+                    showToast(`Selected appointment with ${currentUser.role === 'patient' ? appointmentData.doctor_name : appointmentData.patient_name}`, 'success');
+                    
+                } catch (error) {
+                    console.error('Error selecting appointment:', error);
+                    showToast('Failed to load appointment details', 'error');
+                }
+            }
+
+            // Update contact information
+            function updateContactInfo(appointment) {
+                if (currentUser.role === 'patient') {
+                    contactName.textContent = appointment.doctor_name;
+                    contactStatus.textContent = `Doctor - ${appointment.doctor_specialization || 'General Practitioner'}`;
+                    contactAvatar.innerHTML = '<i class="fas fa-user-md"></i>';
                 } else {
-                    disableCommunicationFeatures();
-                }
-                
-                loadMessages(appointment.id);
-                markMessagesAsRead(appointment.id);
-                
-                if (isSocketConnected) {
-                    socket.emit('join_appointment', { appointment_id: appointment.id });
-                }
-                
-                if (window.innerWidth <= 768) {
-                    sidebar.classList.remove('active');
+                    contactName.textContent = appointment.patient_name;
+                    contactStatus.textContent = `Patient - ${appointment.patient_age ? appointment.patient_age + ' years' : 'Information'}`;
+                    contactAvatar.innerHTML = '<i class="fas fa-user"></i>';
                 }
             }
 
-            // Update contact info in chat header
-            function updateContactInfo(name, role, specialization, status) {
-                contactAvatar.innerHTML = role === 'Doctor' ? 
-                    '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>';
-                contactName.textContent = name || role;
-                contactStatus.textContent = `${specialization} • ${status || 'scheduled'}`;
+            // Update communication features based on payment and status
+            function updateCommunicationFeatures(appointment) {
+                const isAllowed = isCommunicationAllowed(appointment);
+
+                // Enable/disable message input
+                messageInput.disabled = !isAllowed;
+                sendBtn.disabled = !isAllowed || messageInput.value.trim() === '';
+                attachBtn.disabled = !isAllowed;
+
+                // Enable/disable call buttons with lock indicators
+                voiceCallBtn.disabled = !isAllowed;
+                videoCallBtn.disabled = !isAllowed;
+                startRecordingBtn.disabled = !isAllowed;
+
+                if (!isAllowed) {
+                    voiceCallBtn.classList.add('locked');
+                    videoCallBtn.classList.add('locked');
+                    startRecordingBtn.classList.add('locked');
+                    attachBtn.title = 'Payment required to attach files';
+                    messageInput.placeholder = 'Complete payment to start messaging...';
+                } else {
+                    voiceCallBtn.classList.remove('locked');
+                    videoCallBtn.classList.remove('locked');
+                    startRecordingBtn.classList.remove('locked');
+                    attachBtn.title = 'Attach File';
+                    messageInput.placeholder = 'Type a message...';
+                }
+
+                // Update send button based on input
+                messageInput.addEventListener('input', () => {
+                    sendBtn.disabled = !isAllowed || messageInput.value.trim() === '';
+                });
             }
 
-            // Enable communication features
-            function enableCommunicationFeatures() {
-                messageInput.disabled = false;
-                sendBtn.disabled = false;
-                voiceCallBtn.disabled = false;
-                videoCallBtn.disabled = false;
-                startRecordingBtn.disabled = false;
-                emojiBtn.disabled = false;
-                attachBtn.disabled = false;
-                messageInput.placeholder = "Type a message...";
-                
-                // Remove locked state from buttons
-                voiceCallBtn.classList.remove('locked');
-                videoCallBtn.classList.remove('locked');
+            // Check if communication is allowed based on payment and status
+            function isCommunicationAllowed(appointment) {
+                // Allow communication only if payment is completed and appointment is confirmed or completed
+                return appointment.payment_status === 'completed' && 
+                       (appointment.status === 'confirmed' || appointment.status === 'completed');
             }
 
-            // Disable communication features
-            function disableCommunicationFeatures() {
-                messageInput.disabled = true;
-                sendBtn.disabled = true;
-                voiceCallBtn.disabled = true;
-                videoCallBtn.disabled = true;
-                startRecordingBtn.disabled = true;
-                emojiBtn.disabled = true;
-                attachBtn.disabled = true;
-                messageInput.placeholder = "Complete payment to enable messaging";
-                
-                // Add locked state to buttons
-                voiceCallBtn.classList.add('locked');
-                videoCallBtn.classList.add('locked');
+            // Check payment and status requirements
+            function checkPaymentAndStatusRequired() {
+                if (!currentAppointment) return true;
+
+                if (currentAppointment.payment_status !== 'completed') {
+                    showPaymentRequiredModal('payment');
+                    return true;
+                }
+
+                if (currentAppointment.status !== 'confirmed' && currentAppointment.status !== 'completed') {
+                    showPaymentRequiredModal('status');
+                    return true;
+                }
+
+                return false;
             }
 
-            // Load messages for an appointment
+            // Show payment required modal
+            function showPaymentRequiredModal(type) {
+                let message = '';
+                let paymentButtonText = '';
+
+                if (type === 'payment') {
+                    message = 'Please complete your payment to access all communication features including messaging, voice calls, video calls, and file sharing.';
+                    paymentButtonText = 'Complete Payment';
+                } else {
+                    message = 'Your appointment needs to be confirmed by the medical staff before you can use communication features. Please wait for confirmation or contact support.';
+                    paymentButtonText = 'View Appointment';
+                }
+
+                paymentModalMessage.textContent = message;
+                goToPaymentBtn.textContent = paymentButtonText;
+                paymentRequiredModal.style.display = 'flex';
+            }
+
+            // Hide payment required modal
+            function hidePaymentRequiredModal() {
+                paymentRequiredModal.style.display = 'none';
+            }
+
+            // Go to payment page
+            function goToPayment() {
+                if (currentAppointment) {
+                    if (currentAppointment.payment_status !== 'completed') {
+                        // Redirect to payment page
+                        window.location.href = `/payment/${currentAppointment.id}`;
+                    } else {
+                        // Redirect to appointment details
+                        window.location.href = `/appointments/${currentAppointment.id}`;
+                    }
+                }
+                hidePaymentRequiredModal();
+            }
+
+            // Load messages for appointment
             async function loadMessages(appointmentId) {
                 try {
+                    showMessagesLoading();
+                    
                     const response = await fetch(`/api/messages/${appointmentId}`, {
                         method: 'GET',
                         headers: {
@@ -2336,1527 +1654,141 @@
                     });
                     
                     if (!response.ok) {
-                        throw new Error('Failed to load messages');
+                        throw new Error('Failed to fetch messages');
                     }
                     
                     const messages = await response.json();
-                    displayMessages(messages);
+                    renderMessages(messages);
                     
                 } catch (error) {
                     console.error('Error loading messages:', error);
-                    showToast('Failed to load messages. Please try again.', 'error');
-                    displayMessages([]);
+                    showToast('Failed to load messages', 'error');
+                    showMessagesError();
                 }
             }
 
-            // Display messages in the chat
-            function displayMessages(messages) {
-                if (!messagesContainer) return;
-                
-                messagesContainer.innerHTML = '';
-                
+            // Show loading state for messages
+            function showMessagesLoading() {
+                messagesContainer.innerHTML = `
+                    <div class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Loading messages...</p>
+                    </div>
+                `;
+            }
+
+            // Show error state for messages
+            function showMessagesError() {
+                messagesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h3>Failed to load messages</h3>
+                        <p>Please try again later or refresh the page.</p>
+                    </div>
+                `;
+            }
+
+            // Render messages in chat
+            function renderMessages(messages) {
                 if (messages.length === 0) {
                     messagesContainer.innerHTML = `
-                        <div class="message received">
-                            <div class="message-text">
-                                No messages yet. Start the conversation!
-                            </div>
-                            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                        <div class="empty-state">
+                            <div class="empty-state-icon">💬</div>
+                            <h3>No messages yet</h3>
+                            <p>Start the conversation by sending a message!</p>
                         </div>
                     `;
                     return;
                 }
                 
-                messages.forEach(msg => {
-                    addMessageToChat(msg, false);
+                messagesContainer.innerHTML = '';
+                
+                messages.forEach(message => {
+                    addMessageToChat(message, message.sender_id === currentUser.id);
                 });
                 
+                // Scroll to bottom
                 scrollToBottom();
             }
 
             // Add message to chat
-            function addMessageToChat(message, shouldScroll = true) {
-                if (!messagesContainer) return;
-                
+            function addMessageToChat(message, isSent = false) {
+                // Remove welcome message if it exists
+                const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+                if (welcomeMessage) {
+                    welcomeMessage.remove();
+                }
+
+                // Remove empty state if it exists
+                const emptyState = messagesContainer.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
                 const messageElement = document.createElement('div');
-                messageElement.className = `message ${message.sender_id === currentUser.id ? 'sent' : 'received'}`;
-                messageElement.dataset.messageId = message.id;
+                messageElement.className = `message ${isSent ? 'sent' : 'received'}`;
                 
                 let messageContent = '';
                 
-                if (message.message_type === 'audio') {
-                    messageContent = `
-                        <div class="audio-message">
-                            <audio controls class="audio-player">
-                                <source src="${message.audio_url}" type="audio/webm">
-                                Your browser does not support the audio element.
-                            </audio>
-                            <div class="audio-duration">${formatDuration(message.duration || 0)}</div>
-                        </div>
-                        <div class="message-time">${formatTime(message.created_at)}</div>
-                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
-                    `;
-                } else if (message.message_type === 'file') {
-                    messageContent = `
-                        <div class="file-message">
-                            <div class="file-icon">
-                                <i class="fas fa-file"></i>
+                switch (message.message_type) {
+                    case 'text':
+                        messageContent = `
+                            <div class="message-text">${escapeHtml(message.content)}</div>
+                        `;
+                        break;
+                        
+                    case 'audio':
+                        const audioData = safeJsonParse(message.content);
+                        messageContent = `
+                            <div class="audio-message">
+                                <audio controls class="audio-player">
+                                    <source src="${audioData?.url || message.content}" type="audio/wav">
+                                    Your browser does not support the audio element.
+                                </audio>
+                                <span class="audio-duration">${message.duration || ''}</span>
                             </div>
-                            <div class="file-info">
-                                <div class="file-name">${message.file_name}</div>
-                                <div class="file-size">${formatFileSize(message.file_size)}</div>
+                        `;
+                        break;
+                        
+                    case 'file':
+                        const fileData = safeJsonParse(message.content);
+                        messageContent = `
+                            <div class="file-message">
+                                <div class="file-icon">
+                                    <i class="fas fa-file"></i>
+                                </div>
+                                <div class="file-info">
+                                    <div class="file-name">${escapeHtml(fileData?.filename || 'File')}</div>
+                                    <div class="file-size">${fileData?.size ? formatFileSize(fileData.size) : 'Unknown size'}</div>
+                                </div>
+                                <button class="download-btn" onclick="downloadFile('${fileData?.url || '#'}', '${fileData?.filename || 'file'}')">
+                                    <i class="fas fa-download"></i> Download
+                                </button>
                             </div>
-                            <button class="download-btn" onclick="downloadFile('${message.file_url}', '${message.file_name}')">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>
-                        <div class="message-time">${formatTime(message.created_at)}</div>
-                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
-                    `;
-                } else {
-                    messageContent = `
-                        <div class="message-text">${escapeHtml(message.content)}</div>
-                        <div class="message-time">${formatTime(message.created_at)}</div>
-                        ${message.sender_id === currentUser.id ? '<div class="message-status">✓✓</div>' : ''}
-                    `;
+                        `;
+                        break;
+                        
+                    default:
+                        messageContent = `
+                            <div class="message-text">${escapeHtml(message.content)}</div>
+                        `;
                 }
                 
-                messageElement.innerHTML = messageContent;
+                messageElement.innerHTML = `
+                    ${messageContent}
+                    <div class="message-time">${formatMessageTime(message.timestamp)}</div>
+                    ${isSent ? `<div class="message-status">✓</div>` : ''}
+                `;
+                
                 messagesContainer.appendChild(messageElement);
-                
-                if (shouldScroll) {
-                    scrollToBottom();
-                }
-            }
-
-            // Handle new message from WebSocket
-            function handleNewMessage(messageData) {
-                if (!currentAppointment || messageData.appointment_id !== currentAppointment.id) {
-                    showToast('New message received', 'info');
-                    playNotificationSound();
-                    return;
-                }
-                
-                addMessageToChat(messageData, true);
-                updateUnreadCount(messageData.appointment_id, 1);
-                
-                if (messageData.sender_id !== currentUser.id) {
-                    playNotificationSound();
-                }
-            }
-
-            // Handle message delivered
-            function handleMessageDelivered(data) {
-                const messageElement = document.querySelector(`[data-message-id="${data.message_id}"]`);
-                if (messageElement) {
-                    const statusElement = messageElement.querySelector('.message-status');
-                    if (statusElement) {
-                        statusElement.textContent = '✓✓';
-                    }
-                }
-            }
-
-            // Send text message
-            async function sendMessage() {
-                if (!currentAppointment || !messageInput.value.trim()) return;
-                
-                const content = messageInput.value.trim();
-                
-                try {
-                    const messageData = {
-                        appointment_id: currentAppointment.id,
-                        content: content,
-                        message_type: 'text'
-                    };
-                    
-                    if (isSocketConnected) {
-                        socket.emit('send_message', messageData);
-                    } else {
-                        const response = await fetch(`/api/messages/${currentAppointment.id}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-Token': csrfToken || ''
-                            },
-                            credentials: 'same-origin',
-                            body: JSON.stringify(messageData)
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error('Failed to send message');
-                        }
-                        
-                        const sentMessage = await response.json();
-                        addMessageToChat(sentMessage, true);
-                    }
-                    
-                    messageInput.value = '';
-                    messageInput.style.height = 'auto';
-                    stopTypingIndicator();
-                    
-                } catch (error) {
-                    console.error('Error sending message:', error);
-                    showToast('Failed to send message. Please try again.', 'error');
-                }
-            }
-
-            // Start typing indicator
-            function startTypingIndicator() {
-                if (!currentAppointment || !isSocketConnected) return;
-                
-                socket.emit('typing_start', {
-                    appointment_id: currentAppointment.id,
-                    user_id: currentUser.id,
-                    user_name: currentUser.name
-                });
-
-                if (typingTimeout) {
-                    clearTimeout(typingTimeout);
-                }
-
-                typingTimeout = setTimeout(() => {
-                    stopTypingIndicator();
-                }, 3000);
-            }
-
-            // Stop typing indicator
-            function stopTypingIndicator() {
-                if (!currentAppointment || !isSocketConnected) return;
-                
-                socket.emit('typing_stop', {
-                    appointment_id: currentAppointment.id,
-                    user_id: currentUser.id
-                });
-                
-                if (typingTimeout) {
-                    clearTimeout(typingTimeout);
-                    typingTimeout = null;
-                }
-            }
-
-            // Handle typing indicator
-            function handleTypingIndicator(data) {
-                if (!currentAppointment || data.appointment_id !== currentAppointment.id) return;
-                
-                if (data.is_typing) {
-                    typingUserName.textContent = data.user_name;
-                    typingIndicator.classList.add('visible');
-                } else {
-                    typingIndicator.classList.remove('visible');
-                }
-            }
-
-            // ==================== ENHANCED VOICE CALL FUNCTIONS ====================
-
-            // Start voice call
-            async function startVoiceCall() {
-                if (!currentAppointment || checkPaymentRequired()) return;
-                
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: true,
-                        video: false 
-                    });
-                    
-                    isVideoCall = false;
-                    showVoiceCallInterface();
-                    startCallTimer();
-                    
-                    const callerName = currentUser.role === 'patient' ? 
-                        currentAppointment.doctor_name : currentAppointment.patient_name;
-                    document.getElementById('callerAvatar').innerHTML = '<i class="fas fa-user-md"></i>';
-                    
-                    initializeVoiceCall(stream);
-                    
-                    const callData = {
-                        appointment_id: currentAppointment.id,
-                        call_type: 'voice',
-                        caller_id: currentUser.id,
-                        caller_name: currentUser.name,
-                        caller_role: currentUser.role
-                    };
-                    
-                    socket.emit('call_initiate', callData);
-                    
-                    playOutgoingRingtone();
-                    
-                } catch (error) {
-                    console.error('Error starting voice call:', error);
-                    showToast('Cannot access microphone. Please check permissions.', 'error');
-                }
-            }
-
-            // Handle incoming call
-            function handleIncomingCall(data) {
-                if (!currentAppointment || data.appointment_id !== currentAppointment.id) return;
-                
-                // Play incoming call sound with voice announcement
-                playIncomingCallSound(data.caller_name, data.caller_role);
-                
-                // Show incoming call interface
-                showIncomingCallInterface(data);
-            }
-
-            // Play incoming call sound with voice announcement
-            function playIncomingCallSound(callerName, callerRole) {
-                stopAllAudio();
-                
-                // Create speech synthesis for announcement
-                const announcement = `Incoming consultation voice call from ${callerName}, ${callerRole}`;
-                const speech = new SpeechSynthesisUtterance(announcement);
-                speech.volume = 1;
-                speech.rate = 0.8;
-                speech.pitch = 1;
-                
-                // Play ringtone after announcement
-                speech.onend = function() {
-                    incomingCallAudio = new Audio('/static/sounds/incoming_call.mp3');
-                    incomingCallAudio.loop = true;
-                    incomingCallAudio.play().catch(e => console.log('Audio play failed:', e));
-                };
-                
-                window.speechSynthesis.speak(speech);
-            }
-
-            // Play outgoing ringtone
-            function playOutgoingRingtone() {
-                stopAllAudio();
-                outgoingCallAudio = new Audio('/static/sounds/outgoing_call.mp3');
-                outgoingCallAudio.loop = true;
-                outgoingCallAudio.play().catch(e => console.log('Audio play failed:', e));
-            }
-
-            // Show incoming call interface
-            function showIncomingCallInterface(callData) {
-                // Create incoming call modal
-                const incomingCallModal = document.createElement('div');
-                incomingCallModal.className = 'incoming-call-modal';
-                incomingCallModal.style.cssText = `
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-                    z-index: 2000;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    color: white;
-                    animation: fadeIn 0.3s ease-out;
-                `;
-                
-                incomingCallModal.innerHTML = `
-                    <div class="caller-avatar" style="width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin-bottom: 2rem;">
-                        <i class="fas fa-user-md"></i>
-                    </div>
-                    <div class="call-status" style="font-size: 1.5rem; margin-bottom: 1rem;">Incoming Voice Call</div>
-                    <div class="caller-info" style="font-size: 1.2rem; margin-bottom: 2rem;">${callData.caller_name} (${callData.caller_role})</div>
-                    <div class="call-controls" style="display: flex; gap: 1rem;">
-                        <button class="accept-call-btn" style="width: 60px; height: 60px; border: none; border-radius: 50%; background: var(--accent-color); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-                            <i class="fas fa-phone"></i>
-                        </button>
-                        <button class="reject-call-btn" style="width: 60px; height: 60px; border: none; border-radius: 50%; background: var(--danger-color); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-                            <i class="fas fa-phone"></i>
-                        </button>
-                    </div>
-                `;
-                
-                document.body.appendChild(incomingCallModal);
-                
-                // Add event listeners
-                incomingCallModal.querySelector('.accept-call-btn').addEventListener('click', () => {
-                    acceptIncomingCall(callData);
-                    document.body.removeChild(incomingCallModal);
-                    stopAllAudio();
-                });
-                
-                incomingCallModal.querySelector('.reject-call-btn').addEventListener('click', () => {
-                    rejectIncomingCall(callData);
-                    document.body.removeChild(incomingCallModal);
-                    stopAllAudio();
-                });
-            }
-
-            // Accept incoming call
-            async function acceptIncomingCall(callData) {
-                try {
-                    // Automatically enable microphone and speaker when call is accepted
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: true,
-                        video: false 
-                    });
-                    
-                    socket.emit('call_accept', {
-                        call_id: callData.call_id,
-                        appointment_id: currentAppointment.id
-                    });
-                    
-                    // Start voice call with the stream
-                    isVideoCall = false;
-                    showVoiceCallInterface();
-                    startCallTimer();
-                    initializeVoiceCall(stream);
-                    
-                    callStatus.textContent = 'Connected';
-                    
-                } catch (error) {
-                    console.error('Error accepting call:', error);
-                    showToast('Cannot access microphone. Please check permissions.', 'error');
-                }
-            }
-
-            // Reject incoming call
-            function rejectIncomingCall(callData) {
-                socket.emit('call_reject', {
-                    call_id: callData.call_id,
-                    appointment_id: currentAppointment.id
-                });
-            }
-
-            // Handle call accepted
-            function handleCallAccepted(data) {
-                if (outgoingCallAudio) {
-                    outgoingCallAudio.pause();
-                    outgoingCallAudio.currentTime = 0;
-                }
-                callStatus.textContent = 'Connected';
-            }
-
-            // Handle call rejected
-            function handleCallRejected(data) {
-                if (outgoingCallAudio) {
-                    outgoingCallAudio.pause();
-                    outgoingCallAudio.currentTime = 0;
-                }
-                endCall();
-                showToast('Call was rejected', 'info');
-            }
-
-            // Handle call ended
-            function handleCallEnded(data) {
-                endCall();
-                showToast('Call ended', 'info');
-            }
-
-            // Initialize voice call
-            function initializeVoiceCall(stream) {
-                localStream = stream;
-                initializePeerConnection();
-                
-                localStream.getAudioTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-            }
-
-            // Show voice call interface
-            function showVoiceCallInterface() {
-                voiceCallInterface.style.display = 'flex';
-                callStatus.textContent = 'Calling...';
-                isInCall = true;
-            }
-
-            // Toggle voice mute
-            function toggleVoiceMute() {
-                if (localStream) {
-                    const audioTracks = localStream.getAudioTracks();
-                    let isMuted = false;
-                    
-                    audioTracks.forEach(track => {
-                        track.enabled = !track.enabled;
-                        isMuted = !track.enabled;
-                    });
-                    
-                    callMuteBtn.classList.toggle('muted', isMuted);
-                    callMuteBtn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-                }
-            }
-
-            // ==================== ENHANCED VIDEO CALL FUNCTIONS ====================
-
-            // Start video call
-            async function startVideoCall() {
-                if (!currentAppointment || checkPaymentRequired()) return;
-                
-                try {
-                    if (isFirstTimeUser || !devicePermissionsGranted) {
-                        await showDevicePermissionModal();
-                        return;
-                    }
-                    
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: selectedCameraId ? { deviceId: { exact: selectedCameraId } } : true,
-                        audio: selectedMicrophoneId ? { deviceId: { exact: selectedMicrophoneId } } : true
-                    });
-                    
-                    isVideoCall = true;
-                    
-                    // Direct video call - no waiting room
-                    await createMeeting(stream);
-                    
-                } catch (error) {
-                    console.error('Error starting video call:', error);
-                    if (error.name === 'NotAllowedError') {
-                        showToast('Camera/microphone access was denied. Please allow permissions and try again.', 'error');
-                    } else if (error.name === 'NotFoundError') {
-                        showToast('No camera/microphone found. Please check your devices.', 'error');
-                    } else {
-                        showToast('Cannot access camera/microphone. Please check permissions.', 'error');
-                    }
-                }
-            }
-
-            // Create meeting (Direct video call for both doctor and patient)
-            async function createMeeting(stream) {
-                try {
-                    const response = await fetch('/api/meetings/create', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({
-                            appointment_id: currentAppointment.id
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to create meeting');
-                    }
-                    
-                    const meetingData = await response.json();
-                    currentMeeting = meetingData;
-                    
-                    showVideoCallInterface();
-                    startCallTimer();
-                    
-                    const callerName = currentUser.role === 'patient' ? 
-                        currentAppointment.doctor_name : currentAppointment.patient_name;
-                    videoCallerName.textContent = callerName;
-                    
-                    await initializeVideoCall(stream);
-                    
-                    socket.emit('create_meeting', {
-                        appointment_id: currentAppointment.id,
-                        creator_id: currentUser.id,
-                        creator_name: currentUser.name,
-                        creator_role: currentUser.role
-                    });
-                    
-                    addParticipant({
-                        id: currentUser.id,
-                        name: currentUser.name,
-                        role: currentUser.role,
-                        isMuted: false,
-                        hasVideo: true
-                    });
-                    
-                    await loadAvailableUsers();
-                    
-                    showToast('Video call started successfully. Waiting for other participant...', 'success');
-                    
-                } catch (error) {
-                    console.error('Error creating meeting:', error);
-                    showToast('Failed to start video call. Please try again.', 'error');
-                    throw error;
-                }
-            }
-
-            // Initialize video call
-            async function initializeVideoCall(stream) {
-                localStream = stream;
-                
-                if (localVideo) {
-                    localVideo.srcObject = stream;
-                }
-                
-                localParticipantName.textContent = currentUser.name;
-                
-                await initializePeerConnection();
-                
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-                
-                updateConnectionStatus('connecting', 'Establishing connection...');
-            }
-
-            // Initialize peer connection
-            async function initializePeerConnection() {
-                try {
-                    peerConnection = new RTCPeerConnection(configuration);
-                    
-                    peerConnection.ontrack = (event) => {
-                        console.log('Received remote stream:', event.streams);
-                        remoteStream = event.streams[0];
-                        
-                        let remoteVideoElement = document.getElementById('remoteVideo');
-                        if (!remoteVideoElement) {
-                            const remoteParticipant = document.createElement('div');
-                            remoteParticipant.className = 'video-participant';
-                            remoteParticipant.id = 'remoteParticipant';
-                            
-                            remoteVideoElement = document.createElement('video');
-                            remoteVideoElement.id = 'remoteVideo';
-                            remoteVideoElement.autoplay = true;
-                            remoteVideoElement.playsinline = true;
-                            
-                            const participantInfo = document.createElement('div');
-                            participantInfo.className = 'participant-info';
-                            participantInfo.innerHTML = `
-                                <div class="participant-status"></div>
-                                <span id="remoteParticipantName">Remote User</span>
-                            `;
-                            
-                            remoteParticipant.appendChild(remoteVideoElement);
-                            remoteParticipant.appendChild(participantInfo);
-                            videoGrid.appendChild(remoteParticipant);
-                        }
-                        
-                        remoteVideoElement.srcObject = remoteStream;
-                    };
-                    
-                    peerConnection.onicecandidate = (event) => {
-                        if (event.candidate && isSocketConnected) {
-                            socket.emit('webrtc_ice_candidate', {
-                                appointment_id: currentAppointment.id,
-                                candidate: event.candidate
-                            });
-                        }
-                    };
-                    
-                    peerConnection.onconnectionstatechange = () => {
-                        console.log('Connection state:', peerConnection.connectionState);
-                        switch (peerConnection.connectionState) {
-                            case 'connected':
-                                updateConnectionStatus('connected', 'Connected');
-                                break;
-                            case 'disconnected':
-                            case 'failed':
-                                updateConnectionStatus('disconnected', 'Connection lost');
-                                break;
-                            case 'connecting':
-                                updateConnectionStatus('connecting', 'Connecting...');
-                                break;
-                        }
-                    };
-                    
-                    const offer = await peerConnection.createOffer();
-                    await peerConnection.setLocalDescription(offer);
-                    
-                    if (isSocketConnected) {
-                        socket.emit('webrtc_offer', {
-                            appointment_id: currentAppointment.id,
-                            offer: offer
-                        });
-                    }
-                    
-                } catch (error) {
-                    console.error('Error initializing peer connection:', error);
-                    throw error;
-                }
-            }
-
-            // Handle WebRTC offer
-            async function handleWebRTCOffer(data) {
-                if (!peerConnection) {
-                    await initializePeerConnection();
-                }
-                
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                
-                socket.emit('webrtc_answer', {
-                    appointment_id: currentAppointment.id,
-                    answer: answer
-                });
-            }
-
-            // Handle WebRTC answer
-            async function handleWebRTCAnswer(data) {
-                if (!peerConnection) return;
-                
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-            }
-
-            // Handle WebRTC ICE candidate
-            async function handleWebRTCIceCandidate(data) {
-                if (!peerConnection) return;
-                
-                try {
-                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-                } catch (error) {
-                    console.error('Error adding ICE candidate:', error);
-                }
-            }
-
-            // Show video call interface
-            function showVideoCallInterface() {
-                videoCallInterface.style.display = 'flex';
-                videoCallStatus.textContent = 'Connected';
-                isInCall = true;
-            }
-
-            // End call
-            function endCall() {
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                    localStream = null;
-                }
-                
-                if (remoteStream) {
-                    remoteStream.getTracks().forEach(track => track.stop());
-                    remoteStream = null;
-                }
-                
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                }
-                
-                if (isScreenSharing) {
-                    stopScreenShare();
-                }
-                
-                if (isRecording) {
-                    stopRecording();
-                }
-                
-                voiceCallInterface.style.display = 'none';
-                videoCallInterface.style.display = 'none';
-                hideMeetingChat();
-                hideAdminControls();
-                
-                const remoteParticipant = document.getElementById('remoteParticipant');
-                if (remoteParticipant) {
-                    remoteParticipant.remove();
-                }
-                
-                stopCallTimer();
-                
-                if (isSocketConnected && currentMeeting) {
-                    socket.emit('leave_meeting', {
-                        appointment_id: currentAppointment.id,
-                        user_id: currentUser.id
-                    });
-                }
-                
-                isVideoCall = false;
-                isInCall = false;
-                currentMeeting = null;
-                
-                meetingParticipants = [];
-                
-                updateConnectionStatus('disconnected', 'Call ended');
-                stopAllAudio();
-                
-                showToast('Call ended.', 'info');
-            }
-
-            // Toggle mute
-            function toggleMute() {
-                if (localStream) {
-                    const audioTracks = localStream.getAudioTracks();
-                    let isMuted = false;
-                    
-                    audioTracks.forEach(track => {
-                        track.enabled = !track.enabled;
-                        isMuted = !track.enabled;
-                    });
-                    
-                    videoMuteBtn.classList.toggle('muted', isMuted);
-                    videoMuteBtn.innerHTML = isMuted ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-                    
-                    updateParticipantMuteStatus(currentUser.id, isMuted);
-                }
-            }
-
-            // Toggle video
-            function toggleVideo() {
-                if (localStream && isVideoCall) {
-                    const videoTracks = localStream.getVideoTracks();
-                    let isVideoOff = false;
-                    
-                    videoTracks.forEach(track => {
-                        track.enabled = !track.enabled;
-                        isVideoOff = !track.enabled;
-                    });
-                    
-                    videoToggleBtn.classList.toggle('off', isVideoOff);
-                    videoToggleBtn.innerHTML = isVideoOff ? '<i class="fas fa-video-slash"></i>' : '<i class="fas fa-video"></i>';
-                    
-                    if (localVideo) {
-                        localVideo.style.display = isVideoOff ? 'none' : 'block';
-                    }
-                    
-                    updateParticipantVideoStatus(currentUser.id, isVideoOff);
-                }
-            }
-
-            // Toggle screen share
-            async function toggleScreenShare() {
-                if (!isScreenSharing) {
-                    try {
-                        const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
-                            video: true,
-                            audio: true 
-                        });
-                        
-                        const videoTrack = screenStream.getVideoTracks()[0];
-                        const sender = peerConnection.getSenders().find(s => 
-                            s.track && s.track.kind === 'video'
-                        );
-                        
-                        if (sender) {
-                            await sender.replaceTrack(videoTrack);
-                        }
-                        
-                        localVideo.srcObject = screenStream;
-                        
-                        isScreenSharing = true;
-                        screenShareBtn.classList.add('active');
-                        
-                        videoTrack.onended = () => {
-                            stopScreenShare();
-                        };
-                        
-                    } catch (error) {
-                        console.error('Error starting screen share:', error);
-                        if (error.name === 'NotAllowedError') {
-                            showToast('Screen sharing was denied. Please allow permissions to share your screen.', 'error');
-                        } else {
-                            showToast('Failed to start screen sharing. Please try again.', 'error');
-                        }
-                    }
-                } else {
-                    stopScreenShare();
-                }
-            }
-
-            // Stop screen share
-            async function stopScreenShare() {
-                if (localStream && isScreenSharing) {
-                    const originalVideoTrack = localStream.getVideoTracks()[0];
-                    const sender = peerConnection.getSenders().find(s => 
-                        s.track && s.track.kind === 'video'
-                    );
-                    
-                    if (sender && originalVideoTrack) {
-                        await sender.replaceTrack(originalVideoTrack);
-                    }
-                    
-                    localVideo.srcObject = localStream;
-                    
-                    isScreenSharing = false;
-                    screenShareBtn.classList.remove('active');
-                }
-            }
-
-            // Toggle recording
-            function toggleRecording() {
-                if (!isRecording) {
-                    startRecording();
-                } else {
-                    stopRecording();
-                }
-            }
-
-            // Start recording
-            function startRecording() {
-                if (!localStream) return;
-                
-                try {
-                    recordedChunks = [];
-                    const options = { mimeType: 'video/webm; codecs=vp9' };
-                    mediaRecorder = new MediaRecorder(localStream, options);
-                    
-                    mediaRecorder.ondataavailable = event => {
-                        if (event.data.size > 0) {
-                            recordedChunks.push(event.data);
-                        }
-                    };
-                    
-                    mediaRecorder.onstop = async () => {
-                        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                        
-                        const formData = new FormData();
-                        formData.append('recording', blob, `consultation-${new Date().toISOString()}.webm`);
-                        formData.append('appointment_id', currentAppointment.id);
-                        formData.append('duration', callSeconds);
-                        
-                        try {
-                            const response = await fetch('/api/recordings/upload', {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-Token': csrfToken || ''
-                                },
-                                credentials: 'same-origin',
-                                body: formData
-                            });
-                            
-                            if (response.ok) {
-                                showToast('Call recording saved successfully', 'success');
-                            } else {
-                                throw new Error('Failed to upload recording');
-                            }
-                        } catch (error) {
-                            console.error('Error uploading recording:', error);
-                            showToast('Failed to save recording', 'error');
-                        }
-                    };
-                    
-                    mediaRecorder.start();
-                    isRecording = true;
-                    videoRecordBtn.classList.add('recording');
-                    
-                } catch (error) {
-                    console.error('Error starting recording:', error);
-                    showToast('Failed to start recording', 'error');
-                }
-            }
-
-            // Stop recording
-            function stopRecording() {
-                if (mediaRecorder && isRecording) {
-                    mediaRecorder.stop();
-                    isRecording = false;
-                    videoRecordBtn.classList.remove('recording');
-                }
-            }
-
-            // Call timer functions
-            function startCallTimer() {
-                callSeconds = 0;
-                updateCallTimer();
-                
-                callTimer = setInterval(() => {
-                    callSeconds++;
-                    updateCallTimer();
-                }, 1000);
-            }
-
-            function stopCallTimer() {
-                if (callTimer) {
-                    clearInterval(callTimer);
-                    callTimer = null;
-                }
-            }
-
-            function updateCallTimer() {
-                const minutes = Math.floor(callSeconds / 60);
-                const seconds = callSeconds % 60;
-                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                
-                if (isVideoCall) {
-                    videoCallDuration.textContent = timeString;
-                } else {
-                    callDuration.textContent = timeString;
-                }
-            }
-
-            // Update connection status
-            function updateConnectionStatus(status, message) {
-                if (!connectionStatus) return;
-                
-                connectionStatus.textContent = message;
-                connectionStatus.className = `connection-status ${status}`;
-                connectionStatus.style.display = 'block';
-                
-                if (status === 'connected') {
-                    setTimeout(() => {
-                        connectionStatus.style.display = 'none';
-                    }, 3000);
-                }
-            }
-
-            // ==================== MEETING MANAGEMENT ====================
-
-            // Handle meeting created
-            function handleMeetingCreated(meetingData) {
-                currentMeeting = meetingData;
-                showToast('Meeting created successfully', 'success');
-            }
-
-            // Handle user joined meeting
-            function handleUserJoinedMeeting(participantData) {
-                addParticipant(participantData);
-                showToast(`${participantData.name} has joined the meeting`, 'info');
-            }
-
-            // Handle user left meeting
-            function handleUserLeftMeeting(participantData) {
-                removeParticipant(participantData.id);
-                showToast(`${participantData.name} has left the meeting`, 'info');
-            }
-
-            // Handle meeting invitation
-            function handleMeetingInvitation(invitationData) {
-                const shouldAccept = confirm(`You have been invited to join a meeting by ${invitationData.inviter_name}. Would you like to join?`);
-                
-                if (shouldAccept) {
-                    socket.emit('join_meeting', {
-                        meeting_id: invitationData.meeting_id,
-                        appointment_id: invitationData.appointment_id
-                    });
-                }
-            }
-
-            // Add participant to meeting
-            function addParticipant(participant) {
-                const existingIndex = meetingParticipants.findIndex(p => p.id === participant.id);
-                if (existingIndex === -1) {
-                    meetingParticipants.push(participant);
-                    updateParticipantsList();
-                }
-            }
-
-            // Remove participant from meeting
-            function removeParticipant(participantId) {
-                meetingParticipants = meetingParticipants.filter(p => p.id !== participantId);
-                updateParticipantsList();
-            }
-
-            // Update participants list in UI
-            function updateParticipantsList() {
-                if (!meetingParticipantsList) return;
-                
-                meetingParticipantsList.innerHTML = '';
-                
-                meetingParticipants.forEach(participant => {
-                    const participantItem = document.createElement('div');
-                    participantItem.className = 'participant-item';
-                    
-                    participantItem.innerHTML = `
-                        <div class="participant-avatar">
-                            ${participant.role === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>'}
-                        </div>
-                        <div class="participant-details">
-                            <div class="participant-name">${participant.name}</div>
-                            <div class="participant-role">${participant.role} ${isDoctorAdmin && participant.id === currentUser.id ? '(Admin)' : ''}</div>
-                        </div>
-                        <div class="participant-status-indicator ${participant.isMuted ? 'muted' : ''}"></div>
-                    `;
-                    
-                    meetingParticipantsList.appendChild(participantItem);
-                });
-            }
-
-            // Update participant mute status
-            function updateParticipantMuteStatus(participantId, isMuted) {
-                const participant = meetingParticipants.find(p => p.id === participantId);
-                if (participant) {
-                    participant.isMuted = isMuted;
-                    updateParticipantsList();
-                }
-            }
-
-            // Update participant video status
-            function updateParticipantVideoStatus(participantId, hasVideo) {
-                const participant = meetingParticipants.find(p => p.id === participantId);
-                if (participant) {
-                    participant.hasVideo = hasVideo;
-                    updateParticipantsList();
-                }
-            }
-
-            // ==================== VOICE RECORDING FUNCTIONS ====================
-
-            // Show voice recorder
-            function showVoiceRecorder() {
-                voiceRecorder.style.display = 'flex';
-            }
-
-            // Toggle voice recording
-            function toggleVoiceRecording() {
-                if (!isVoiceRecording) {
-                    startVoiceRecording();
-                } else {
-                    stopVoiceRecording();
-                }
-            }
-
-            // Start voice recording
-            function startVoiceRecording() {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showToast('Audio recording is not supported in your browser', 'error');
-                    return;
-                }
-
-                navigator.mediaDevices.getUserMedia({ audio: true })
-                    .then(stream => {
-                        voiceMediaRecorder = new MediaRecorder(stream);
-                        voiceAudioChunks = [];
-
-                        voiceMediaRecorder.ondataavailable = event => {
-                            voiceAudioChunks.push(event.data);
-                        };
-
-                        voiceMediaRecorder.onstop = async () => {
-                            const audioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' });
-                            
-                            const formData = new FormData();
-                            formData.append('audio', audioBlob, `voice-message-${new Date().getTime()}.webm`);
-                            formData.append('appointment_id', currentAppointment.id);
-                            formData.append('duration', voiceRecordingSeconds);
-                            
-                            try {
-                                const response = await fetch('/api/messages/voice', {
-                                    method: 'POST',
-                                    headers: {
-                                        'X-CSRF-Token': csrfToken || ''
-                                    },
-                                    credentials: 'same-origin',
-                                    body: formData
-                                });
-
-                                if (response.ok) {
-                                    const message = await response.json();
-                                    addMessageToChat(message, true);
-                                    showToast('Voice message sent', 'success');
-                                } else {
-                                    throw new Error('Failed to upload voice message');
-                                }
-                            } catch (error) {
-                                console.error('Error uploading voice message:', error);
-                                showToast('Failed to send voice message', 'error');
-                            }
-                            
-                            voiceRecorder.style.display = 'none';
-                            isVoiceRecording = false;
-                            voiceRecordingSeconds = 0;
-                            recordingTimerDisplay.textContent = '00:00';
-                            recordBtn.classList.remove('recording');
-                            sendRecordingBtn.disabled = true;
-                        };
-
-                        voiceMediaRecorder.start();
-                        startVoiceRecordingTimer();
-                        isVoiceRecording = true;
-                        recordBtn.classList.add('recording');
-                        sendRecordingBtn.disabled = true;
-                    })
-                    .catch(error => {
-                        console.error('Error accessing microphone:', error);
-                        showToast('Cannot access microphone. Please check permissions.', 'error');
-                    });
-            }
-
-            // Stop voice recording
-            function stopVoiceRecording() {
-                if (voiceMediaRecorder && voiceMediaRecorder.state === 'recording') {
-                    voiceMediaRecorder.stop();
-                    voiceMediaRecorder.stream.getTracks().forEach(track => track.stop());
-                    stopVoiceRecordingTimer();
-                    sendRecordingBtn.disabled = false;
-                }
-            }
-
-            // Start voice recording timer
-            function startVoiceRecordingTimer() {
-                voiceRecordingSeconds = 0;
-                recordingTimerDisplay.textContent = '00:00';
-                
-                voiceRecordingTimer = setInterval(() => {
-                    voiceRecordingSeconds++;
-                    const minutes = Math.floor(voiceRecordingSeconds / 60);
-                    const seconds = voiceRecordingSeconds % 60;
-                    recordingTimerDisplay.textContent = 
-                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                }, 1000);
-            }
-
-            // Stop voice recording timer
-            function stopVoiceRecordingTimer() {
-                if (voiceRecordingTimer) {
-                    clearInterval(voiceRecordingTimer);
-                    voiceRecordingTimer = null;
-                }
-            }
-
-            // Send voice recording
-            function sendVoiceRecording() {
-                stopVoiceRecording();
-            }
-
-            // Cancel voice recording
-            function cancelVoiceRecording() {
-                if (voiceMediaRecorder && voiceMediaRecorder.state === 'recording') {
-                    voiceMediaRecorder.stop();
-                    voiceMediaRecorder.stream.getTracks().forEach(track => track.stop());
-                }
-                
-                stopVoiceRecordingTimer();
-                voiceRecorder.style.display = 'none';
-                voiceAudioChunks = [];
-                isVoiceRecording = false;
-                voiceRecordingSeconds = 0;
-                recordingTimerDisplay.textContent = '00:00';
-                recordBtn.classList.remove('recording');
-                sendRecordingBtn.disabled = true;
-            }
-
-            // ==================== DEVICE MANAGEMENT ====================
-
-            // Show device permission modal
-            async function showDevicePermissionModal() {
-                try {
-                    await enumerateDevices();
-                    populateDeviceSelects();
-                    devicePermissionModal.style.display = 'flex';
-                } catch (error) {
-                    console.error('Error showing device permission modal:', error);
-                    showToast('Error accessing devices. Please check your browser permissions.', 'error');
-                }
-            }
-
-            // Hide device permission modal
-            function hideDevicePermissionModal() {
-                devicePermissionModal.style.display = 'none';
-            }
-
-            // Enumerate available devices
-            async function enumerateDevices() {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: true, 
-                        audio: true 
-                    });
-                    
-                    stream.getTracks().forEach(track => track.stop());
-                    
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    
-                    availableCameras = devices.filter(device => device.kind === 'videoinput');
-                    availableMicrophones = devices.filter(device => device.kind === 'audioinput');
-                    availableSpeakers = devices.filter(device => device.kind === 'audiooutput');
-                    
-                    if (availableCameras.length > 0) {
-                        selectedCameraId = availableCameras[0].deviceId;
-                    }
-                    if (availableMicrophones.length > 0) {
-                        selectedMicrophoneId = availableMicrophones[0].deviceId;
-                    }
-                    if (availableSpeakers.length > 0) {
-                        selectedSpeakerId = availableSpeakers[0].deviceId;
-                    }
-                    
-                    devicePermissionsGranted = true;
-                    
-                } catch (error) {
-                    console.error('Error enumerating devices:', error);
-                    throw error;
-                }
-            }
-
-            // Populate device selects
-            function populateDeviceSelects() {
-                cameraSelect.innerHTML = '';
-                availableCameras.forEach(camera => {
-                    const option = document.createElement('option');
-                    option.value = camera.deviceId;
-                    option.textContent = camera.label || `Camera ${cameraSelect.length + 1}`;
-                    cameraSelect.appendChild(option);
-                });
-                
-                microphoneSelect.innerHTML = '';
-                availableMicrophones.forEach(microphone => {
-                    const option = document.createElement('option');
-                    option.value = microphone.deviceId;
-                    option.textContent = microphone.label || `Microphone ${microphoneSelect.length + 1}`;
-                    microphoneSelect.appendChild(option);
-                });
-                
-                speakerSelect.innerHTML = '';
-                availableSpeakers.forEach(speaker => {
-                    const option = document.createElement('option');
-                    option.value = speaker.deviceId;
-                    option.textContent = speaker.label || `Speaker ${speakerSelect.length + 1}`;
-                    speakerSelect.appendChild(option);
-                });
-                
-                if (selectedCameraId) {
-                    cameraSelect.value = selectedCameraId;
-                }
-                if (selectedMicrophoneId) {
-                    microphoneSelect.value = selectedMicrophoneId;
-                }
-                if (selectedSpeakerId) {
-                    speakerSelect.value = selectedSpeakerId;
-                }
-            }
-
-            // Confirm device selection
-            function confirmDeviceSelection() {
-                selectedCameraId = cameraSelect.value;
-                selectedMicrophoneId = microphoneSelect.value;
-                selectedSpeakerId = speakerSelect.value;
-                
-                localStorage.setItem('hasUsedVideoCall', 'true');
-                isFirstTimeUser = false;
-                
-                hideDevicePermissionModal();
-                applySpeakerSelection();
-                startVideoCall();
-            }
-
-            // Cancel device selection
-            function cancelDeviceSelection() {
-                hideDevicePermissionModal();
-            }
-
-            // Apply speaker selection
-            function applySpeakerSelection() {
-                if (selectedSpeakerId) {
-                    const remoteVideo = document.getElementById('remoteVideo');
-                    if (remoteVideo && remoteVideo.setSinkId) {
-                        remoteVideo.setSinkId(selectedSpeakerId)
-                            .then(() => {
-                                console.log('Speaker set successfully');
-                            })
-                            .catch(error => {
-                                console.error('Error setting speaker:', error);
-                            });
-                    }
-                }
-            }
-
-            // ==================== FILE UPLOAD ====================
-
-            // Handle file upload
-            async function handleFileUpload(e) {
-                const file = e.target.files[0];
-                if (file && currentAppointment) {
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    formData.append('appointment_id', currentAppointment.id);
-                    
-                    try {
-                        const response = await fetch('/api/messages/file', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-Token': csrfToken || ''
-                            },
-                            credentials: 'same-origin',
-                            body: formData
-                        });
-                        
-                        if (response.ok) {
-                            const message = await response.json();
-                            addMessageToChat(message, true);
-                            showToast('File uploaded successfully', 'success');
-                        } else {
-                            const errorData = await response.json();
-                            throw new Error(errorData.error || 'Failed to upload file');
-                        }
-                    } catch (error) {
-                        console.error('Error uploading file:', error);
-                        showToast('Failed to upload file. Please try again.', 'error');
-                    }
-                    
-                    fileInput.value = '';
-                }
-            }
-
-            // ==================== UTILITY FUNCTIONS ====================
-
-            // Show toast notification
-            function showToast(message, type = 'info') {
-                const backgroundColors = {
-                    success: '#28a745',
-                    error: '#dc3545',
-                    warning: '#ffc107',
-                    info: '#17a2b8'
-                };
-                
-                Toastify({
-                    text: message,
-                    duration: 3000,
-                    gravity: "top",
-                    position: "right",
-                    style: {
-                        background: backgroundColors[type] || '#17a2b8'
-                    },
-                    stopOnFocus: true
-                }).showToast();
-            }
-
-            // Play notification sound
-            function playNotificationSound() {
-                // Implementation for notification sound
-                console.log('Playing notification sound');
-            }
-
-            // Stop all audio
-            function stopAllAudio() {
-                if (incomingCallAudio) {
-                    incomingCallAudio.pause();
-                    incomingCallAudio.currentTime = 0;
-                }
-                if (outgoingCallAudio) {
-                    outgoingCallAudio.pause();
-                    outgoingCallAudio.currentTime = 0;
-                }
-                window.speechSynthesis.cancel();
-            }
-
-            // Format time
-            function formatTime(isoString) {
-                return new Date(isoString).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            }
-
-            // Format date
-            function formatDate(dateString) {
-                return new Date(dateString).toLocaleDateString([], {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            }
-
-            // Format duration
-            function formatDuration(seconds) {
-                const mins = Math.floor(seconds / 60);
-                const secs = seconds % 60;
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
-            }
-
-            // Format file size
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-
-            // Scroll to bottom of messages
-            function scrollToBottom() {
-                if (messagesContainer) {
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-            }
-
-            // Escape HTML
-            function escapeHtml(unsafe) {
-                return unsafe
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            }
-
-            // Download file
-            function downloadFile(url, filename) {
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                link.click();
-            }
-
-            // Show loading state
-            function showLoadingState() {
-                if (loadingState) loadingState.style.display = 'block';
-                if (emptyState) emptyState.style.display = 'none';
-            }
-
-            // Hide loading state
-            function hideLoadingState() {
-                if (loadingState) loadingState.style.display = 'none';
-            }
-
-            // Show empty state
-            function showEmptyState() {
-                if (emptyState) emptyState.style.display = 'block';
-                if (loadingState) loadingState.style.display = 'none';
-            }
-
-            // Hide empty state
-            function hideEmptyState() {
-                if (emptyState) emptyState.style.display = 'none';
-            }
-
-            // Show error state
-            function showErrorState(message) {
-                if (!appointmentList) return;
-                
-                appointmentList.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">⚠️</div>
-                        <h3>Error Loading Appointments</h3>
-                        <p>${message}</p>
-                        <button class="refresh-button" onclick="loadAppointments()">
-                            <i class="fas fa-sync-alt"></i> Try Again
-                        </button>
-                    </div>
-                `;
+                scrollToBottom();
             }
 
             // Mark messages as read
             async function markMessagesAsRead(appointmentId) {
                 try {
-                    const response = await fetch(`/api/messages/${appointmentId}/mark_all_read`, {
+                    const response = await fetch(`/api/messages/${appointmentId}/read`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': csrfToken || ''
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({})
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to mark messages as read: ${response.status}`);
-                    }
-                    
-                    const appointmentItem = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
-                    if (appointmentItem) {
-                        const unreadBadge = appointmentItem.querySelector('.unread-badge');
-                        if (unreadBadge) {
-                            unreadBadge.remove();
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error marking messages as read:', error);
-                }
-            }
-
-            // Update unread count
-            function updateUnreadCount(appointmentId, newMessageCount) {
-                const appointmentItem = document.querySelector(`[data-appointment-id="${appointmentId}"]`);
-                if (appointmentItem) {
-                    let unreadBadge = appointmentItem.querySelector('.unread-badge');
-                    let currentCount = 0;
-                    
-                    if (unreadBadge) {
-                        currentCount = parseInt(unreadBadge.textContent) || 0;
-                        unreadBadge.textContent = `${currentCount + newMessageCount} unread`;
-                    } else {
-                        unreadBadge = document.createElement('span');
-                        unreadBadge.className = 'unread-badge';
-                        unreadBadge.textContent = `${newMessageCount} unread`;
-                        appointmentItem.querySelector('.appointment-info').appendChild(unreadBadge);
-                    }
-                }
-            }
-
-            // Set welcome message time
-            function setWelcomeTime() {
-                const timeElement = document.getElementById('welcomeTime');
-                if (timeElement) {
-                    timeElement.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                }
-            }
-
-            // Load available users for invitation
-            async function loadAvailableUsers() {
-                try {
-                    const response = await fetch('/api/users/available', {
-                        method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-Token': csrfToken || ''
@@ -3865,18 +1797,134 @@
                     });
                     
                     if (response.ok) {
-                        availableUsers = await response.json();
+                        updateUnreadCount(appointmentId);
                     }
+                    
                 } catch (error) {
-                    console.error('Error loading available users:', error);
+                    console.error('Error marking messages as read:', error);
                 }
             }
 
-            // Make functions globally available
-            window.loadAppointments = loadAppointments;
-            window.downloadFile = downloadFile;
+            // Update unread count in UI
+            function updateUnreadCount(appointmentId) {
+                const appointmentElement = document.querySelector(`[data-appointment*='"id":${appointmentId}']`);
+                if (appointmentElement) {
+                    const unreadBadge = appointmentElement.querySelector('.unread-badge');
+                    if (unreadBadge) {
+                        unreadBadge.remove();
+                    }
+                }
+            }
 
-        })(); // End of IIFE
+            // Utility functions
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+            }
+
+            function formatMessageTime(timestamp) {
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function formatFileSize(bytes) {
+                if (!bytes || bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function safeJsonParse(str) {
+                try {
+                    return JSON.parse(str);
+                } catch {
+                    return null;
+                }
+            }
+
+            function scrollToBottom() {
+                setTimeout(() => {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }, 100);
+            }
+
+            function showLoadingState() {
+                loadingState.style.display = 'block';
+                emptyState.style.display = 'none';
+            }
+
+            function hideLoadingState() {
+                loadingState.style.display = 'none';
+            }
+
+            function showEmptyState() {
+                loadingState.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+
+            // Toast notification function
+            function showToast(message, type = 'info') {
+                const backgroundColor = type === 'error' ? '#dc3545' : 
+                                       type === 'success' ? '#28a745' : 
+                                       type === 'warning' ? '#ffc107' : '#007bff';
+                
+                Toastify({
+                    text: message,
+                    duration: 4000,
+                    gravity: "top",
+                    position: "right",
+                    backgroundColor: backgroundColor,
+                    stopOnFocus: true,
+                    className: type,
+                    style: {
+                        borderRadius: '8px',
+                        padding: '12px 20px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }
+                }).showToast();
+            }
+
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768) {
+                    const isClickInsideSidebar = sidebar.contains(event.target);
+                    const isClickOnToggle = toggleSidebar.contains(event.target);
+                    
+                    if (!isClickInsideSidebar && !isClickOnToggle && sidebar.classList.contains('active')) {
+                        sidebar.classList.remove('active');
+                    }
+                }
+            });
+
+            // Handle Escape key to close modal
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    hidePaymentRequiredModal();
+                }
+            });
+
+            // Initialize when DOM is loaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initializeApplication);
+            } else {
+                initializeApplication();
+            }
+        })();
     </script>
 </body>
 </html>

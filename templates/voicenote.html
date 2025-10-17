@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Note - Makokha Medical Centre</title>
+    
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #075e54;
+            --secondary-color: #128c7e;
+            --accent-color: #25d366;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+
+        body {
+            background: #f0f2f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .voice-note-container {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+        }
+
+        .header p {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        /* Voice Recorder */
+        .voice-recorder {
+            margin-bottom: 2rem;
+        }
+
+        .record-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 4px 12px rgba(7, 94, 84, 0.3);
+        }
+
+        .record-btn.recording {
+            background: var(--danger-color);
+            animation: pulse 1.5s infinite;
+            transform: scale(1.1);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4); }
+        }
+
+        .recording-timer {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .recording-visualizer {
+            height: 40px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+
+        .recording-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-recording {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .send-recording:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .cancel-recording {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* Recording Preview */
+        .recording-preview {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: none;
+        }
+
+        .preview-header {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .preview-audio {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .preview-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .re-record-btn {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .voice-note-container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            
+            .record-btn {
+                width: 70px;
+                height: 70px;
+                font-size: 1.5rem;
+            }
+            
+            .recording-timer {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="voice-note-container">
+        <div class="header">
+            <div class="header-icon">
+                <i class="fas fa-microphone"></i>
+            </div>
+            <h1>Record Voice Note</h1>
+            <p>Tap the microphone to start recording your message</p>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+
+        <div class="voice-recorder">
+            <button class="record-btn" id="recordBtn">
+                <i class="fas fa-microphone"></i>
+            </button>
+            
+            <div class="recording-timer" id="recordingTimer">00:00</div>
+            
+            <div class="recording-visualizer" id="recordingVisualizer">
+                <!-- Visualizer bars will be generated dynamically -->
+            </div>
+            
+            <div class="recording-controls">
+                <button class="control-btn send-recording" id="sendRecordingBtn" disabled>
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+                <button class="control-btn cancel-recording" id="cancelRecordingBtn">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+
+        <div class="recording-preview" id="recordingPreview">
+            <div class="preview-header">Preview Your Recording</div>
+            <audio controls class="preview-audio" id="previewAudio"></audio>
+            <div class="preview-actions">
+                <button class="preview-btn re-record-btn" id="reRecordBtn">
+                    <i class="fas fa-redo"></i> Re-record
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            let mediaRecorder = null;
+            let audioChunks = [];
+            let recordingTimer = null;
+            let recordingSeconds = 0;
+            let isRecording = false;
+            let audioContext = null;
+            let analyser = null;
+            let dataArray = null;
+            let animationId = null;
+
+            // DOM Elements
+            const recordBtn = document.getElementById('recordBtn');
+            const recordingTimer = document.getElementById('recordingTimer');
+            const recordingVisualizer = document.getElementById('recordingVisualizer');
+            const sendRecordingBtn = document.getElementById('sendRecordingBtn');
+            const cancelRecordingBtn = document.getElementById('cancelRecordingBtn');
+            const recordingPreview = document.getElementById('recordingPreview');
+            const previewAudio = document.getElementById('previewAudio');
+            const reRecordBtn = document.getElementById('reRecordBtn');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeVoiceNote();
+            });
+
+            // Initialize voice note recorder
+            function initializeVoiceNote() {
+                // Check if browser supports media recording
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showStatus('Your browser does not support audio recording', 'error');
+                    recordBtn.disabled = true;
+                    return;
+                }
+
+                setupEventListeners();
+                initializeVisualizer();
+            }
+
+            // Setup event listeners
+            function setupEventListeners() {
+                recordBtn.addEventListener('click', toggleRecording);
+                sendRecordingBtn.addEventListener('click', sendRecording);
+                cancelRecordingBtn.addEventListener('click', cancelRecording);
+                reRecordBtn.addEventListener('click', resetRecorder);
+            }
+
+            // Initialize audio visualizer
+            function initializeVisualizer() {
+                // Create visualizer bars
+                for (let i = 0; i < 20; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'visualizer-bar';
+                    bar.style.height = '5px';
+                    recordingVisualizer.appendChild(bar);
+                }
+            }
+
+            // Toggle recording
+            async function toggleRecording() {
+                if (!isRecording) {
+                    await startRecording();
+                } else {
+                    stopRecording();
+                }
+            }
+
+            // Start recording
+            async function startRecording() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    });
+
+                    // Setup audio analysis for visualizer
+                    setupAudioAnalysis(stream);
+
+                    mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: 'audio/webm;codecs=opus'
+                    });
+
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        previewAudio.src = audioUrl;
+                        recordingPreview.style.display = 'block';
+                        sendRecordingBtn.disabled = false;
+                        
+                        // Stop all tracks
+                        stream.getTracks().forEach(track => track.stop());
+                        
+                        // Stop visualizer animation
+                        if (animationId) {
+                            cancelAnimationFrame(animationId);
+                        }
+                    };
+
+                    mediaRecorder.start();
+                    startRecordingTimer();
+                    isRecording = true;
+                    recordBtn.classList.add('recording');
+                    recordBtn.innerHTML = '<i class="fas fa-square"></i>';
+                    sendRecordingBtn.disabled = true;
+
+                } catch (error) {
+                    console.error('Error starting recording:', error);
+                    showStatus('Cannot access microphone. Please check permissions.', 'error');
+                }
+            }
+
+            // Stop recording
+            function stopRecording() {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    stopRecordingTimer();
+                    isRecording = false;
+                    recordBtn.classList.remove('recording');
+                    recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                }
+            }
+
+            // Setup audio analysis for visualizer
+            function setupAudioAnalysis(stream) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                // Start visualizer animation
+                animateVisualizer();
+            }
+
+            // Animate visualizer
+            function animateVisualizer() {
+                if (!analyser || !isRecording) return;
+                
+                analyser.getByteFrequencyData(dataArray);
+                
+                const bars = recordingVisualizer.getElementsByClassName('visualizer-bar');
+                const barCount = bars.length;
+                
+                for (let i = 0; i < barCount; i++) {
+                    const value = dataArray[i * 2] || 0;
+                    const height = Math.max(5, (value / 255) * 40);
+                    bars[i].style.height = `${height}px`;
+                    bars[i].style.background = `hsl(${200 + (value / 255) * 60}, 70%, 50%)`;
+                }
+                
+                animationId = requestAnimationFrame(animateVisualizer);
+            }
+
+            // Start recording timer
+            function startRecordingTimer() {
+                recordingSeconds = 0;
+                updateRecordingTimer();
+                
+                recordingTimer = setInterval(() => {
+                    recordingSeconds++;
+                    updateRecordingTimer();
+                    
+                    // Auto-stop after 5 minutes
+                    if (recordingSeconds >= 300) {
+                        stopRecording();
+                    }
+                }, 1000);
+            }
+
+            // Stop recording timer
+            function stopRecordingTimer() {
+                if (recordingTimer) {
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+                }
+            }
+
+            // Update recording timer
+            function updateRecordingTimer() {
+                const minutes = Math.floor(recordingSeconds / 60);
+                const seconds = recordingSeconds % 60;
+                recordingTimer.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            // Send recording
+            async function sendRecording() {
+                if (audioChunks.length === 0) {
+                    showStatus('No recording to send', 'error');
+                    return;
+                }
+
+                try {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    // Get appointment ID from URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const appointmentId = urlParams.get('appointment_id');
+                    
+                    if (!appointmentId) {
+                        throw new Error('No appointment specified');
+                    }
+
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, `voice-note-${Date.now()}.webm`);
+                    formData.append('appointment_id', appointmentId);
+                    formData.append('duration', recordingSeconds);
+
+                    // Get CSRF token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+                    const response = await fetch('/api/messages/voice', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-Token': csrfToken
+                        },
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        showStatus('Voice note sent successfully!', 'success');
+                        setTimeout(() => {
+                            window.close();
+                        }, 2000);
+                    } else {
+                        throw new Error('Failed to send voice note');
+                    }
+
+                } catch (error) {
+                    console.error('Error sending recording:', error);
+                    showStatus('Failed to send voice note. Please try again.', 'error');
+                }
+            }
+
+            // Cancel recording
+            function cancelRecording() {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+                
+                resetRecorder();
+                window.close();
+            }
+
+            // Reset recorder
+            function resetRecorder() {
+                stopRecordingTimer();
+                isRecording = false;
+                recordBtn.classList.remove('recording');
+                recordBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                recordingTimer.textContent = '00:00';
+                recordingPreview.style.display = 'none';
+                sendRecordingBtn.disabled = true;
+                audioChunks = [];
+                
+                // Reset visualizer
+                const bars = recordingVisualizer.getElementsByClassName('visualizer-bar');
+                for (let bar of bars) {
+                    bar.style.height = '5px';
+                    bar.style.background = 'var(--primary-color)';
+                }
+                
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            }
+
+            // Show status message
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = `status-message status-${type}`;
+                statusMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+
+        })();
+    </script>
+</body>
+</html>

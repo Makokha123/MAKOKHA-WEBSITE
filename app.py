@@ -2349,6 +2349,110 @@ def upload_document():
         flash('Error uploading document', 'error')
         return redirect(url_for('patient_dashboard'))
 
+# =============================================================================
+# FEATURE PAGES ROUTES
+# =============================================================================
+
+@app.route('/fileupload.html')
+@login_required
+def file_upload_page():
+    """File upload page"""
+    appointment_id = request.args.get('appointment_id')
+    if not appointment_id:
+        flash('Appointment ID is required', 'error')
+        return redirect(url_for('communication'))
+    
+    appointment = Appointment.query.get_or_404(appointment_id)
+    
+    # Check if user has access to this appointment
+    if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    return render_template('fileupload.html', appointment=appointment)
+
+@app.route('/voicecall.html')
+@login_required
+def voice_call_page():
+    """Voice call page"""
+    appointment_id = request.args.get('appointment_id')
+    contact_name = request.args.get('contact_name', 'Medical Consultation')
+    user_role = request.args.get('user_role', 'patient')
+    
+    if not appointment_id:
+        flash('Appointment ID is required', 'error')
+        return redirect(url_for('communication'))
+    
+    appointment = Appointment.query.get_or_404(appointment_id)
+    
+    # Check if user has access to this appointment
+    if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    return render_template('voicecall.html', 
+                         appointment=appointment,
+                         contact_name=contact_name,
+                         user_role=user_role)
+
+@app.route('/videocall.html')
+@login_required
+def video_call_page():
+    """Video call page"""
+    appointment_id = request.args.get('appointment_id')
+    contact_name = request.args.get('contact_name', 'Medical Consultation')
+    user_role = request.args.get('user_role', 'patient')
+    
+    if not appointment_id:
+        flash('Appointment ID is required', 'error')
+        return redirect(url_for('communication'))
+    
+    appointment = Appointment.query.get_or_404(appointment_id)
+    
+    # Check if user has access to this appointment
+    if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    return render_template('videocall.html', 
+                         appointment=appointment,
+                         contact_name=contact_name,
+                         user_role=user_role)
+
+@app.route('/voicenote.html')
+@login_required
+def voice_note_page():
+    """Voice note page"""
+    appointment_id = request.args.get('appointment_id')
+    if not appointment_id:
+        flash('Appointment ID is required', 'error')
+        return redirect(url_for('communication'))
+    
+    appointment = Appointment.query.get_or_404(appointment_id)
+    
+    # Check if user has access to this appointment
+    if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+        flash('Access denied', 'error')
+        return redirect(url_for('communication'))
+    
+    return render_template('voicenote.html', appointment=appointment)
+
 @app.route('/delete-document/<int:document_id>', methods=['POST'])
 @login_required
 def delete_document(document_id):
