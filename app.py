@@ -16,6 +16,8 @@ from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_migrate import Migrate
+from flask_talisman import Talisman
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from dotenv import load_dotenv
@@ -32,8 +34,17 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-# Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+# Load configuration class based on environment
+env = os.environ.get('FLASK_ENV', 'development')
+if env == 'production' or os.environ.get('RENDER'):
+    app.config.from_object('config.ProductionConfig')
+elif env == 'testing':
+    app.config.from_object('config.TestingConfig')
+else:
+    app.config.from_object('config.DevelopmentConfig')
+
+# Ensure SECRET_KEY is set (env overrides class defaults)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or app.config.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
 
 # Enhanced Database configuration with better PostgreSQL/SSL handling
 def get_database_uri():
@@ -67,7 +78,8 @@ app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_SECRET_KEY'] = os.environ.get('CSRF_SECRET_KEY') or 'csrf-secret-key-change-in-production'
 
 # File upload configuration
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
+base_dir = os.path.abspath(os.path.dirname(__file__))
+app.config['UPLOAD_FOLDER'] = os.path.join(base_dir, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'}
 
@@ -78,6 +90,19 @@ app.config['REMEMBER_COOKIE_SECURE'] = is_production
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['REMEMBER_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Security headers (production only)
+if is_production:
+    csp = {
+        'default-src': ["'self'", 'https:', 'data:'],
+        'script-src': ["'self'", 'https:', "'unsafe-inline'"],
+        'style-src': ["'self'", 'https:', "'unsafe-inline'"],
+        'img-src': ["'self'", 'data:', 'https:'],
+        'connect-src': ["'self'", 'https:'],
+        'font-src': ["'self'", 'https:', 'data:'],
+        'frame-ancestors': ["'self'"]
+    }
+    Talisman(app, content_security_policy=csp, force_https=True, session_cookie_secure=True)
 
 # Email configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -91,6 +116,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 mail = Mail(app)
 csrf = CSRFProtect(app)
+migrate = Migrate(app, db)
 
 
 
@@ -131,16 +157,22 @@ except Exception as e:
     )
     print("⚠️ Using in-memory rate limiting (Redis not available)")
 
-# Replace your current SocketIO initialization with this:
+# SocketIO configuration with environment-aware CORS
+cors_origins_env = os.environ.get('SOCKETIO_CORS_ORIGINS')
+if is_production and cors_origins_env:
+    allowed_origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
+else:
+    allowed_origins = "*"
+
 socketio = SocketIO(
-    app, 
-    cors_allowed_origins="*",
+    app,
+    cors_allowed_origins=allowed_origins,
     async_mode='eventlet',
-    logger=False,  # Disable in production
-    engineio_logger=False,  # Disable in production
+    logger=not is_production,
+    engineio_logger=not is_production,
     ping_timeout=60,
     ping_interval=25,
-    max_http_buffer_size=100 * 1024 * 1024  # 100MB for file uploads
+    max_http_buffer_size=100 * 1024 * 1024
 )
 
 # Configure login manager
@@ -313,71 +345,129 @@ def handle_typing_stop(data):
 
 @socketio.on('call_initiate')
 def handle_call_initiate(data):
-    """Handle call initiation"""
+    """Handle call initiation by doctor only with payment gating"""
     if not current_user.is_authenticated:
         return
-    
+
     appointment_id = data.get('appointment_id')
-    call_type = data.get('call_type', 'voice')  # 'voice' or 'video'
-    
+    call_type = data.get('call_type', 'video')  # 'voice' or 'video'
+    call_id = data.get('call_id') or secrets.token_urlsafe(12)
+
     appointment = Appointment.query.get(appointment_id)
     if not appointment:
         return
-    
-    # Determine receiver
-    if current_user.role == 'patient':
-        receiver_id = appointment.doctor.user_id
-    else:
-        receiver_id = appointment.patient.user_id
-    
-    # Send call notification to receiver
+
+    # ACL: Only doctor can initiate calls; both parties must belong to appointment
+    if current_user.role != 'doctor' or not current_user.doctor_profile or appointment.doctor_id != current_user.doctor_profile.id:
+        return
+
+    # Payment gating: features unlocked only if payment completed
+    if appointment.payment_status != 'completed':
+        emit('call_error', {
+            'appointment_id': appointment_id,
+            'error': 'Payment pending. Complete payment to use calling features.'
+        }, room=f'user_{current_user.id}')
+        return
+
+    # Determine receiver (patient)
+    receiver_id = appointment.patient.user_id
+
+    # Notify patient of incoming call
     emit('incoming_call', {
         'appointment_id': appointment_id,
         'caller_id': current_user.id,
-        'caller_name': current_user.username or current_user.email,
+        'caller_name': get_user_display_name(current_user),
         'call_type': call_type,
-        'call_id': data.get('call_id')
+        'call_id': call_id
     }, room=f'user_{receiver_id}')
+
+    # Notify doctor's own room that ringing started (for UI state)
+    emit('outgoing_call_started', {
+        'appointment_id': appointment_id,
+        'call_type': call_type,
+        'call_id': call_id
+    }, room=f'user_{current_user.id}')
+    
+    # Also broadcast to appointment room for awareness
+    emit('call_ringing', {
+        'appointment_id': appointment_id,
+        'call_id': call_id,
+        'by': current_user.id
+    }, room=f'appointment_{appointment_id}')
 
 @socketio.on('call_accept')
 def handle_call_accept(data):
-    """Handle call acceptance"""
+    """Patient accepts call: notify doctor and open media channels"""
     if not current_user.is_authenticated:
         return
-    
+
     call_id = data.get('call_id')
     appointment_id = data.get('appointment_id')
-    
-    # Notify caller that call was accepted
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # ACL: Only patient on this appointment can accept
+    if current_user.role != 'patient' or not current_user.patient_profile or appointment.patient_id != current_user.patient_profile.id:
+        return
+
+    # Identify doctor user id
+    doctor_user_id = appointment.doctor.user_id
+
+    # Notify doctor personally and appointment room
     emit('call_accepted', {
         'call_id': call_id,
+        'appointment_id': appointment_id,
+        'acceptor_id': current_user.id
+    }, room=f'user_{doctor_user_id}')
+
+    emit('call_accepted', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
         'acceptor_id': current_user.id
     }, room=f'appointment_{appointment_id}')
 
 @socketio.on('call_reject')
 def handle_call_reject(data):
-    """Handle call rejection"""
+    """Patient rejects or timeout triggers rejection"""
     if not current_user.is_authenticated:
         return
-    
+
     call_id = data.get('call_id')
     appointment_id = data.get('appointment_id')
-    
-    # Notify caller that call was rejected
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # Determine counterpart (notify doctor in any case)
+    doctor_user_id = appointment.doctor.user_id
+
     emit('call_rejected', {
         'call_id': call_id,
+        'appointment_id': appointment_id,
+        'rejector_id': current_user.id
+    }, room=f'user_{doctor_user_id}')
+
+    emit('call_rejected', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
         'rejector_id': current_user.id
     }, room=f'appointment_{appointment_id}')
 
 @socketio.on('call_end')
 def handle_call_end(data):
-    """Handle call end"""
+    """Handle call end from either side"""
     appointment_id = data.get('appointment_id')
     call_id = data.get('call_id')
-    
-    # Notify all participants that call ended
+
+    if not current_user.is_authenticated:
+        return
+
     emit('call_ended', {
         'call_id': call_id,
+        'appointment_id': appointment_id,
         'ended_by': current_user.id
     }, room=f'appointment_{appointment_id}')
 
