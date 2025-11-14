@@ -180,7 +180,52 @@ socketio = SocketIO(
 active_voice_calls = {}
 user_busy = {}  # maps user_id -> call_id
 
+# Redis-backed busy tracking (optional, for multi-worker deployments)
+redis_client = None
+
+def get_redis_client():
+    """Get or create Redis client for distributed call tracking"""
+    global redis_client
+    if redis_client is None:
+        try:
+            import redis
+            redis_url = os.environ.get('REDIS_URL')
+            if redis_url:
+                # Handle rediss:// for SSL connections
+                if redis_url.startswith('rediss://'):
+                    redis_url += '?ssl_cert_reqs=none'
+                redis_client = redis.from_url(redis_url, decode_responses=True)
+                redis_client.ping()
+                print("✅ Redis busy tracking enabled")
+                return redis_client
+        except Exception as e:
+            print(f"⚠️ Redis not available for busy tracking: {str(e)}")
+    return None
+
+def is_using_redis():
+    """Check if Redis is available and configured"""
+    return os.environ.get('REDIS_URL') is not None and get_redis_client() is not None
+
 def mark_users_busy(call_id, user_ids, appointment_id):
+    """Mark users as busy (uses Redis if available, else in-memory)"""
+    if is_using_redis():
+        redis = get_redis_client()
+        if redis:
+            # Store call info with 1-hour TTL
+            call_info = {
+                'participants': ','.join(str(u) for u in user_ids),
+                'appointment_id': str(appointment_id),
+                'started_at': datetime.utcnow().isoformat()
+            }
+            redis.hset(f'call:{call_id}', mapping=call_info)
+            redis.expire(f'call:{call_id}', 3600)
+            
+            # Mark each user busy
+            for uid in user_ids:
+                redis.set(f'user_busy:{uid}', call_id, ex=3600)
+            return
+    
+    # Fallback to in-memory
     active_voice_calls[call_id] = {
         'participants': list(user_ids),
         'appointment_id': appointment_id,
@@ -190,12 +235,41 @@ def mark_users_busy(call_id, user_ids, appointment_id):
         user_busy[uid] = call_id
 
 def clear_call_markers(call_id):
+    """Clear busy markers for a call (uses Redis if available, else in-memory)"""
+    if is_using_redis():
+        redis = get_redis_client()
+        if redis:
+            # Get participants before deleting
+            call_data = redis.hgetall(f'call:{call_id}')
+            if call_data and 'participants' in call_data:
+                participants = call_data['participants'].split(',')
+                for uid_str in participants:
+                    try:
+                        uid = int(uid_str)
+                        redis.delete(f'user_busy:{uid}')
+                    except (ValueError, TypeError):
+                        pass
+            redis.delete(f'call:{call_id}')
+            return
+    
+    # Fallback to in-memory
     info = active_voice_calls.pop(call_id, None)
     if not info:
         return
     for uid in info.get('participants', []):
         if user_busy.get(uid) == call_id:
             user_busy.pop(uid, None)
+
+def get_user_busy_status(user_id):
+    """Get busy call_id for a user (uses Redis if available, else in-memory)"""
+    if is_using_redis():
+        redis = get_redis_client()
+        if redis:
+            busy_call = redis.get(f'user_busy:{user_id}')
+            return busy_call
+    
+    # Fallback to in-memory
+    return user_busy.get(user_id)
 
 
 # Configure login manager
@@ -251,37 +325,44 @@ def handle_leave_appointment(data):
 
 @socketio.on('send_message')
 def handle_send_message(data):
-    """Handle real-time message sending"""
+    """Handle real-time message sending with payment and completion gating"""
     if not current_user.is_authenticated:
         return
-    
+
     try:
         appointment_id = data.get('appointment_id')
         content = sanitize_input(data.get('content', '').strip())
         message_type = data.get('message_type', 'text')
         if not content or not appointment_id:
             return
-        
+
         # Verify user has access to this appointment
         appointment = Appointment.query.get(appointment_id)
         if not appointment:
             return
-        
+
+        # If appointment is completed, lock conversation entirely
+        if appointment.status == 'completed':
+            emit('message_error', {'error': 'Appointment is completed. Messaging is locked.'}, room=f'user_{current_user.id}')
+            return
+
         if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
             return
         if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
             return
-        
-        # Check if doctor can communicate (payment completed)
-        if current_user.role == 'doctor' and appointment.payment_status != 'completed':
+
+        # Check payment gating: allow when status in allowed
+        allowed_paid = {'completed', 'paid', 'confirmed'}
+        if appointment.payment_status not in allowed_paid:
+            emit('message_error', {'error': 'Payment required to send messages.'}, room=f'user_{current_user.id}')
             return
-        
+
         # Determine receiver
         if current_user.role == 'patient':
             receiver_id = appointment.doctor.user_id
         else:
             receiver_id = appointment.patient.user_id
-        
+
         # Create message in database
         message = Message(
             appointment_id=appointment_id,
@@ -290,10 +371,10 @@ def handle_send_message(data):
             message_type=message_type,
             content=content
         )
-        
+
         db.session.add(message)
         db.session.commit()
-        
+
         # Prepare message data for broadcasting
         message_data = {
             'id': message.id,
@@ -308,14 +389,14 @@ def handle_send_message(data):
             'created_at': message.created_at.isoformat(),
             'is_own': False  # This will be set by the receiver's client
         }
-        
+
         # Broadcast to appointment room and receiver's personal room
         room_name = f'appointment_{appointment_id}'
         emit('new_message', message_data, room=room_name)
         emit('new_message', {**message_data, 'is_own': True}, room=f'user_{receiver_id}')
-        
+
         log_audit('message_sent_websocket', current_user.id, f'Appointment: {appointment_id}')
-        
+
     except Exception as e:
         app.logger.error(f"WebSocket message error: {str(e)}")
         emit('message_error', {'error': 'Failed to send message'})
@@ -327,6 +408,62 @@ def get_csrf_token():
     return jsonify({
         'csrf_token': generate_csrf_token()
     })
+
+@app.route('/api/appointments/<int:appointment_id>/features')
+@login_required
+def get_appointment_features(appointment_id):
+    """Return feature lock/unlock status for an appointment"""
+    appointment = db.session.get(Appointment, appointment_id)
+    if not appointment:
+        return jsonify({'error': 'Appointment not found'}), 404
+
+    # ACL
+    if current_user.role == 'patient':
+        if not current_user.patient_profile or appointment.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+    if current_user.role == 'doctor':
+        if not current_user.doctor_profile or appointment.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+
+    allowed_paid = {'completed', 'paid', 'confirmed'}
+    unlocked = appointment.payment_status in allowed_paid and appointment.status != 'completed'
+
+    return jsonify({
+        'appointment_id': appointment.id,
+        'status': appointment.status,
+        'payment_status': appointment.payment_status,
+        'features_unlocked': unlocked
+    })
+
+@app.route('/api/appointments/<int:appointment_id>/complete', methods=['POST'])
+@login_required
+def mark_appointment_complete(appointment_id):
+    """Mark appointment as completed (locks all features permanently)"""
+    appt = db.session.get(Appointment, appointment_id)
+    if not appt:
+        return jsonify({'error': 'Appointment not found'}), 404
+
+    # Only participants (doctor or patient) may mark complete
+    if current_user.role == 'patient':
+        if not current_user.patient_profile or appt.patient_id != current_user.patient_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+    elif current_user.role == 'doctor':
+        if not current_user.doctor_profile or appt.doctor_id != current_user.doctor_profile.id:
+            return jsonify({'error': 'Access denied'}), 403
+    else:
+        return jsonify({'error': 'Access denied'}), 403
+
+    appt.status = 'completed'
+    db.session.commit()
+    log_audit('appointment_mark_completed', current_user.id, f'Appointment: {appointment_id}')
+
+    # Notify room to update UIs
+    emit('appointment_completed', {
+        'appointment_id': appointment_id,
+        'by_user_id': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+    return jsonify({'success': True, 'appointment_id': appointment_id, 'status': appt.status})
 
 def generate_csrf_token():
     """Generate CSRF token"""
@@ -494,13 +631,107 @@ def handle_call_end(data):
         'ended_by': current_user.id
     }, room=f'appointment_{appointment_id}')
 
+    # Clear busy markers for video calls too
+    clear_call_markers(call_id)
 
-# -----------------------------
-# Voice call specific handlers
-# -----------------------------
-@socketio.on('voice_call_initiate')
-def handle_voice_call_initiate(data):
-    """Initiate a voice call (either doctor or patient) with payment and busy gating"""
+
+# =============================
+# Video Call SDP Signaling
+# =============================
+
+@socketio.on('video_sdp_offer')
+def handle_video_sdp_offer(data):
+    """Relay SDP offer from doctor to patient"""
+    if not current_user.is_authenticated:
+        return
+
+    appointment_id = data.get('appointment_id')
+    call_id = data.get('call_id')
+    sdp_offer = data.get('sdp')
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # Verify sender is doctor and participant
+    if current_user.role != 'doctor' or appointment.doctor_id != current_user.doctor_profile.id:
+        return
+
+    receiver_id = appointment.patient.user_id
+
+    emit('video_sdp_offer', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'sdp': sdp_offer,
+        'from_id': current_user.id
+    }, room=f'user_{receiver_id}')
+
+
+@socketio.on('video_sdp_answer')
+def handle_video_sdp_answer(data):
+    """Relay SDP answer from patient to doctor"""
+    if not current_user.is_authenticated:
+        return
+
+    appointment_id = data.get('appointment_id')
+    call_id = data.get('call_id')
+    sdp_answer = data.get('sdp')
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # Verify sender is patient and participant
+    if current_user.role != 'patient' or appointment.patient_id != current_user.patient_profile.id:
+        return
+
+    receiver_id = appointment.doctor.user_id
+
+    emit('video_sdp_answer', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'sdp': sdp_answer,
+        'from_id': current_user.id
+    }, room=f'user_{receiver_id}')
+
+
+@socketio.on('video_ice_candidate')
+def handle_video_ice_candidate(data):
+    """Relay ICE candidates between peers"""
+    if not current_user.is_authenticated:
+        return
+
+    appointment_id = data.get('appointment_id')
+    call_id = data.get('call_id')
+    candidate = data.get('candidate')
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # Determine receiver (the other participant)
+    if current_user.role == 'doctor' and appointment.doctor_id == current_user.doctor_profile.id:
+        receiver_id = appointment.patient.user_id
+    elif current_user.role == 'patient' and appointment.patient_id == current_user.patient_profile.id:
+        receiver_id = appointment.doctor.user_id
+    else:
+        return
+
+    emit('video_ice_candidate', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'candidate': candidate,
+        'from_id': current_user.id
+    }, room=f'user_{receiver_id}')
+
+
+# =============================
+# Video Call Enhanced Handlers
+# =============================
+
+@socketio.on('video_call_initiate')
+def handle_video_call_initiate(data):
+    """Initiate a video call - DOCTOR ONLY with payment, completion, and busy gating"""
     if not current_user.is_authenticated:
         return
 
@@ -509,6 +740,171 @@ def handle_voice_call_initiate(data):
 
     appointment = Appointment.query.get(appointment_id)
     if not appointment:
+        return
+
+    # Completed appointments cannot start calls
+    if appointment.status == 'completed':
+        emit('video_call_error', {
+            'appointment_id': appointment_id,
+            'error': 'Appointment is completed. Calling is locked.'
+        }, room=f'user_{current_user.id}')
+        return
+
+    # ACL: ONLY doctor can initiate video calls
+    if current_user.role != 'doctor' or not current_user.doctor_profile or appointment.doctor_id != current_user.doctor_profile.id:
+        emit('video_call_error', {
+            'appointment_id': appointment_id,
+            'error': 'Only doctors can initiate video calls.'
+        }, room=f'user_{current_user.id}')
+        return
+
+    # Payment gating - treat paid/confirmed/completed as unlocked
+    if appointment.payment_status not in {'completed', 'paid', 'confirmed'}:
+        emit('video_call_error', {
+            'appointment_id': appointment_id,
+            'error': 'Payment pending. Complete payment to use video calling features.'
+        }, room=f'user_{current_user.id}')
+        return
+
+    patient_user_id = appointment.patient.user_id
+
+    # Busy detection
+    busy_call_id = get_user_busy_status(patient_user_id)
+    if busy_call_id:
+        emit('video_call_busy', {
+            'appointment_id': appointment_id,
+            'callee_id': patient_user_id
+        }, room=f'user_{current_user.id}')
+        return
+
+    # Mark both users busy
+    mark_users_busy(call_id, [current_user.id, patient_user_id], appointment_id)
+
+    # Notify patient of incoming call
+    emit('video_incoming_call', {
+        'appointment_id': appointment_id,
+        'caller_id': current_user.id,
+        'caller_name': get_user_display_name(current_user),
+        'call_id': call_id,
+        'call_type': 'video'
+    }, room=f'user_{patient_user_id}')
+
+    # Notify doctor's own room that ringing started
+    emit('video_outgoing_call_started', {
+        'appointment_id': appointment_id,
+        'call_id': call_id
+    }, room=f'user_{current_user.id}')
+
+    # Broadcast to appointment room
+    emit('video_call_ringing', {
+        'appointment_id': appointment_id,
+        'call_id': call_id,
+        'by': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+
+@socketio.on('video_call_accept')
+def handle_video_call_accept(data):
+    """Patient accepts video call"""
+    if not current_user.is_authenticated:
+        return
+
+    call_id = data.get('call_id')
+    appointment_id = data.get('appointment_id')
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # ACL: Only patient on this appointment can accept
+    if current_user.role != 'patient' or not current_user.patient_profile or appointment.patient_id != current_user.patient_profile.id:
+        return
+
+    doctor_user_id = appointment.doctor.user_id
+
+    emit('video_call_accepted', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'acceptor_id': current_user.id
+    }, room=f'user_{doctor_user_id}')
+
+    emit('video_call_accepted', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'acceptor_id': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+
+@socketio.on('video_call_reject')
+def handle_video_call_reject(data):
+    """Patient rejects or times out on video call"""
+    if not current_user.is_authenticated:
+        return
+
+    call_id = data.get('call_id')
+    appointment_id = data.get('appointment_id')
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    doctor_user_id = appointment.doctor.user_id
+
+    emit('video_call_rejected', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'rejector_id': current_user.id
+    }, room=f'user_{doctor_user_id}')
+
+    emit('video_call_rejected', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'rejector_id': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+    clear_call_markers(call_id)
+
+
+@socketio.on('video_call_end')
+def handle_video_call_end(data):
+    """End video call and clear busy markers"""
+    if not current_user.is_authenticated:
+        return
+
+    call_id = data.get('call_id')
+    appointment_id = data.get('appointment_id')
+
+    emit('video_call_ended', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'ended_by': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+    clear_call_markers(call_id)
+
+
+# =============================
+# Voice call specific handlers
+# =============================
+@socketio.on('voice_call_initiate')
+def handle_voice_call_initiate(data):
+    """Initiate a voice call (either doctor or patient) with payment, completion, and busy gating"""
+    if not current_user.is_authenticated:
+        return
+
+    appointment_id = data.get('appointment_id')
+    call_id = data.get('call_id') or secrets.token_urlsafe(12)
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # Completed appointments cannot start calls
+    if appointment.status == 'completed':
+        emit('voice_call_error', {
+            'appointment_id': appointment_id,
+            'error': 'Appointment is completed. Calling is locked.'
+        }, room=f'user_{current_user.id}')
         return
 
     # ACL: caller must be one of the appointment participants
@@ -526,7 +922,7 @@ def handle_voice_call_initiate(data):
         return
 
     # Payment gating
-    allowed = ['completed', 'paid', 'confirmed']
+    allowed = {'completed', 'paid', 'confirmed'}
     if appointment.payment_status not in allowed:
         emit('voice_call_error', {
             'appointment_id': appointment_id,
@@ -535,7 +931,8 @@ def handle_voice_call_initiate(data):
         return
 
     # Busy detection
-    if user_busy.get(callee_user_id):
+    busy_call_id = get_user_busy_status(callee_user_id)
+    if busy_call_id:
         emit('voice_call_busy', {
             'appointment_id': appointment_id,
             'callee_id': callee_user_id
@@ -1316,30 +1713,27 @@ def get_user_display_name(user):
 @app.route('/api/messages/<int:appointment_id>')
 @login_required
 def get_appointment_messages(appointment_id):
-    """Get all messages for an appointment - FIXED VERSION"""
+    """Get all messages for an appointment with feature gating info"""
     try:
-        # Use session.get instead of Query.get
         appointment = db.session.get(Appointment, appointment_id)
         if not appointment:
             return jsonify({'error': 'Appointment not found'}), 404
-        
-        # Check if user has access to this appointment
+
+        # ACL checks
         if current_user.role == 'patient':
             if not current_user.patient_profile:
                 return jsonify({'error': 'Patient profile not found'}), 404
             if appointment.patient_id != current_user.patient_profile.id:
                 return jsonify({'error': 'Access denied'}), 403
-        
         if current_user.role == 'doctor':
             if not current_user.doctor_profile:
                 return jsonify({'error': 'Doctor profile not found'}), 404
             if appointment.doctor_id != current_user.doctor_profile.id:
                 return jsonify({'error': 'Access denied'}), 403
-        
-        messages = Message.query.filter_by(appointment_id=appointment_id)\
-                              .order_by(Message.created_at.asc())\
-                              .all()
-        
+
+        messages = Message.query.filter_by(appointment_id=appointment_id) \
+            .order_by(Message.created_at.asc()).all()
+
         messages_data = []
         for message in messages:
             messages_data.append({
@@ -1358,9 +1752,20 @@ def get_appointment_messages(appointment_id):
                 'created_at': message.created_at.isoformat(),
                 'is_own': message.sender_id == current_user.id
             })
-        
-        return jsonify(messages_data)
-    
+
+        allowed_paid = {'completed', 'paid', 'confirmed'}
+        features_unlocked = appointment.payment_status in allowed_paid and appointment.status != 'completed'
+
+        return jsonify({
+            'messages': messages_data,
+            'appointment': {
+                'id': appointment.id,
+                'status': appointment.status,
+                'payment_status': appointment.payment_status
+            },
+            'features_unlocked': features_unlocked
+        })
+
     except Exception as e:
         app.logger.error(f"Error fetching messages: {str(e)}")
         return jsonify({'error': 'Failed to fetch messages'}), 500
@@ -1404,24 +1809,29 @@ def mark_messages_read(appointment_id):
 @login_required
 @limiter.limit("10 per minute")
 def upload_voice_message():
-    """Upload voice message with payment validation"""
+    """Upload voice message with payment validation and completion lock"""
     try:
         if 'audio' not in request.files:
             return jsonify({'error': 'No audio file provided'}), 400
-        
+
         audio_file = request.files['audio']
         appointment_id = request.form.get('appointment_id')
         duration = request.form.get('duration', 0)
-        
+
         if not appointment_id:
             return jsonify({'error': 'Appointment ID is required'}), 400
-        
+
         appointment = Appointment.query.get_or_404(appointment_id)
-        
-        # Check payment status for doctors
-        if current_user.role == 'doctor' and appointment.payment_status != 'completed':
+
+        # Completed appointments are locked
+        if appointment.status == 'completed':
+            return jsonify({'error': 'Appointment is completed. Messaging is locked.'}), 403
+
+        # Payment gating for both sides
+        allowed_paid = {'completed', 'paid', 'confirmed'}
+        if appointment.payment_status not in allowed_paid:
             return jsonify({'error': 'Payment required to send voice messages'}), 403
-        
+
         # Check user access
         if current_user.role == 'patient':
             patient_profile = Patient.query.filter_by(user_id=current_user.id).first()
@@ -1437,18 +1847,18 @@ def upload_voice_message():
             if appointment.doctor_id != doctor_profile.id:
                 return jsonify({'error': 'Access denied'}), 403
             receiver_id = appointment.patient.user_id
-        
+
         if audio_file and audio_file.filename != '':
             # Save the audio file
             timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
             filename = f"voice_{current_user.id}_{timestamp}.webm"
             voice_messages_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'voice_messages')
             os.makedirs(voice_messages_dir, exist_ok=True)
-            
+
             file_path = os.path.join(voice_messages_dir, filename)
             audio_file.save(file_path)
             file_size = os.path.getsize(file_path)
-            
+
             # Create message record
             message = Message(
                 appointment_id=appointment_id,
@@ -1461,10 +1871,10 @@ def upload_voice_message():
                 file_size=file_size,
                 created_at=datetime.now(timezone.utc)
             )
-            
+
             db.session.add(message)
             db.session.commit()
-            
+
             # Prepare response
             message_data = {
                 'id': message.id,
@@ -1482,12 +1892,12 @@ def upload_voice_message():
                 'is_own': True,
                 'duration': int(duration)
             }
-            
+
             log_audit('voice_message_uploaded', current_user.id, f'Appointment: {appointment_id}')
             return jsonify(message_data)
         else:
             return jsonify({'error': 'Invalid audio file'}), 400
-        
+
     except Exception as e:
         app.logger.error(f"Error uploading voice message: {str(e)}")
         return jsonify({'error': f'Failed to upload voice message: {str(e)}'}), 500
@@ -1534,21 +1944,25 @@ def debug_user_profile():
 @app.route('/api/debug/appointment/<int:appointment_id>')
 @login_required
 def debug_appointment(appointment_id):
-    """Debug endpoint to check appointment data"""
+    """Debug endpoint to check appointment data and feature gate status"""
     appointment = db.session.get(Appointment, appointment_id)
     if not appointment:
         return jsonify({'error': 'Appointment not found'}), 404
-    
+
     patient = db.session.get(Patient, appointment.patient_id)
     doctor = db.session.get(Doctor, appointment.doctor_id)
-    
+
+    allowed_paid = {'completed', 'paid', 'confirmed'}
+    features_unlocked = appointment.payment_status in allowed_paid and appointment.status != 'completed'
+
     return jsonify({
         'appointment': {
             'id': appointment.id,
             'patient_id': appointment.patient_id,
             'doctor_id': appointment.doctor_id,
             'status': appointment.status,
-            'payment_status': appointment.payment_status
+            'payment_status': appointment.payment_status,
+            'features_unlocked': features_unlocked
         },
         'patient': {
             'id': patient.id if patient else None,
@@ -1568,57 +1982,61 @@ def debug_appointment(appointment_id):
 @login_required
 @limiter.limit("20 per minute")
 def upload_message_file():
-    """Upload file for messaging with payment validation"""
+    """Upload file for messaging with payment validation and completion lock"""
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
-        
+
         file = request.files['file']
         appointment_id = request.form.get('appointment_id')
-        
+
         if not appointment_id:
             return jsonify({'error': 'Appointment ID required'}), 400
-        
+
         appointment = Appointment.query.get_or_404(appointment_id)
-        
+
+        # Completed appointments are locked
+        if appointment.status == 'completed':
+            return jsonify({'error': 'Appointment is completed. Messaging is locked.'}), 403
+
         # Check if user has access to this appointment
         if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
             return jsonify({'error': 'Access denied'}), 403
-        
         if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
             return jsonify({'error': 'Access denied'}), 403
-        
-        # Check payment status for doctors
-        if current_user.role == 'doctor' and appointment.payment_status != 'completed':
+
+        # Payment gating for both sides
+        allowed_paid = {'completed', 'paid', 'confirmed'}
+        if appointment.payment_status not in allowed_paid:
             return jsonify({'error': 'Payment required to send files'}), 403
-        
+
         if file and file.filename != '':
             # Generate unique filename
             timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
             filename = secure_filename(file.filename)
             unique_filename = f"file_{current_user.id}_{timestamp}_{filename}"
-            
+
             # Create upload directories if they don't exist
             message_files_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'message_files')
             os.makedirs(message_files_dir, exist_ok=True)
-            
+
             file_path = os.path.join(message_files_dir, unique_filename)
             file.save(file_path)
             file_size = os.path.getsize(file_path)
-            
+
             # Determine receiver
             if current_user.role == 'patient':
                 receiver_id = appointment.doctor.user_id
             else:
                 receiver_id = appointment.patient.user_id
-            
+
             # Determine file type
             file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
             if file_extension in ['jpg', 'jpeg', 'png', 'gif', 'bmp']:
                 message_type = 'image'
             else:
                 message_type = 'file'
-            
+
             message = Message(
                 appointment_id=appointment_id,
                 sender_id=current_user.id,
@@ -1631,7 +2049,7 @@ def upload_message_file():
             )
             db.session.add(message)
             db.session.commit()
-            
+
             # Prepare response data
             message_data = {
                 'id': message.id,
@@ -1648,12 +2066,12 @@ def upload_message_file():
                 'created_at': message.created_at.isoformat(),
                 'is_own': True
             }
-            
+
             log_audit('message_file_uploaded', current_user.id, f'Appointment: {appointment_id}, Type: {message_type}')
             return jsonify(message_data)
         else:
             return jsonify({'error': 'Invalid file'}), 400
-    
+
     except Exception as e:
         app.logger.error(f"Error uploading message file: {str(e)}")
         return jsonify({'error': 'Failed to upload file'}), 500

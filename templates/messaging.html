@@ -531,6 +531,50 @@
                 fileInput.addEventListener('change', handleFileUpload);
             }
 
+            function setFeatureLockState(unlocked, appointment) {
+                const container = document.querySelector('.messaging-container');
+                let banner = document.getElementById('featureLockBanner');
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'featureLockBanner';
+                    container.insertBefore(banner, container.children[1]);
+                }
+                banner.style.padding = '8px 12px';
+                banner.style.textAlign = 'center';
+                banner.style.fontSize = '0.95rem';
+                banner.style.background = unlocked ? '#e8f5e9' : '#fff3cd';
+                banner.style.color = unlocked ? '#2e7d32' : '#856404';
+                banner.innerHTML = unlocked ? '<i class="fas fa-unlock"></i> Features unlocked' : '<i class="fas fa-lock"></i> Payment required to use chat, voice, and video features.';
+
+                // Disable/enable inputs
+                messageInput.disabled = !unlocked;
+                sendBtn.disabled = !unlocked;
+                attachBtn.disabled = !unlocked;
+
+                const guard = (e) => {
+                    if (!unlocked) {
+                        e.preventDefault();
+                        redirectToPayment(appointment);
+                    }
+                }
+                ;
+                sendBtn.addEventListener('click', guard);
+                attachBtn.addEventListener('click', guard);
+                messageInput.addEventListener('focus', guard);
+
+                if (!unlocked) {
+                    messageInput.placeholder = 'Payment required to send messages';
+                } else {
+                    messageInput.placeholder = 'Type a message...';
+                }
+            }
+
+            function redirectToPayment(appointment) {
+                const id = appointment?.id || new URLSearchParams(window.location.search).get('appointment_id');
+                alert('Pay to access these features. Redirecting to payment...');
+                window.location.href = `/payment?appointment_id=${encodeURIComponent(id)}`;
+            }
+
             // Load messages
             async function loadMessages(appointmentId) {
                 try {
@@ -544,7 +588,11 @@
                     });
 
                     if (response.ok) {
-                        const messages = await response.json();
+                        const payload = await response.json();
+                        const messages = Array.isArray(payload) ? payload : (payload.messages || []);
+                        const appt = Array.isArray(payload) ? null : (payload.appointment || null);
+                        const featuresUnlocked = Array.isArray(payload) ? true : !!payload.features_unlocked;
+                        setFeatureLockState(featuresUnlocked, appt);
                         displayMessages(messages);
                     } else {
                         throw new Error('Failed to load messages');
@@ -663,6 +711,16 @@
                     const urlParams = new URLSearchParams(window.location.search);
                     const appointmentId = urlParams.get('appointment_id');
 
+                    // verify features
+                    const featureCheck = await fetch(`/api/appointments/${appointmentId}/features`, { credentials: 'same-origin' });
+                    if (featureCheck.ok) {
+                        const f = await featureCheck.json();
+                        if (!f.features_unlocked) {
+                            redirectToPayment({ id: appointmentId });
+                            return;
+                        }
+                    }
+
                     const messageData = {
                         appointment_id: appointmentId,
                         content: content,
@@ -752,6 +810,16 @@
                 try {
                     const urlParams = new URLSearchParams(window.location.search);
                     const appointmentId = urlParams.get('appointment_id');
+
+                    // verify features
+                    const featureCheck = await fetch(`/api/appointments/${appointmentId}/features`, { credentials: 'same-origin' });
+                    if (featureCheck.ok) {
+                        const f = await featureCheck.json();
+                        if (!f.features_unlocked) {
+                            redirectToPayment({ id: appointmentId });
+                            return;
+                        }
+                    }
 
                     const formData = new FormData();
                     formData.append('file', file);

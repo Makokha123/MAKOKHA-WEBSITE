@@ -1,427 +1,72 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Call - Makokha Medical Centre</title>
-    
-    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        :root {
-            --primary-color: #075e54;
-            --secondary-color: #128c7e;
-            --accent-color: #25d366;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-        }
-
-        body {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* Enhanced Voice Call Interface */
-        .voice-call-interface {
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-            padding: 2rem;
-        }
-
-        .caller-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            margin: 0 auto 2rem;
-        }
-
-        .call-status {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            font-weight: 300;
-        }
-
-        .caller-name {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .call-duration {
-            font-size: 1.2rem;
-            margin-bottom: 3rem;
-            opacity: 0.8;
-        }
-
-        .call-controls {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-        }
-
-        .call-control-btn {
-            width: 70px;
-            height: 70px;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .call-control-btn.mute-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-
-        .call-control-btn.mute-btn.muted {
-            background: var(--danger-color);
-        }
-
-        .call-control-btn.speaker-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-
-        .call-control-btn.speaker-btn.active {
-            background: var(--accent-color);
-        }
-
-        .call-control-btn.end-call-btn {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .call-control-btn:hover {
-            transform: scale(1.1);
-        }
-
-        /* Call ended screen */
-        .call-ended {
-            text-align: center;
-        }
-
-        .call-ended-icon {
-            font-size: 4rem;
-            margin-bottom: 2rem;
-            opacity: 0.7;
-        }
-
-        .call-ended h2 {
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-        }
-
-        .call-ended p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.8;
-        }
-
-        .back-button {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background 0.3s;
-        }
-
-        .back-button:hover {
-            background: rgba(255,255,255,0.3);
-        }
-
-        /* Responsive */
-        @media (max-width: 480px) {
-            .voice-call-interface {
-                padding: 1rem;
-            }
-            
-            .caller-avatar {
-                width: 100px;
-                height: 100px;
-                font-size: 2.5rem;
-            }
-            
-            .call-control-btn {
-                width: 60px;
-                height: 60px;
-                font-size: 1.3rem;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Voice Call</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    .banner { padding: 8px 12px; text-align:center; font-size:0.95rem; }
+    .banner.lock { background:#fff3cd; color:#856404; }
+    .banner.unlock { background:#e8f5e9; color:#2e7d32; }
+    .toolbar button { margin: 0 6px; }
+  </style>
 </head>
 <body>
-    <div class="voice-call-interface" id="voiceCallInterface">
-        <div class="caller-avatar" id="callerAvatar">
-            <i class="fas fa-user-md"></i>
-        </div>
-        <div class="call-status" id="callStatus">Connected</div>
-        <div class="caller-name" id="callerName">Medical Consultation</div>
-        <div class="call-duration" id="callDuration">00:00</div>
-        <div class="call-controls">
-            <button class="call-control-btn mute-btn" id="callMuteBtn">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button class="call-control-btn speaker-btn" id="speakerBtn">
-                <i class="fas fa-volume-up"></i>
-            </button>
-            <button class="call-control-btn end-call-btn" id="endCallBtn">
-                <i class="fas fa-phone"></i>
-            </button>
-        </div>
-    </div>
+  <div class="toolbar">
+    <button id="markCompleteBtn">Mark Complete</button>
+  </div>
+  <div id="featureBanner" class="banner" style="display:none;"></div>
 
-    <div class="call-ended" id="callEnded" style="display: none;">
-        <div class="call-ended-icon">
-            <i class="fas fa-phone-slash"></i>
-        </div>
-        <h2>Call Ended</h2>
-        <p>The voice call has been completed</p>
-        <button class="back-button" id="backButton">Back to Chat</button>
-    </div>
+  <div id="callContainer">
+    <!-- your voice call UI -->
+    <p>Voice call session</p>
+  </div>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script>
-        (function() {
-            'use strict';
+  <script>
+    (function(){
+      'use strict';
+      const params = new URLSearchParams(window.location.search);
+      // Support both /voice-call/<id> route or query param
+      const pathMatch = window.location.pathname.match(/voice-call\/(\d+)/);
+      const appointmentId = pathMatch ? pathMatch[1] : (params.get('appointment_id') || '');
+      const banner = document.getElementById('featureBanner');
 
-            // DOM Elements
-            const voiceCallInterface = document.getElementById('voiceCallInterface');
-            const callerAvatar = document.getElementById('callerAvatar');
-            const callStatus = document.getElementById('callStatus');
-            const callerName = document.getElementById('callerName');
-            const callDuration = document.getElementById('callDuration');
-            const callMuteBtn = document.getElementById('callMuteBtn');
-            const speakerBtn = document.getElementById('speakerBtn');
-            const endCallBtn = document.getElementById('endCallBtn');
-            const callEnded = document.getElementById('callEnded');
-            const backButton = document.getElementById('backButton');
+      function setBanner(unlocked){
+        banner.style.display = 'block';
+        banner.className = 'banner ' + (unlocked ? 'unlock' : 'lock');
+        banner.innerHTML = unlocked ? '<i class="fas fa-unlock"></i> Features unlocked' : '<i class="fas fa-lock"></i> Payment required to use voice call';
+      }
 
-            // State
-            let socket = null;
-            let callTimer = null;
-            let callSeconds = 0;
-            let outgoingTone = null;
-            let incomingRingtone = null;
-            let currentCallId = null;
-            let appointmentId = null;
-            let userRole = null;
-            let isCaller = false;
+      function redirectToPayment(){
+        alert('Pay to access these features. Redirecting to payment...');
+        window.location.href = `/payment?appointment_id=${encodeURIComponent(appointmentId)}`;
+      }
 
-            // Use available ringtone in static resources; replace with separate files if added
-            const OUTGOING_SRC = '/static/ringtones/video_ringtone.mp3';
-            const INCOMING_SRC = '/static/ringtones/video_ringtone.mp3';
+      async function getFeatures(){
+        try {
+          const r = await fetch(`/api/appointments/${appointmentId}/features`, { credentials:'same-origin' });
+          return r.ok ? r.json() : { features_unlocked:false };
+        } catch(e){ return { features_unlocked:false }; }
+      }
 
-            function init() {
-                const urlParams = new URLSearchParams(window.location.search);
-                appointmentId = urlParams.get('appointment_id');
-                userRole = urlParams.get('user_role') || 'patient';
-                const contact = urlParams.get('contact_name') || 'Medical Consultation';
-                const payment = urlParams.get('payment_status') || '';
+      async function enforce(){
+        const f = await getFeatures();
+        setBanner(!!f.features_unlocked);
+        if(!f.features_unlocked){ redirectToPayment(); }
+      }
 
-                callerName.textContent = contact;
-                callerAvatar.innerHTML = userRole === 'doctor' ? '<i class="fas fa-user-md"></i>' : '<i class="fas fa-user"></i>';
+      document.getElementById('markCompleteBtn').addEventListener('click', async () => {
+        try {
+          const r = await fetch(`/api/appointments/${appointmentId}/complete`, { method:'POST', credentials:'same-origin' });
+          if(r.ok){ alert('Appointment marked complete.'); window.history.back(); }
+          else { const e = await r.json().catch(()=>({})); alert(e.error || 'Failed to mark complete'); }
+        } catch(e){ alert('Failed to mark complete'); }
+      });
 
-                // Prepare audio
-                try { outgoingTone = new Audio(OUTGOING_SRC); outgoingTone.loop = true; } catch (e) {}
-                try { incomingRingtone = new Audio(INCOMING_SRC); incomingRingtone.loop = true; } catch (e) {}
-
-                // Connect socket
-                socket = io({ transports: ['websocket', 'polling'] });
-                socket.on('connect', () => {
-                    if (appointmentId) socket.emit('join_appointment', { appointment_id: appointmentId });
-                    // If this page was opened by the initiator, start the voice call
-                    if (appointmentId) {
-                        // Emit initiate; server will gate by ACL and payment
-                        socket.emit('voice_call_initiate', { appointment_id: appointmentId });
-                    }
-                });
-
-                // App-level events
-                socket.on('voice_incoming_call', handleIncomingCall);
-                socket.on('outgoing_voice_call_started', handleOutgoingStarted);
-                socket.on('voice_call_busy', handleBusy);
-                socket.on('voice_call_accepted', handleAccepted);
-                socket.on('voice_call_rejected', handleRejected);
-                socket.on('voice_call_ended', handleEnded);
-
-                // UI actions
-                endCallBtn.addEventListener('click', () => {
-                    if (currentCallId && appointmentId) {
-                        socket.emit('voice_call_end', { call_id: currentCallId, appointment_id: appointmentId });
-                    }
-                    finishCall('You ended the call');
-                });
-
-                callMuteBtn.addEventListener('click', toggleMute);
-                speakerBtn.addEventListener('click', toggleSpeaker);
-
-                // If this page was opened by caller (caller-side should emit initiation elsewhere), we just wait for events
-            }
-
-            function handleOutgoingStarted(data) {
-                if (!data) return;
-                currentCallId = data.call_id;
-                isCaller = true;
-                callStatus.textContent = 'Calling...';
-                playOutgoingTone();
-
-                // 60s timeout
-                setTimeout(() => {
-                    if (callStatus.textContent === 'Calling...' && currentCallId) {
-                        // timeout - treat as unanswered
-                        stopOutgoingTone();
-                        callStatus.textContent = 'No answer';
-                        showRetryCancel();
-                        // notify server to clear markers
-                        socket.emit('voice_call_reject', { call_id: currentCallId, appointment_id: appointmentId });
-                    }
-                }, 60000);
-            }
-
-            function handleIncomingCall(data) {
-                if (!data) return;
-                currentCallId = data.call_id;
-                isCaller = false;
-                callStatus.textContent = 'Incoming call';
-                callerName.textContent = data.caller_name || callerName.textContent;
-                playIncomingRingtone();
-
-                // Show accept/decline overlay
-                showIncomingControls();
-            }
-
-            function handleBusy(data) {
-                stopOutgoingTone();
-                callStatus.textContent = 'User is on another call';
-                showRetryCancel();
-            }
-
-            function handleAccepted(data) {
-                if (!data) return;
-                stopIncomingRingtone();
-                stopOutgoingTone();
-                callStatus.textContent = 'Connected';
-                startCallTimer();
-            }
-
-            function handleRejected(data) {
-                stopIncomingRingtone();
-                stopOutgoingTone();
-                callStatus.textContent = 'Call declined';
-                showRetryCancel();
-                clearLocalCallState();
-            }
-
-            function handleEnded(data) {
-                stopIncomingRingtone();
-                stopOutgoingTone();
-                finishCall('Call ended');
-                clearLocalCallState();
-            }
-
-            function acceptIncoming() {
-                if (!currentCallId || !appointmentId) return;
-                stopIncomingRingtone();
-                socket.emit('voice_call_accept', { call_id: currentCallId, appointment_id: appointmentId });
-                callStatus.textContent = 'Connecting...';
-                // connection established via signaling — for now assume immediate
-                setTimeout(() => {
-                    callStatus.textContent = 'Connected';
-                    startCallTimer();
-                }, 800);
-            }
-
-            function declineIncoming() {
-                if (!currentCallId || !appointmentId) return;
-                stopIncomingRingtone();
-                socket.emit('voice_call_reject', { call_id: currentCallId, appointment_id: appointmentId });
-                callStatus.textContent = 'Call declined';
-                showRetryCancel();
-                clearLocalCallState();
-            }
-
-            function showIncomingControls() {
-                // simple confirm dialog style
-                const accept = confirm(`${callerName.textContent} is calling. Accept?`);
-                if (accept) acceptIncoming(); else declineIncoming();
-            }
-
-            function showRetryCancel() {
-                const retry = confirm('Call not answered. Retry?');
-                if (retry) {
-                    // retry by reloading page — caller UI should re-initiate the call externally
-                    window.location.reload();
-                } else {
-                    window.close();
-                }
-            }
-
-            function clearLocalCallState() {
-                currentCallId = null;
-                isCaller = false;
-                stopCallTimer();
-            }
-
-            function finishCall(message) {
-                stopCallTimer();
-                stopIncomingRingtone();
-                stopOutgoingTone();
-                callStatus.textContent = message || 'Call ended';
-                voiceCallInterface.style.display = 'none';
-                callEnded.style.display = 'block';
-            }
-
-            function startCallTimer() {
-                callSeconds = 0;
-                updateCallTimer();
-                if (callTimer) clearInterval(callTimer);
-                callTimer = setInterval(() => { callSeconds++; updateCallTimer(); }, 1000);
-            }
-
-            function stopCallTimer() { if (callTimer) { clearInterval(callTimer); callTimer = null; } }
-            function updateCallTimer() { const m = Math.floor(callSeconds/60).toString().padStart(2,'0'); const s = (callSeconds%60).toString().padStart(2,'0'); callDuration.textContent = `${m}:${s}`; }
-
-            function playOutgoingTone() { try { outgoingTone && outgoingTone.play().catch(()=>{}); } catch(e){} }
-            function stopOutgoingTone() { try { outgoingTone && outgoingTone.pause(); outgoingTone && (outgoingTone.currentTime = 0); } catch(e){} }
-            function playIncomingRingtone() { try { incomingRingtone && incomingRingtone.play().catch(()=>{}); } catch(e){} }
-            function stopIncomingRingtone() { try { incomingRingtone && incomingRingtone.pause(); incomingRingtone && (incomingRingtone.currentTime = 0); } catch(e){} }
-
-            function toggleMute() { callMuteBtn.classList.toggle('muted'); }
-            function toggleSpeaker() { speakerBtn.classList.toggle('active'); }
-
-            // Expose accept/decline to global for testing (if needed)
-            window.voiceAccept = acceptIncoming;
-            window.voiceDecline = declineIncoming;
-
-            // Init on DOM loaded
-            document.addEventListener('DOMContentLoaded', init);
-        })();
-    </script>
+      if(!appointmentId){ alert('Missing appointment id'); window.history.back(); return; }
+      enforce();
+    })();
+  </script>
 </body>
 </html>
