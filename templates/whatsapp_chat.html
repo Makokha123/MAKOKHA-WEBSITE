@@ -300,8 +300,8 @@
                 </div>
             </div>
             <div class="header-actions">
-                <button class="header-action" title="Video Call" onclick="startVideoCall()">📹</button>
-                <button class="header-action" title="Voice Call" onclick="startVoiceCall()">📞</button>
+                <a class="header-action" title="Video Call" href="{{ url_for('video_call', appointment_id=appointment.id) }}?user_role={{ current_user.role }}&contact_name={{ (appointment.doctor.first_name ~ ' ' ~ appointment.doctor.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">📹</a>
+                <a class="header-action" title="Voice Call" href="{{ url_for('voice_call', appointment_id=appointment.id) }}?user_role={{ current_user.role }}&contact_name={{ (appointment.doctor.first_name ~ ' ' ~ appointment.doctor.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">📞</a>
                 <button class="header-action" title="Menu">⋮</button>
             </div>
         </div>

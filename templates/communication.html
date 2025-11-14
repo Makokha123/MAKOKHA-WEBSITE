@@ -1121,10 +1121,11 @@
                 const params = new URLSearchParams({
                     appointment_id: currentAppointment.id,
                     contact_name: currentUser.role === 'patient' ? currentAppointment.doctor_name : currentAppointment.patient_name,
-                    user_role: currentUser.role
+                    user_role: currentUser.role,
+                    payment_status: currentAppointment.payment_status
                 });
                 
-                window.open(`/voicecall?${params.toString()}`, '_blank', 'width=400,height=600');
+                window.open(`/voice-call/${currentAppointment.id}?${params.toString()}`, '_blank', 'width=400,height=600');
             };
 
             // Start video call - redirect to videocall.html
@@ -1140,10 +1141,11 @@
                 const params = new URLSearchParams({
                     appointment_id: currentAppointment.id,
                     contact_name: currentUser.role === 'patient' ? currentAppointment.doctor_name : currentAppointment.patient_name,
-                    user_role: currentUser.role
+                    user_role: currentUser.role,
+                    payment_status: currentAppointment.payment_status
                 });
                 
-                window.open(`/videocall?${params.toString()}`, '_blank', 'width=800,height=600');
+                window.open(`/video-call/${currentAppointment.id}?${params.toString()}`, '_blank', 'width=800,height=600');
             };
 
             // Start voice note - redirect to voicenote.html
@@ -1160,7 +1162,7 @@
                     appointment_id: currentAppointment.id
                 });
                 
-                window.open(`/voicenote?${params.toString()}`, '_blank', 'width=400,height=600');
+                window.open(`/voicenote.html?${params.toString()}`, '_blank', 'width=400,height=600');
             };
 
             // Attach file - redirect to fileupload.html
@@ -1177,7 +1179,7 @@
                     appointment_id: currentAppointment.id
                 });
                 
-                window.open(`/fileupload?${params.toString()}`, '_blank', 'width=600,height=700');
+                window.open(`/fileupload.html?${params.toString()}`, '_blank', 'width=600,height=700');
             };
 
             // Send message

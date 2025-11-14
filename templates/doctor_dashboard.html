@@ -719,18 +719,18 @@
                                         onclick="startConsultation({{ appointment.id }})">
                                     Start Consult
                                 </button>
-                                <button class="btn btn-secondary btn-sm" 
-                                        onclick="startVideoCall({{ appointment.id }})">
+                                          <a class="btn btn-secondary btn-sm" 
+                                              href="{{ url_for('video_call', appointment_id=appointment.id) }}?user_role=doctor&contact_name={{ (appointment.patient.first_name ~ ' ' ~ appointment.patient.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">
                                     Video
-                                </button>
-                                <button class="btn btn-secondary btn-sm" 
-                                        onclick="startVoiceCall({{ appointment.id }})">
+                                </a>
+                                          <a class="btn btn-secondary btn-sm" 
+                                              href="{{ url_for('voice_call', appointment_id=appointment.id) }}?user_role=doctor&contact_name={{ (appointment.patient.first_name ~ ' ' ~ appointment.patient.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">
                                     Voice
-                                </button>
-                                <button class="btn btn-secondary btn-sm" 
-                                        onclick="openMessages({{ appointment.id }})">
+                                </a>
+                                <a class="btn btn-secondary btn-sm" 
+                                   href="{{ url_for('communication') }}?appointment_id={{ appointment.id }}">
                                     Chat
-                                </button>
+                                </a>
                                 {% endif %}
                                 
                                 {% if appointment.status == 'scheduled' %}

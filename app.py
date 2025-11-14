@@ -175,6 +175,29 @@ socketio = SocketIO(
     max_http_buffer_size=100 * 1024 * 1024
 )
 
+# In-memory registry for active voice calls and busy users
+# Note: This is process-local. Replace with Redis for multi-worker deployments.
+active_voice_calls = {}
+user_busy = {}  # maps user_id -> call_id
+
+def mark_users_busy(call_id, user_ids, appointment_id):
+    active_voice_calls[call_id] = {
+        'participants': list(user_ids),
+        'appointment_id': appointment_id,
+        'started_at': datetime.utcnow()
+    }
+    for uid in user_ids:
+        user_busy[uid] = call_id
+
+def clear_call_markers(call_id):
+    info = active_voice_calls.pop(call_id, None)
+    if not info:
+        return
+    for uid in info.get('participants', []):
+        if user_busy.get(uid) == call_id:
+            user_busy.pop(uid, None)
+
+
 # Configure login manager
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
@@ -470,6 +493,170 @@ def handle_call_end(data):
         'appointment_id': appointment_id,
         'ended_by': current_user.id
     }, room=f'appointment_{appointment_id}')
+
+
+# -----------------------------
+# Voice call specific handlers
+# -----------------------------
+@socketio.on('voice_call_initiate')
+def handle_voice_call_initiate(data):
+    """Initiate a voice call (either doctor or patient) with payment and busy gating"""
+    if not current_user.is_authenticated:
+        return
+
+    appointment_id = data.get('appointment_id')
+    call_id = data.get('call_id') or secrets.token_urlsafe(12)
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # ACL: caller must be one of the appointment participants
+    if current_user.role == 'patient':
+        if not current_user.patient_profile or appointment.patient_id != current_user.patient_profile.id:
+            return
+        callee_user_id = appointment.doctor.user_id
+        caller_label = get_user_display_name(current_user)
+    elif current_user.role == 'doctor':
+        if not current_user.doctor_profile or appointment.doctor_id != current_user.doctor_profile.id:
+            return
+        callee_user_id = appointment.patient.user_id
+        caller_label = get_user_display_name(current_user)
+    else:
+        return
+
+    # Payment gating
+    allowed = ['completed', 'paid', 'confirmed']
+    if appointment.payment_status not in allowed:
+        emit('voice_call_error', {
+            'appointment_id': appointment_id,
+            'error': 'Payment required to start voice call.'
+        }, room=f'user_{current_user.id}')
+        return
+
+    # Busy detection
+    if user_busy.get(callee_user_id):
+        emit('voice_call_busy', {
+            'appointment_id': appointment_id,
+            'callee_id': callee_user_id
+        }, room=f'user_{current_user.id}')
+        return
+
+    # Mark both users busy
+    mark_users_busy(call_id, [current_user.id, callee_user_id], appointment_id)
+
+    # Notify callee and caller
+    emit('voice_incoming_call', {
+        'appointment_id': appointment_id,
+        'caller_id': current_user.id,
+        'caller_name': caller_label,
+        'call_id': call_id,
+        'caller_role': current_user.role
+    }, room=f'user_{callee_user_id}')
+
+    emit('outgoing_voice_call_started', {
+        'appointment_id': appointment_id,
+        'call_id': call_id
+    }, room=f'user_{current_user.id}')
+
+    emit('voice_call_ringing', {
+        'appointment_id': appointment_id,
+        'call_id': call_id,
+        'by': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+
+@socketio.on('voice_call_accept')
+def handle_voice_call_accept(data):
+    """Callee accepts voice call"""
+    if not current_user.is_authenticated:
+        return
+
+    call_id = data.get('call_id')
+    appointment_id = data.get('appointment_id')
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # Only callee can accept (must be participant)
+    if current_user.role == 'patient' and appointment.patient_id != current_user.patient_profile.id:
+        return
+    if current_user.role == 'doctor' and appointment.doctor_id != current_user.doctor_profile.id:
+        return
+
+    # Find initiator (other participant)
+    if current_user.role == 'patient':
+        initiator_id = appointment.doctor.user_id
+    else:
+        initiator_id = appointment.patient.user_id
+
+    emit('voice_call_accepted', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'acceptor_id': current_user.id
+    }, room=f'user_{initiator_id}')
+
+    emit('voice_call_accepted', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'acceptor_id': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+
+@socketio.on('voice_call_reject')
+def handle_voice_call_reject(data):
+    """Callee rejects or times out"""
+    if not current_user.is_authenticated:
+        return
+
+    call_id = data.get('call_id')
+    appointment_id = data.get('appointment_id')
+
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return
+
+    # Notify the initiator (other participant)
+    if current_user.role == 'patient':
+        other_id = appointment.doctor.user_id
+    else:
+        other_id = appointment.patient.user_id
+
+    emit('voice_call_rejected', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'rejector_id': current_user.id
+    }, room=f'user_{other_id}')
+
+    emit('voice_call_rejected', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'rejector_id': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+    # Clear busy markers
+    clear_call_markers(call_id)
+
+
+@socketio.on('voice_call_end')
+def handle_voice_call_end(data):
+    """End voice call and clear busy markers"""
+    if not current_user.is_authenticated:
+        return
+
+    call_id = data.get('call_id')
+    appointment_id = data.get('appointment_id')
+
+    emit('voice_call_ended', {
+        'call_id': call_id,
+        'appointment_id': appointment_id,
+        'ended_by': current_user.id
+    }, room=f'appointment_{appointment_id}')
+
+    # Clear markers
+    clear_call_markers(call_id)
+
 
 # =============================================================================
 # TIMEZONE UTILITY FUNCTIONS

@@ -66,9 +66,13 @@
                                                 <i class="fas fa-comments"></i> Chat
                                             </a>
                                             {% if appointment.payment_status == 'completed' %}
-                                            <a href="{{ url_for('video_call', appointment_id=appointment.id) }}" 
+                                            <a href="{{ url_for('video_call', appointment_id=appointment.id) }}?user_role=doctor&contact_name={{ (appointment.patient.first_name ~ ' ' ~ appointment.patient.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}" 
                                                class="btn btn-sm btn-outline-success">
                                                 <i class="fas fa-video"></i> Video
+                                            </a>
+                                            <a href="{{ url_for('voice_call', appointment_id=appointment.id) }}?user_role=doctor&contact_name={{ (appointment.patient.first_name ~ ' ' ~ appointment.patient.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}" 
+                                               class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-phone"></i> Voice
                                             </a>
                                             {% endif %}
                                         </div>

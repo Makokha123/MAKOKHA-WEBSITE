@@ -734,18 +734,18 @@
                                 </button>
                                 {% endif %}
                                 {% if appointment.status == 'confirmed' and appointment.payment_status == 'completed' %}
-                                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
-                                        onclick="startVideoCall({{ appointment.id }})">
+                                          <a class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
+                                              href="{{ url_for('video_call', appointment_id=appointment.id) }}?user_role=patient&contact_name={{ (appointment.doctor.first_name ~ ' ' ~ appointment.doctor.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">
                                     Video
-                                </button>
-                                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
-                                        onclick="startVoiceCall({{ appointment.id }})">
+                                </a>
+                                          <a class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
+                                              href="{{ url_for('voice_call', appointment_id=appointment.id) }}?user_role=patient&contact_name={{ (appointment.doctor.first_name ~ ' ' ~ appointment.doctor.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">
                                     Voice
-                                </button>
-                                <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
-                                        onclick="startWhatsAppChat({{ appointment.id }})">
+                                </a>
+                                <a class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
+                                   href="{{ url_for('communication') }}?appointment_id={{ appointment.id }}">
                                     Chat
-                                </button>
+                                </a>
                                 {% endif %}
                             </div>
                         </td>

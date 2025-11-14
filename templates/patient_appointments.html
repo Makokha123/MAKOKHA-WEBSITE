@@ -470,14 +470,14 @@
                                 {% endif %}
                                 
                                 {% if appointment.status == 'confirmed' and appointment.payment_status == 'completed' %}
-                                <button class="action-btn secondary"
-                                        onclick="startVideoCall({{ appointment.id }})">
+                                          <a class="action-btn secondary"
+                                              href="{{ url_for('video_call', appointment_id=appointment.id) }}?user_role=patient&contact_name={{ (appointment.doctor.first_name ~ ' ' ~ appointment.doctor.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">
                                     📹 Video Call
-                                </button>
-                                <button class="action-btn secondary"
-                                        onclick="startVoiceCall({{ appointment.id }})">
+                                </a>
+                                          <a class="action-btn secondary"
+                                              href="{{ url_for('voice_call', appointment_id=appointment.id) }}?user_role=patient&contact_name={{ (appointment.doctor.first_name ~ ' ' ~ appointment.doctor.last_name)|urlencode }}&payment_status={{ appointment.payment_status }}">
                                     📞 Voice Call
-                                </button>
+                                </a>
                                 <a href="{{ url_for('communication') }}?appointment_id={{ appointment.id }}" 
                                    class="action-btn secondary">
                                     💬 Message
